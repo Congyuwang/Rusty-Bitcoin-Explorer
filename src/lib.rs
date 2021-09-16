@@ -2,7 +2,6 @@ mod api;
 mod bitcoinparser;
 
 use crate::api::TxDB;
-use bitcoinparser::parsed_proto::Block;
 use pyo3::prelude::*;
 use pythonize::pythonize;
 use rayon::prelude::*;
@@ -11,18 +10,26 @@ use std::path::Path;
 #[pyclass]
 struct BitcoinDB {
     db: api::BitcoinDB,
-    tx_db: api::TxDB,
+    tx_db: Option<api::TxDB>,
 }
 
 #[pymethods]
 impl BitcoinDB {
+    ///
+    /// `tx_index`: whether to open tx_index levelDB.
+    /// Setting `tx_index` to `false` allows easy python parallelization.
+    ///
     #[new]
-    fn new(path: &str) -> PyResult<Self> {
+    fn new(path: &str, tx_index: bool) -> PyResult<Self> {
         let path = Path::new(path);
         match api::BitcoinDB::new(path) {
             Ok(db) => {
-                let tx_db = TxDB::new(path, &db.block_index);
-                Ok(BitcoinDB { db, tx_db })
+                if tx_index {
+                    let tx_db = TxDB::new(path, &db.block_index);
+                    Ok(BitcoinDB { db, tx_db: Some(tx_db) })
+                } else {
+                    Ok(BitcoinDB { db, tx_db: None })
+                }
             }
             Err(_) => Err(pyo3::exceptions::PyException::new_err(
                 "failed to launch bitcoinDB",
@@ -45,21 +52,16 @@ impl BitcoinDB {
 
     /// get blocks of heights in parallel
     #[pyo3(text_signature = "($self, heights, /)")]
-    fn get_block_batch(&self, heights: Vec<i32>) -> PyResult<String> {
+    fn get_block_batch(&self, heights: Vec<i32>) -> PyResult<Vec<String>> {
         let db = &self.db;
-        let blocks: Vec<Option<Block>> = heights
-            .par_iter()
-            .map(|h| match db.get_block_of_height(*h) {
-                Ok(block) => Some(block),
-                Err(_) => None,
+        Ok(heights.par_iter()
+            .filter_map(|h| {
+                db.get_block_of_height(*h).ok()
             })
-            .collect();
-        match serde_json::to_string(&blocks) {
-            Ok(s) => Ok(s),
-            Err(_) => Err(pyo3::exceptions::PyException::new_err(
-                "failed to serialize",
-            )),
-        }
+            .filter_map(|blk| {
+                serde_json::to_string(&blk).ok()
+            })
+            .collect())
     }
 
     /// only get the block header (in memory, no disk access)
@@ -91,19 +93,27 @@ impl BitcoinDB {
 
     #[pyo3(text_signature = "($self, txid, /)", name = "get_height_from_txid")]
     fn query_height_from_txid(&mut self, txid: String) -> PyResult<i32> {
-        match self.tx_db.query_block_height_of_transaction(&txid) {
-            Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
-            Ok(h) => Ok(h),
+        if let Some(tx_db) = self.tx_db.as_mut() {
+            match tx_db.query_block_height_of_transaction(&txid) {
+                Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
+                Ok(h) => Ok(h),
+            }
+        } else {
+            Err(pyo3::exceptions::PyException::new_err("tx_index not set to True"))
         }
     }
 
     #[pyo3(text_signature = "($self, txid, /)", name = "get_transaction")]
     fn query_transaction(&mut self, txid: String) -> PyResult<PyObject> {
-        let gil = Python::acquire_gil();
-        let py = gil.python();
-        match self.tx_db.query_transaction(&txid, &self.db.blk_store) {
-            Ok(t) => Ok(pythonize(py, &t)?),
-            Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
+        if let Some(tx_db) = self.tx_db.as_mut() {
+            let gil = Python::acquire_gil();
+            let py = gil.python();
+            match tx_db.query_transaction(&txid, &self.db.blk_store) {
+                Ok(t) => Ok(pythonize(py, &t)?),
+                Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
+            }
+        } else {
+            Err(pyo3::exceptions::PyException::new_err("tx_index not set to True"))
         }
     }
 
