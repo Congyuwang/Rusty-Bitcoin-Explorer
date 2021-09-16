@@ -1,0 +1,10 @@
+[project]
+name = "bitcoinquery"
+classifiers = ["Programming Language :: Python"]
+
+[package.metadata.maturin]
+python-source = "bitcoinquery"
+
+[build-system]
+requires = ["maturin>=0.11,<0.12"]
+build-backend = "maturin"
