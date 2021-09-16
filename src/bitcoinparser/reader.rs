@@ -6,7 +6,6 @@ use std::fs::File;
 use std::io::{BufReader, Cursor};
 
 pub trait BlockchainRead: std::io::Read {
-
     fn read_varint(&mut self) -> OpResult<usize> {
         let mut n = 0;
         loop {

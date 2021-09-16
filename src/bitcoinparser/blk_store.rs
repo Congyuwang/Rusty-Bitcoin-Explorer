@@ -14,7 +14,6 @@ pub struct BlkFile {
 }
 
 impl BlkFile {
-
     pub(crate) fn new(path: &Path) -> OpResult<BlkFile> {
         Ok(BlkFile {
             files: BlkFile::scan_path(path)?,
@@ -35,7 +34,12 @@ impl BlkFile {
         }
     }
 
-    pub fn read_transaction(&self, n_file: i32, n_pos: u32, n_tx_offset: u32) -> OpResult<Transaction> {
+    pub fn read_transaction(
+        &self,
+        n_file: i32,
+        n_pos: u32,
+        n_tx_offset: u32,
+    ) -> OpResult<Transaction> {
         if let Some(blk_path) = self.files.get(&n_file) {
             let mut r = BufReader::new(File::open(blk_path)?);
             r.seek(SeekFrom::Start(n_pos as u64))?;

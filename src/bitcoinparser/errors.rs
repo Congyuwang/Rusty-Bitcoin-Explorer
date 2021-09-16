@@ -5,8 +5,8 @@ use std::io;
 use std::string;
 use std::sync;
 
-use rusty_leveldb::Status;
 use bitcoin::hashes::hex::Error;
+use rusty_leveldb::Status;
 
 pub type OpResult<T> = Result<T, OpError>;
 
@@ -105,7 +105,9 @@ impl From<bitcoin::consensus::encode::Error> for OpError {
 }
 
 impl From<bitcoin::hashes::hex::Error> for OpError {
-    fn from(_: Error) -> Self {Self::from("not a valid hash".to_string())}
+    fn from(_: Error) -> Self {
+        Self::from("not a valid hash".to_string())
+    }
 }
 
 impl From<bitcoin_hashes::Error> for OpError {

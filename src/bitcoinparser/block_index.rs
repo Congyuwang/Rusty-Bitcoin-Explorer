@@ -1,13 +1,13 @@
+use bitcoin::hashes::hex::ToHex;
+use bitcoin::hashes::Hash;
+use bitcoin::{BlockHash, BlockHeader};
+use log::info;
+use rusty_leveldb::{LdbIterator, Options, DB};
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
-use log::info;
-use bitcoin::{BlockHash, BlockHeader};
-use bitcoin::hashes::Hash;
-use bitcoin::hashes::hex::ToHex;
-use rusty_leveldb::{DB, LdbIterator, Options};
-use serde::Serialize;
 
 use crate::bitcoinparser::errors::OpResult;
 use crate::bitcoinparser::reader::BlockchainRead;
@@ -99,7 +99,6 @@ impl fmt::Debug for BlockIndexRecord {
 fn is_block_index_record(data: &[u8]) -> bool {
     *data.get(0).unwrap() == b'b'
 }
-
 
 pub struct BlockIndex {
     pub records: Vec<BlockIndexRecord>,

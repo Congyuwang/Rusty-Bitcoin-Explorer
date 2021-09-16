@@ -1,11 +1,11 @@
+use bitcoin::hashes::Hash;
+use bitcoin::Txid;
+use log::{info, warn};
+use rusty_leveldb::{Options, DB};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::path::Path;
-use log::{info, warn};
-use bitcoin::hashes::Hash;
-use bitcoin::Txid;
-use rusty_leveldb::{DB, Options};
 
 use crate::bitcoinparser::block_index::BlockIndex;
 use crate::bitcoinparser::errors::{OpError, OpResult};
@@ -39,9 +39,9 @@ impl TransactionIndex {
     fn try_open_db(path: &Path) -> Option<DB> {
         match DB::open(path, Options::default()) {
             Ok(db) => {
-                info!{"Successfully open tx_index DB!"}
+                info! {"Successfully open tx_index DB!"}
                 Some(db)
-            },
+            }
             Err(e) => {
                 warn!("Filed to open tx_index DB: {:?}", e);
                 None
@@ -63,8 +63,11 @@ impl TransactionIndex {
                 Err(OpError::from("value not found".to_string()))
             }
         } else {
-            Err(OpError::from("tx_index DB not found,\
-            might need to reindex with tx_index=1".to_string()))
+            Err(OpError::from(
+                "tx_index DB not found,\
+            might need to reindex with tx_index=1"
+                    .to_string(),
+            ))
         }
     }
 }

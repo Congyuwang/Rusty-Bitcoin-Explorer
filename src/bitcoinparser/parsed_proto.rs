@@ -1,20 +1,19 @@
-use crate::bitcoinparser::script::{Type, evaluate_script};
-use serde::{Serialize, Deserialize};
-use bitcoin::{Txid, Address};
+use crate::bitcoinparser::script::{evaluate_script, Type};
+use bitcoin::{Address, Txid};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Block {
     pub header: bitcoin::BlockHeader,
-    pub txdata: Vec<Transaction>
+    pub txdata: Vec<Transaction>,
 }
 
 impl Block {
-
     /// obtain addresses for each output of each transactions
     pub fn parse(block: bitcoin::Block) -> Block {
         Block {
             header: block.header,
-            txdata: block.txdata.into_iter().map(Transaction::parse).collect()
+            txdata: block.txdata.into_iter().map(Transaction::parse).collect(),
         }
     }
 }
@@ -31,7 +30,6 @@ pub struct Transaction {
 }
 
 impl Transaction {
-
     /// obtain addresses for each output
     pub fn parse(tx: bitcoin::Transaction) -> Transaction {
         Transaction {
@@ -39,7 +37,7 @@ impl Transaction {
             lock_time: tx.lock_time,
             txid: tx.txid(),
             input: tx.input,
-            output: tx.output.into_iter().map(TxOut::parse).collect()
+            output: tx.output.into_iter().map(TxOut::parse).collect(),
         }
     }
 }
@@ -59,7 +57,7 @@ impl TxOut {
             value: out.value,
             script_pubkey: out.script_pubkey,
             script_type: eval.pattern,
-            addresses: eval.addresses
+            addresses: eval.addresses,
         }
     }
 }

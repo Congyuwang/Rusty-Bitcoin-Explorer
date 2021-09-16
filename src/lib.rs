@@ -1,12 +1,12 @@
 mod api;
 mod bitcoinparser;
 
+use crate::api::TxDB;
 use bitcoinparser::parsed_proto::Block;
 use pyo3::prelude::*;
 use pythonize::pythonize;
 use rayon::prelude::*;
 use std::path::Path;
-use crate::api::TxDB;
 
 #[pyclass]
 struct BitcoinDB {
@@ -22,10 +22,8 @@ impl BitcoinDB {
         match api::BitcoinDB::new(path) {
             Ok(db) => {
                 let tx_db = TxDB::new(path, &db.block_index);
-                Ok(BitcoinDB {
-                    db,
-                    tx_db,
-                })},
+                Ok(BitcoinDB { db, tx_db })
+            }
             Err(_) => Err(pyo3::exceptions::PyException::new_err(
                 "failed to launch bitcoinDB",
             )),
@@ -50,14 +48,17 @@ impl BitcoinDB {
     fn get_block_batch(&self, heights: Vec<i32>) -> PyResult<String> {
         let db = &self.db;
         let blocks: Vec<Option<Block>> = heights
-                .par_iter()
-                .map(|h| match db.get_block_of_height(*h) {
-                    Ok(block) => Some(block),
-                    Err(_) => None,
-                }).collect();
+            .par_iter()
+            .map(|h| match db.get_block_of_height(*h) {
+                Ok(block) => Some(block),
+                Err(_) => None,
+            })
+            .collect();
         match serde_json::to_string(&blocks) {
             Ok(s) => Ok(s),
-            Err(_) => Err(pyo3::exceptions::PyException::new_err("failed to serialize"))
+            Err(_) => Err(pyo3::exceptions::PyException::new_err(
+                "failed to serialize",
+            )),
         }
     }
 
@@ -68,39 +69,31 @@ impl BitcoinDB {
         let py = gil.python();
         match self.db.get_block_header(height) {
             Ok(block) => Ok(pythonize(py, &block)?),
-            Err(_) => Err(pyo3::exceptions::PyException::new_err(
-                "height not found",
-            )),
+            Err(_) => Err(pyo3::exceptions::PyException::new_err("height not found")),
         }
     }
 
     #[pyo3(text_signature = "($self, height, /)")]
     fn get_hash(&self, height: usize) -> PyResult<String> {
         match self.db.block_index.records.get(height) {
-            None => Err(pyo3::exceptions::PyException::new_err(
-                "height not found",
-            )),
-            Some(s) => Ok(s.block_hash.to_string())
+            None => Err(pyo3::exceptions::PyException::new_err("height not found")),
+            Some(s) => Ok(s.block_hash.to_string()),
         }
     }
 
     #[pyo3(text_signature = "($self, hash, /)")]
     fn get_height_from_hash(&self, hash: String) -> PyResult<i32> {
         match self.db.block_index.hash_to_height.get(&hash) {
-            None => Err(pyo3::exceptions::PyException::new_err(
-                "hash not found",
-            )),
-            Some(h) => Ok(*h)
+            None => Err(pyo3::exceptions::PyException::new_err("hash not found")),
+            Some(h) => Ok(*h),
         }
     }
 
     #[pyo3(text_signature = "($self, txid, /)", name = "get_height_from_txid")]
     fn query_height_from_txid(&mut self, txid: String) -> PyResult<i32> {
         match self.tx_db.query_block_height_of_transaction(&txid) {
-            Err(_) => Err(pyo3::exceptions::PyException::new_err(
-                "txid not found",
-            )),
-            Ok(h) => Ok(h)
+            Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
+            Ok(h) => Ok(h),
         }
     }
 
@@ -110,9 +103,7 @@ impl BitcoinDB {
         let py = gil.python();
         match self.tx_db.query_transaction(&txid, &self.db.blk_store) {
             Ok(t) => Ok(pythonize(py, &t)?),
-            Err(_) => Err(pyo3::exceptions::PyException::new_err(
-                "txid not found",
-            ))
+            Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
         }
     }
 
@@ -128,7 +119,7 @@ impl BitcoinDB {
             }
             Err(_) => Err(pyo3::exceptions::PyException::new_err(
                 "failed to parse script_pub_key",
-            ))
+            )),
         }
     }
 

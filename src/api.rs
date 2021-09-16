@@ -56,7 +56,6 @@ pub struct TxDB {
 }
 
 impl TxDB {
-
     /// pass the `-datadir` directory of Bitcoin core
     pub fn new(p: &Path, blk_index: &BlockIndex) -> TxDB {
         let path = p.join("indexes").join("txindex");
@@ -70,12 +69,10 @@ impl TxDB {
         let file_pos_height = &self.transaction_index.file_pos_to_height;
         match file_pos_height.get(&record.n_file) {
             None => Err(OpError::from("transaction not found".to_string())),
-            Some(pos_height) => {
-                match pos_height.borrow().get(&record.n_pos) {
-                    None => Err(OpError::from("transaction not found".to_string())),
-                    Some(height) => Ok(*height)
-                }
-            }
+            Some(pos_height) => match pos_height.borrow().get(&record.n_pos) {
+                None => Err(OpError::from("transaction not found".to_string())),
+                Some(height) => Ok(*height),
+            },
         }
     }
 

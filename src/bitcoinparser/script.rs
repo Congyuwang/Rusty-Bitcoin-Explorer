@@ -1,12 +1,12 @@
+use crate::bitcoinparser::errors::{OpError, OpResult};
 use bitcoin::blockdata::opcodes::{all, All};
 use bitcoin::blockdata::script::Instruction;
 use bitcoin::util::address::Payload;
-use bitcoin::{Address, Network, PubkeyHash, Script, PublicKey};
+use bitcoin::{Address, Network, PubkeyHash, PublicKey, Script};
 use bitcoin_hashes::{hash160, Hash};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use Instruction::{Op, PushBytes};
-use crate::bitcoinparser::errors::{OpResult, OpError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Type {
@@ -179,27 +179,21 @@ fn is_multisig(script: &Script) -> bool {
 
 fn get_pub_keys(script: &Script) -> OpResult<Vec<PublicKey>> {
     assert!(is_multisig(script));
-    let ops: Vec<Instruction> = script.instructions()
-        .map(|o| o.unwrap())
-        .collect();
+    let ops: Vec<Instruction> = script.instructions().map(|o| o.unwrap()).collect();
     if let Op(op) = ops.get(ops.len() - 2).unwrap() {
         let num_keys = decode_from_op_n(op);
         let mut public_keys = Vec::with_capacity(num_keys as usize);
         for i in 0..num_keys {
             if let Some(PushBytes(data)) = ops.get(i as usize + 1) {
                 match PublicKey::from_slice(data) {
-                    Ok(pk) => {
-                        public_keys.push(pk)
-                    },
-                    Err(_) => {
-                        return Err(OpError::from("failed to parse public key".to_string()))
-                    }
+                    Ok(pk) => public_keys.push(pk),
+                    Err(_) => return Err(OpError::from("failed to parse public key".to_string())),
                 }
             } else {
                 // assert! is_multisig
                 unreachable!()
             }
-        };
+        }
         Ok(public_keys)
     } else {
         // assert! is_multisig
@@ -212,10 +206,11 @@ fn get_pub_keys(script: &Script) -> OpResult<Vec<PublicKey>> {
 fn pub_keys_to_addresses(script: &Script) -> Vec<Address> {
     assert!(is_multisig(script));
     if let Ok(pub_keys) = get_pub_keys(&script) {
-        pub_keys.iter()
+        pub_keys
+            .iter()
             .map(|k| Address {
                 payload: Payload::PubkeyHash(k.pubkey_hash()),
-                network: Network::Bitcoin
+                network: Network::Bitcoin,
             })
             .collect()
     } else {
