@@ -3,3 +3,5 @@
 **/*.so
 **/.ipynb_checkpoints
 notebook/
+**/__pycache__
+**/.DS_Store

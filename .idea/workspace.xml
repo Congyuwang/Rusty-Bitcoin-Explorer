@@ -13,7 +13,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f44dce78-5675-4583-949c-7c22f4ac30dc" name="Changes" comment="Merge remote-tracking branch 'origin/master'">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -79,7 +79,12 @@
       <recent name="$PROJECT_DIR$/src/bitcoinparser" />
     </key>
   </component>
-  <component name="RunManager" selected="Cargo.Test lib::test">
+  <component name="RunManager" selected="Cargo.publish">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Test lib::test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package bitcoinquery --lib test" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -96,8 +101,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test lib::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package bitcoinquery --lib tests" />
+    <configuration name="Test test::test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package bitcoinquery --lib test::test -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="requiredFeatures" value="true" />
@@ -112,8 +117,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test test::test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package bitcoinquery --lib test::test -- --exact" />
+    <configuration name="publish" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="publish" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="requiredFeatures" value="true" />
@@ -186,20 +191,20 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Cargo.Test lib::tests" />
       <item itemvalue="Cargo.Test test::test" />
       <item itemvalue="Cargo.Test lib::test" />
       <item itemvalue="Python.__init__" />
       <item itemvalue="Python.test" />
       <item itemvalue="Shell Script.build" />
+      <item itemvalue="Cargo.publish" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.publish" />
         <item itemvalue="Cargo.Test lib::test" />
         <item itemvalue="Cargo.Test test::test" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.__init__" />
-        <item itemvalue="Cargo.Test lib::tests" />
       </list>
     </recent_temporary>
   </component>
@@ -228,7 +233,7 @@
       <workItem from="1631790424994" duration="11310000" />
       <workItem from="1631803406204" duration="1473000" />
       <workItem from="1631805155477" duration="398000" />
-      <workItem from="1631805704791" duration="2000" />
+      <workItem from="1631805704791" duration="161000" />
     </task>
     <task id="LOCAL-00001" summary="first commit">
       <created>1631776327970</created>
@@ -293,7 +298,14 @@
       <option name="project" value="LOCAL" />
       <updated>1631805528087</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Merge remote-tracking branch 'origin/master'">
+      <created>1631805852244</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1631805852244</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
