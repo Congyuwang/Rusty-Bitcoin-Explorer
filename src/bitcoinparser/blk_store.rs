@@ -38,7 +38,9 @@ impl BlkFile {
     pub fn read_transaction(&self, n_file: i32, n_pos: u32, n_tx_offset: u32) -> OpResult<Transaction> {
         if let Some(blk_path) = self.files.get(&n_file) {
             let mut r = BufReader::new(File::open(blk_path)?);
-            r.seek(SeekFrom::Start((n_pos + n_tx_offset) as u64))?;
+            r.seek(SeekFrom::Start(n_pos as u64))?;
+            r.read_block_header()?;
+            r.seek(SeekFrom::Current(n_tx_offset as i64))?;
             r.read_transaction()
         } else {
             Err(OpError::from(

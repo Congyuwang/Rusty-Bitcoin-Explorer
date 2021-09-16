@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::path::Path;
-use log::info;
+use log::{info, warn};
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use rusty_leveldb::{DB, Options};
@@ -43,7 +43,7 @@ impl TransactionIndex {
                 Some(db)
             },
             Err(e) => {
-                info!("Filed to open tx_index DB: {:?}", e);
+                warn!("Filed to open tx_index DB: {:?}", e);
                 None
             }
         }

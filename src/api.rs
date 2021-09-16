@@ -80,9 +80,12 @@ impl TxDB {
     }
 
     pub fn query_transaction(&mut self, txid: &str, blk_store: &BlkFile) -> OpResult<Transaction> {
-        let record: TransactionRecord = self.transaction_index.query_tx_record(txid)?;
-        let tx = blk_store.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)?;
-        let tx_parsed = Transaction::parse(tx);
-        Ok(tx_parsed)
+        if let Ok(record) = self.transaction_index.query_tx_record(txid) {
+            let tx = blk_store.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)?;
+            let tx_parsed = Transaction::parse(tx);
+            Ok(tx_parsed)
+        } else {
+            Err(OpError::from("txid not found".to_string()))
+        }
     }
 }
