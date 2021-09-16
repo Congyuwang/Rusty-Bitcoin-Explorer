@@ -1,9 +1,23 @@
 [project]
 name = "bitcoinquery"
+version = "0.1.2"
 classifiers = ["Programming Language :: Python"]
+description = "Read Bitcoin Core Blockchain Binary File Concurrently"
+long_description_content_type="text/markdown"
+readme = "README.md"
+homepage = 'https://github.com/Congyuwang/bitcoinquery'
+repository = 'https://github.com/Congyuwang/bitcoinquery'
+documentation = 'https://github.com/Congyuwang/bitcoinquery'
+
+keywords = ["rust", "bitcoin", "levelDB", "blockchain", "deserialize", "parser"]
 
 [package.metadata.maturin]
 python-source = "bitcoinquery"
+
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
 
 [build-system]
 requires = ["maturin>=0.11,<0.12"]

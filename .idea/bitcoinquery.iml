@@ -11,6 +11,7 @@
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/.env" />
       <excludeFolder url="file://$MODULE_DIR$/.env/lib/python3.9/site-packages/jupyterlab_widgets/labextension/static" />
+      <excludeFolder url="file://$MODULE_DIR$/notebook" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
