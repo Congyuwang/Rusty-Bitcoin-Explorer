@@ -26,6 +26,9 @@ db = bq.BitcoinDB("~/Bitcoin")
 # get the length of the longest chain currently on disk.
 db.get_max_height()
 
+# get block of a certain height
+db.get_block(1000)
+
 # get block hash of a certain height.
 db.get_hash(1000)
 

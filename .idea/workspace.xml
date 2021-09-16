@@ -12,15 +12,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f44dce78-5675-4583-949c-7c22f4ac30dc" name="Changes" comment="auto reformat code">
-      <change afterPath="$PROJECT_DIR$/LICENSE.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/statistic.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/statistic.xml" afterDir="false" />
+    <list default="true" id="f44dce78-5675-4583-949c-7c22f4ac30dc" name="Changes" comment="add LICENSE.txt">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitcoinquery/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/bitcoinquery/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -239,7 +233,7 @@
       <workItem from="1631782606653" duration="3665000" />
       <workItem from="1631790424994" duration="11310000" />
       <workItem from="1631803406204" duration="1473000" />
-      <workItem from="1631805155477" duration="31000" />
+      <workItem from="1631805155477" duration="357000" />
     </task>
     <task id="LOCAL-00001" summary="first commit">
       <created>1631776327970</created>
@@ -276,7 +270,28 @@
       <option name="project" value="LOCAL" />
       <updated>1631780847219</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="add basic documentations">
+      <created>1631805286302</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1631805286302</updated>
+    </task>
+    <task id="LOCAL-00007" summary="improve data parallelism">
+      <created>1631805307200</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1631805307200</updated>
+    </task>
+    <task id="LOCAL-00008" summary="add LICENSE.txt">
+      <created>1631805326025</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1631805326025</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -299,7 +314,10 @@
     <MESSAGE value="first commit" />
     <MESSAGE value="fix get_transaction" />
     <MESSAGE value="auto reformat code" />
-    <option name="LAST_COMMIT_MESSAGE" value="auto reformat code" />
+    <MESSAGE value="add basic documentations" />
+    <MESSAGE value="improve data parallelism" />
+    <MESSAGE value="add LICENSE.txt" />
+    <option name="LAST_COMMIT_MESSAGE" value="add LICENSE.txt" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
