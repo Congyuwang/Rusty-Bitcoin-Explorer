@@ -12,9 +12,8 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f44dce78-5675-4583-949c-7c22f4ac30dc" name="Changes" comment="add LICENSE.txt">
+    <list default="true" id="f44dce78-5675-4583-949c-7c22f4ac30dc" name="Changes" comment="Merge remote-tracking branch 'origin/master'">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,11 +128,6 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="__init__" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="bitcoinquery" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -233,7 +227,8 @@
       <workItem from="1631782606653" duration="3665000" />
       <workItem from="1631790424994" duration="11310000" />
       <workItem from="1631803406204" duration="1473000" />
-      <workItem from="1631805155477" duration="357000" />
+      <workItem from="1631805155477" duration="398000" />
+      <workItem from="1631805704791" duration="2000" />
     </task>
     <task id="LOCAL-00001" summary="first commit">
       <created>1631776327970</created>
@@ -291,7 +286,14 @@
       <option name="project" value="LOCAL" />
       <updated>1631805326025</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Merge remote-tracking branch 'origin/master'">
+      <created>1631805528086</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1631805528087</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -317,7 +319,8 @@
     <MESSAGE value="add basic documentations" />
     <MESSAGE value="improve data parallelism" />
     <MESSAGE value="add LICENSE.txt" />
-    <option name="LAST_COMMIT_MESSAGE" value="add LICENSE.txt" />
+    <MESSAGE value="Merge remote-tracking branch 'origin/master'" />
+    <option name="LAST_COMMIT_MESSAGE" value="Merge remote-tracking branch 'origin/master'" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
