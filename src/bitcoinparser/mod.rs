@@ -5,3 +5,4 @@ pub mod parsed_proto;
 mod reader;
 pub(crate) mod script;
 pub(crate) mod tx_index;
+pub(crate) mod simple_proto;

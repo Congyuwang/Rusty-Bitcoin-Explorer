@@ -43,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoinquery"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "bitcoin",
  "bitcoin_hashes",

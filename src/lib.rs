@@ -50,6 +50,19 @@ impl BitcoinDB {
         }
     }
 
+    /// get complete block of height
+    #[pyo3(text_signature = "($self, height, /)")]
+    fn get_block_simple(&self, height: i32) -> PyResult<PyObject> {
+        let gil = Python::acquire_gil();
+        let py = gil.python();
+        match self.db.get_block_of_height_simple(height) {
+            Ok(block) => Ok(pythonize(py, &block)?),
+            Err(_) => Err(pyo3::exceptions::PyException::new_err(
+                "failed to get block",
+            )),
+        }
+    }
+
     /// get blocks of heights in parallel
     #[pyo3(text_signature = "($self, heights, /)")]
     fn get_block_batch(&self, heights: Vec<i32>) -> PyResult<Vec<String>> {
@@ -57,6 +70,20 @@ impl BitcoinDB {
         Ok(heights.par_iter()
             .filter_map(|h| {
                 db.get_block_of_height(*h).ok()
+            })
+            .filter_map(|blk| {
+                serde_json::to_string(&blk).ok()
+            })
+            .collect())
+    }
+
+    /// get blocks of heights in parallel
+    #[pyo3(text_signature = "($self, heights, /)")]
+    fn get_simple_block_batch(&self, heights: Vec<i32>) -> PyResult<Vec<String>> {
+        let db = &self.db;
+        Ok(heights.par_iter()
+            .filter_map(|h| {
+                db.get_block_of_height_simple(*h).ok()
             })
             .filter_map(|blk| {
                 serde_json::to_string(&blk).ok()
@@ -109,6 +136,20 @@ impl BitcoinDB {
             let gil = Python::acquire_gil();
             let py = gil.python();
             match tx_db.query_transaction(&txid, &self.db.blk_store) {
+                Ok(t) => Ok(pythonize(py, &t)?),
+                Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
+            }
+        } else {
+            Err(pyo3::exceptions::PyException::new_err("tx_index not set to True"))
+        }
+    }
+
+    #[pyo3(text_signature = "($self, txid, /)", name = "get_transaction_simple")]
+    fn query_transaction_simple(&mut self, txid: String) -> PyResult<PyObject> {
+        if let Some(tx_db) = self.tx_db.as_mut() {
+            let gil = Python::acquire_gil();
+            let py = gil.python();
+            match tx_db.query_transaction_simple(&txid, &self.db.blk_store) {
                 Ok(t) => Ok(pythonize(py, &t)?),
                 Err(_) => Err(pyo3::exceptions::PyException::new_err("txid not found")),
             }

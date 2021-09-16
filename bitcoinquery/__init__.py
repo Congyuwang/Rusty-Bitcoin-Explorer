@@ -22,9 +22,12 @@ class BitcoinDB:
         self.db = _db(path, tx_index)
         self.tx_index = tx_index
 
-    def get_block(self, height: int):
+    def get_block(self, height: int, simplify: bool = True):
         """get the block of a specific height."""
-        return self.db.get_block(height)
+        if simplify:
+            return self.db.get_block_simple(height)
+        else:
+            return self.db.get_block(height)
 
     def get_max_height(self):
         """get the length of the longest chain currently on disk."""
@@ -48,18 +51,22 @@ class BitcoinDB:
         """get block height of certain hash."""
         return self.db.get_height_from_hash(block_hash)
 
-    def get_transaction(self, txid: str):
+    def get_transaction(self, txid: str, simplify: bool = True):
         """get transactions from txid
 
         This queries the `levelDB` each time, thus it is relatively slow.
 
+        :param simplify: simplify transaction info (faster)
         :param txid: transaction id (hex encoded string)
 
         :return: list of transactions
         """
         if not self.tx_index:
             raise Exception("tx_index is set to False")
-        return self.db.get_transaction(txid)
+        if simplify:
+            return self.db.get_transaction_simple(txid)
+        else:
+            return self.db.get_transaction(txid)
 
     def get_height_from_txid(self, txid: str):
         """get the height of the block which this transaction belongs.
@@ -79,10 +86,14 @@ class BitcoinDB:
         """
         return self.db.parse_script(script_pub_key)
 
-    def get_block_batch(self, heights: list[int]) -> list[str]:
+    def get_block_batch(self, heights: list[int], simplify: bool = True) -> list[str]:
         """get multiple blocks in parallel, return list of json string.
 
+        :param simplify: simplify block info (faster)
         :param heights: a list of heights
         :return: list of json strings
         """
-        return self.db.get_block_batch(heights)
+        if simplify:
+            return self.db.get_block_batch_simple(heights)
+        else:
+            return self.db.get_block_batch(heights)

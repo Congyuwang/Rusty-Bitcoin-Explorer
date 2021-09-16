@@ -6,6 +6,7 @@ use crate::bitcoinparser::blk_store::BlkFile;
 use crate::bitcoinparser::block_index::{BlockIndex, BlockIndexRecord};
 use crate::bitcoinparser::errors::{OpError, OpResult};
 use crate::bitcoinparser::parsed_proto::{Block, Transaction};
+use crate::bitcoinparser::simple_proto::{SBlock, STransaction};
 use crate::bitcoinparser::script::{evaluate_script, ScriptInfo};
 use crate::bitcoinparser::tx_index::{TransactionIndex, TransactionRecord};
 use bitcoin::hashes::hex::FromHex;
@@ -36,6 +37,16 @@ impl BitcoinDB {
         if let Some(index) = self.block_index.records.get(height as usize) {
             let blk = self.blk_store.read_block(index.n_file, index.n_data_pos)?;
             let blk_parsed = Block::parse(blk);
+            Ok(blk_parsed)
+        } else {
+            Err(OpError::from("height not found".to_string()))
+        }
+    }
+
+    pub fn get_block_of_height_simple(&self, height: i32) -> OpResult<SBlock> {
+        if let Some(index) = self.block_index.records.get(height as usize) {
+            let blk = self.blk_store.read_block(index.n_file, index.n_data_pos)?;
+            let blk_parsed = SBlock::parse(blk);
             Ok(blk_parsed)
         } else {
             Err(OpError::from("height not found".to_string()))
@@ -80,6 +91,16 @@ impl TxDB {
         if let Ok(record) = self.transaction_index.query_tx_record(txid) {
             let tx = blk_store.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)?;
             let tx_parsed = Transaction::parse(tx);
+            Ok(tx_parsed)
+        } else {
+            Err(OpError::from("txid not found".to_string()))
+        }
+    }
+
+    pub fn query_transaction_simple(&mut self, txid: &str, blk_store: &BlkFile) -> OpResult<STransaction> {
+        if let Ok(record) = self.transaction_index.query_tx_record(txid) {
+            let tx = blk_store.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)?;
+            let tx_parsed = STransaction::parse(tx);
             Ok(tx_parsed)
         } else {
             Err(OpError::from("txid not found".to_string()))

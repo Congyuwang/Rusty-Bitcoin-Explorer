@@ -1,19 +1,46 @@
 use crate::bitcoinparser::script::{evaluate_script, Type};
-use bitcoin::{Address, Txid};
+use bitcoin::{Address, Txid, BlockHash, TxMerkleNode};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Block {
-    pub header: bitcoin::BlockHeader,
+    pub header: BlockHeader,
     pub txdata: Vec<Transaction>,
 }
 
 impl Block {
     /// obtain addresses for each output of each transactions
     pub fn parse(block: bitcoin::Block) -> Block {
+        let block_hash = *&block.block_hash();
         Block {
-            header: block.header,
+            header: BlockHeader::parse(block.header, block_hash),
             txdata: block.txdata.into_iter().map(Transaction::parse).collect(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BlockHeader {
+    pub version: i32,
+    pub block_hash: BlockHash,
+    pub prev_blockhash: BlockHash,
+    pub merkle_root: TxMerkleNode,
+    pub time: u32,
+    pub bits: u32,
+    pub nonce: u32,
+}
+
+impl BlockHeader {
+    /// obtain addresses for each output
+    pub fn parse(b: bitcoin::BlockHeader, block_hash: BlockHash) -> BlockHeader {
+        BlockHeader {
+            version: b.version,
+            block_hash,
+            prev_blockhash: b.prev_blockhash,
+            merkle_root: b.merkle_root,
+            time: b.time,
+            bits: b.bits,
+            nonce: b.nonce,
         }
     }
 }

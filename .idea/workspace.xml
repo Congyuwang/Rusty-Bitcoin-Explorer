@@ -12,18 +12,13 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f44dce78-5675-4583-949c-7c22f4ac30dc" name="Changes" comment="Merge remote-tracking branch 'origin/master'">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="c89ef381-e9b2-4acf-a4bd-4038a746f20f" name="Changes" comment="add `simplify` option">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
-  </component>
-  <component name="ChangesViewManager">
-    <option name="groupingKeys">
-      <option value="directory" />
-    </option>
   </component>
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
@@ -32,29 +27,22 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Rust File" />
-        <option value="Python Script" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$USER_HOME$/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/boxed.rs" root0="SKIP_INSPECTION" />
-    <setting file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/bitcoin-0.27.0/src/blockdata/opcodes.rs" root0="SKIP_INSPECTION" />
-    <setting file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/bitcoin-0.27.0/src/util/address.rs" root0="SKIP_INSPECTION" />
-    <setting file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/bitcoin-0.27.0/src/blockdata/script.rs" root0="SKIP_INSPECTION" />
-  </component>
   <component name="MacroExpansionManager">
-    <option name="directoryName" value="pry8hu5h" />
+    <option name="directoryName" value="q6kpu6xh" />
   </component>
-  <component name="ProjectId" id="1yAblc2vcQZ8cq5OV1HNnHEAaXW" />
+  <component name="ProjectId" id="1yEAeopak13PpUoU6T9UsgyRQFR" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
-    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="RunOnceActivity.cidr.known.project.marker" value="true" />
@@ -70,143 +58,12 @@
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
     <property name="settings.editor.selected.configurable" value="reference.settings.project.statistic.project.settings" />
   </component>
-  <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$" />
-    </key>
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/target/wheels" />
-      <recent name="$PROJECT_DIR$/src/bitcoinparser" />
-    </key>
-  </component>
-  <component name="RunManager" selected="Cargo.publish">
+  <component name="RunManager">
     <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test lib::test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package bitcoinquery --lib test" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="emulateTerminal" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="backtrace" value="SHORT" />
-      <envs />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test test::test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package bitcoinquery --lib test::test -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="emulateTerminal" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="backtrace" value="SHORT" />
-      <envs />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="publish" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="publish" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="emulateTerminal" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="backtrace" value="SHORT" />
-      <envs />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="__init__" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="bitcoinquery" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/bitcoinquery" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/bitcoinquery/__init__.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="bitcoinquery" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/notebook" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/notebook/test.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="build" type="ShConfigurationType">
-      <option name="SCRIPT_TEXT" value="source .env/bin/activate ;unset CONDA_PREFIX" />
-      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
-      <option name="SCRIPT_PATH" value="" />
-      <option name="SCRIPT_OPTIONS" value="" />
-      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
-      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
-      <option name="INTERPRETER_PATH" value="/bin/zsh" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="EXECUTE_IN_TERMINAL" value="true" />
-      <option name="EXECUTE_SCRIPT_FILE" value="false" />
-      <envs />
-      <method v="2" />
-    </configuration>
-    <list>
-      <item itemvalue="Cargo.Test test::test" />
-      <item itemvalue="Cargo.Test lib::test" />
-      <item itemvalue="Python.__init__" />
-      <item itemvalue="Python.test" />
-      <item itemvalue="Shell Script.build" />
-      <item itemvalue="Cargo.publish" />
-    </list>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Cargo.publish" />
-        <item itemvalue="Cargo.Test lib::test" />
-        <item itemvalue="Cargo.Test test::test" />
-        <item itemvalue="Python.test" />
-        <item itemvalue="Python.__init__" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="RustProjectSettings">
     <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
@@ -215,97 +72,36 @@
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="f44dce78-5675-4583-949c-7c22f4ac30dc" name="Changes" comment="" />
-      <created>1631697492131</created>
+      <changelist id="c89ef381-e9b2-4acf-a4bd-4038a746f20f" name="Changes" comment="" />
+      <created>1631806471867</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1631697492131</updated>
-      <workItem from="1631697494965" duration="25390000" />
-      <workItem from="1631727479309" duration="1338000" />
-      <workItem from="1631729520004" duration="1459000" />
-      <workItem from="1631731278478" duration="339000" />
-      <workItem from="1631731871306" duration="6550000" />
-      <workItem from="1631753690346" duration="684000" />
-      <workItem from="1631754609354" duration="3595000" />
-      <workItem from="1631758432358" duration="10929000" />
-      <workItem from="1631769539892" duration="10250000" />
-      <workItem from="1631782606653" duration="3665000" />
-      <workItem from="1631790424994" duration="11310000" />
-      <workItem from="1631803406204" duration="1473000" />
-      <workItem from="1631805155477" duration="398000" />
-      <workItem from="1631805704791" duration="161000" />
+      <updated>1631806471867</updated>
+      <workItem from="1631806477893" duration="121000" />
+      <workItem from="1631810332288" duration="2938000" />
     </task>
-    <task id="LOCAL-00001" summary="first commit">
-      <created>1631776327970</created>
+    <task id="LOCAL-00001" summary="add `simplify` option">
+      <created>1631812600374</created>
       <option name="number" value="00001" />
       <option name="presentableId" value="LOCAL-00001" />
       <option name="project" value="LOCAL" />
-      <updated>1631776327970</updated>
+      <updated>1631812600374</updated>
     </task>
-    <task id="LOCAL-00002" summary="first commit">
-      <created>1631776442281</created>
+    <task id="LOCAL-00002" summary="add `simplify` option">
+      <created>1631813243280</created>
       <option name="number" value="00002" />
       <option name="presentableId" value="LOCAL-00002" />
       <option name="project" value="LOCAL" />
-      <updated>1631776442281</updated>
+      <updated>1631813243280</updated>
     </task>
-    <task id="LOCAL-00003" summary="fix get_transaction">
-      <created>1631780786733</created>
+    <task id="LOCAL-00003" summary="add `simplify` option">
+      <created>1631813250050</created>
       <option name="number" value="00003" />
       <option name="presentableId" value="LOCAL-00003" />
       <option name="project" value="LOCAL" />
-      <updated>1631780786733</updated>
+      <updated>1631813250050</updated>
     </task>
-    <task id="LOCAL-00004" summary="fix get_transaction">
-      <created>1631780808237</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1631780808237</updated>
-    </task>
-    <task id="LOCAL-00005" summary="auto reformat code">
-      <created>1631780847219</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1631780847219</updated>
-    </task>
-    <task id="LOCAL-00006" summary="add basic documentations">
-      <created>1631805286302</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1631805286302</updated>
-    </task>
-    <task id="LOCAL-00007" summary="improve data parallelism">
-      <created>1631805307200</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1631805307200</updated>
-    </task>
-    <task id="LOCAL-00008" summary="add LICENSE.txt">
-      <created>1631805326025</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1631805326025</updated>
-    </task>
-    <task id="LOCAL-00009" summary="Merge remote-tracking branch 'origin/master'">
-      <created>1631805528086</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1631805528087</updated>
-    </task>
-    <task id="LOCAL-00010" summary="Merge remote-tracking branch 'origin/master'">
-      <created>1631805852244</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1631805852244</updated>
-    </task>
-    <option name="localTasksCounter" value="11" />
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -321,18 +117,10 @@
         </entry>
       </map>
     </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
-    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="first commit" />
-    <MESSAGE value="fix get_transaction" />
-    <MESSAGE value="auto reformat code" />
-    <MESSAGE value="add basic documentations" />
-    <MESSAGE value="improve data parallelism" />
-    <MESSAGE value="add LICENSE.txt" />
-    <MESSAGE value="Merge remote-tracking branch 'origin/master'" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merge remote-tracking branch 'origin/master'" />
+    <MESSAGE value="add `simplify` option" />
+    <option name="LAST_COMMIT_MESSAGE" value="add `simplify` option" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
