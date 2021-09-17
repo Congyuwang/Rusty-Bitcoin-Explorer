@@ -1,8 +1,18 @@
-pub(crate) mod blk_store;
-pub(crate) mod block_index;
-pub(crate) mod errors;
-pub mod parsed_proto;
-mod reader;
-pub(crate) mod script;
-pub(crate) mod tx_index;
-pub(crate) mod simple_proto;
+/// read transactions and blocks from blk.dat files
+pub mod blk_file;
+
+/// read block index in memory from levelDB
+pub mod block_index;
+
+/// define binary file readers
+pub mod reader;
+
+/// add multi-sig pattern recognition and decode addresses from multi-sig script
+pub mod script;
+
+/// on disk transaction index database
+pub mod tx_index;
+
+pub mod errors;
+/// various formats of blockchain data representation
+pub mod proto;

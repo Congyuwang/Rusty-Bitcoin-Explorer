@@ -54,9 +54,9 @@ impl ScriptInfo {
         }
     }
 
-    pub fn new_from_vec(address: Vec<Address>, pattern: Type) -> Self {
+    pub fn new_from_vec(addresses: Vec<Address>, pattern: Type) -> Self {
         Self {
-            addresses: address,
+            addresses,
             pattern,
         }
     }
@@ -187,7 +187,7 @@ fn get_pub_keys(script: &Script) -> OpResult<Vec<PublicKey>> {
             if let Some(PushBytes(data)) = ops.get(i as usize + 1) {
                 match PublicKey::from_slice(data) {
                     Ok(pk) => public_keys.push(pk),
-                    Err(_) => return Err(OpError::from("failed to parse public key".to_string())),
+                    Err(_) => return Err(OpError::from("failed to parse public key")),
                 }
             } else {
                 // assert! is_multisig

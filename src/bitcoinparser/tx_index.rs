@@ -2,7 +2,6 @@ use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use log::{info, warn};
 use rusty_leveldb::{Options, DB};
-use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::path::Path;
@@ -10,36 +9,54 @@ use std::path::Path;
 use crate::bitcoinparser::block_index::BlockIndex;
 use crate::bitcoinparser::errors::{OpError, OpResult};
 use crate::bitcoinparser::reader::BlockchainRead;
-use bitcoin::hashes::hex::FromHex;
+use std::sync::{Arc, Mutex, RwLock};
 
-pub struct TransactionIndex {
-    db: Option<DB>,
-    // used for reverse looking up block
-    pub file_pos_to_height: BTreeMap<i32, RefCell<BTreeMap<u32, i32>>>,
+pub struct TxDB {
+    db: Option<Arc<Mutex<DB>>>,
+    // used for reverse looking up to block height
+    pub file_pos_to_height: BTreeMap<i32, Arc<RwLock<BTreeMap<u32, i32>>>>,
 }
 
-impl TransactionIndex {
-    pub fn new(path: &Path, blk_index: &BlockIndex) -> TransactionIndex {
-        let mut file_pos_to_height = BTreeMap::new();
-        for b in &blk_index.records {
-            let height = b.n_height;
-            if !file_pos_to_height.contains_key(&b.n_file) {
-                file_pos_to_height.insert(b.n_file, RefCell::new(BTreeMap::new()));
+impl TxDB {
+    /// initialize TxDB for transaction queries
+    pub fn new(path: &Path, blk_index: &BlockIndex) -> TxDB {
+        let option_db = TxDB::try_open_db(path);
+        if let Some(db) = option_db {
+            let mut file_pos_to_height = BTreeMap::new();
+            for b in &blk_index.records {
+                let height = b.n_height;
+                if !file_pos_to_height.contains_key(&b.n_file) {
+                    file_pos_to_height.insert(b.n_file, Arc::new(RwLock::new(BTreeMap::new())));
+                }
+                let pos_to_height = file_pos_to_height
+                    .get(&b.n_file)
+                    .unwrap()
+                    .clone();
+                let mut map = pos_to_height
+                    .write()
+                    .unwrap();
+                map.insert(b.n_data_pos, height);
             }
-            let mut pos_to_height = file_pos_to_height.get(&b.n_file).unwrap().borrow_mut();
-            pos_to_height.insert(b.n_data_pos, height);
-        }
-        TransactionIndex {
-            db: TransactionIndex::try_open_db(path),
-            file_pos_to_height,
+            TxDB {
+                db: Some(Arc::new(Mutex::new(db))),
+                file_pos_to_height,
+            }
+        } else {
+            TxDB::null()
         }
     }
 
-    #[inline]
+    pub fn null() -> TxDB {
+        TxDB {
+            db: None,
+            file_pos_to_height: BTreeMap::new(),
+        }
+    }
+
     fn try_open_db(path: &Path) -> Option<DB> {
         match DB::open(path, Options::default()) {
             Ok(db) => {
-                info! {"Successfully open tx_index DB!"}
+                info! {"Successfully opened tx_index DB!"}
                 Some(db)
             }
             Err(e) => {
@@ -49,25 +66,38 @@ impl TransactionIndex {
         }
     }
 
-    pub fn query_tx_record(&mut self, txid: &str) -> OpResult<TransactionRecord> {
-        let txid = Txid::from_hex(txid)?;
-        if let Some(db) = self.db.as_mut() {
+    pub fn get_tx_record(&self, txid: &Txid) -> OpResult<TransactionRecord> {
+        if let Some(db) = &self.db {
             let inner = txid.as_inner();
             let mut key = Vec::with_capacity(inner.len() + 1);
             key.push(b't');
             key.extend(inner);
             let key = key.as_slice();
-            if let Some(value) = db.get(key) {
+            let db = db.clone();
+            let mut db_lock = db.lock().unwrap();
+            if let Some(value) = db_lock.get(key) {
                 Ok(TransactionRecord::from(&key[1..], value.as_slice())?)
             } else {
-                Err(OpError::from("value not found".to_string()))
+                Err(OpError::from("value not found"))
             }
         } else {
-            Err(OpError::from(
-                "tx_index DB not found,\
-            might need to reindex with tx_index=1"
-                    .to_string(),
-            ))
+            Err(OpError::from("TxDB not open"))
+        }
+    }
+
+    pub fn get_block_height_of_tx(&self, txid: &Txid) -> OpResult<i32> {
+        let record: TransactionRecord = self.get_tx_record(txid)?;
+        let file_pos_height = &self.file_pos_to_height;
+        match file_pos_height.get(&record.n_file) {
+            None => Err(OpError::from("transaction not found")),
+            Some(pos_height) => {
+                let pos_height = Arc::clone(pos_height);
+                let pos_height = pos_height.read().unwrap();
+                match pos_height.get(&record.n_pos) {
+                    None => Err(OpError::from("transaction not found")),
+                    Some(height) => Ok(*height),
+                }
+            }
         }
     }
 }

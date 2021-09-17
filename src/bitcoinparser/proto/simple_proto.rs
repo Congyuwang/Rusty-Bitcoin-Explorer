@@ -1,5 +1,5 @@
 use crate::bitcoinparser::script::{evaluate_script, Type};
-use bitcoin::{Address, Txid, BlockHash};
+use bitcoin::{Address, BlockHash, Txid};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -9,6 +9,10 @@ pub struct SBlock {
 }
 
 impl SBlock {
+    ///
+    /// Add addresses, block_hash, tx_id to the bitcoin library format,
+    /// and also simplify the format.
+    ///
     pub fn parse(block: bitcoin::Block) -> SBlock {
         let block_hash = *&block.block_hash();
         SBlock {
@@ -63,7 +67,7 @@ pub struct STxIn {
 }
 
 impl STxIn {
-    fn parse(tx_in: bitcoin::TxIn) -> STxIn {
+    pub fn parse(tx_in: bitcoin::TxIn) -> STxIn {
         STxIn {
             txid: tx_in.previous_output.txid,
             vout: tx_in.previous_output.vout,
@@ -79,7 +83,7 @@ pub struct STxOut {
 }
 
 impl STxOut {
-    fn parse(out: bitcoin::TxOut) -> STxOut {
+    pub fn parse(out: bitcoin::TxOut) -> STxOut {
         let eval = evaluate_script(&out.script_pubkey, bitcoin::Network::Bitcoin);
         STxOut {
             value: out.value,

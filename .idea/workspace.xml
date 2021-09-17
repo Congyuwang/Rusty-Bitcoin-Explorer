@@ -12,8 +12,12 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c89ef381-e9b2-4acf-a4bd-4038a746f20f" name="Changes" comment="add `simplify` option">
+    <list default="true" id="c89ef381-e9b2-4acf-a4bd-4038a746f20f" name="Changes" comment="connect outpoints to actual outputs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bitcoinquery/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/bitcoinquery/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/proto/connected_proto.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/proto/connected_proto.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/script.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/script.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/tx_index.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/tx_index.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,6 +36,19 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="InvalidFacetManager">
+    <ignored-facets>
+      <facet id="bitcoinquerypy/invalid/Python facet" />
+    </ignored-facets>
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="q6kpu6xh" />
@@ -56,12 +73,33 @@
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
-    <property name="settings.editor.selected.configurable" value="reference.settings.project.statistic.project.settings" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/bitcoinparser/proto" />
+    </key>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test script" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package bitcoinquery --lib bitcoinparser::script" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
   </component>
@@ -78,7 +116,9 @@
       <option name="presentableId" value="Default" />
       <updated>1631806471867</updated>
       <workItem from="1631806477893" duration="121000" />
-      <workItem from="1631810332288" duration="2938000" />
+      <workItem from="1631810332288" duration="3003000" />
+      <workItem from="1631838936784" duration="24936000" />
+      <workItem from="1631869178507" duration="3960000" />
     </task>
     <task id="LOCAL-00001" summary="add `simplify` option">
       <created>1631812600374</created>
@@ -101,7 +141,21 @@
       <option name="project" value="LOCAL" />
       <updated>1631813250050</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="add `simplify` option">
+      <created>1631813432942</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1631813432942</updated>
+    </task>
+    <task id="LOCAL-00005" summary="connect outpoints to actual outputs">
+      <created>1631869969608</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1631869969608</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -117,10 +171,12 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="add `simplify` option" />
-    <option name="LAST_COMMIT_MESSAGE" value="add `simplify` option" />
+    <MESSAGE value="connect outpoints to actual outputs" />
+    <option name="LAST_COMMIT_MESSAGE" value="connect outpoints to actual outputs" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

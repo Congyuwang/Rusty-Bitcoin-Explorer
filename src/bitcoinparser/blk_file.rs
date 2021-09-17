@@ -20,7 +20,7 @@ impl BlkFile {
         })
     }
 
-    pub fn read_block(&self, n_file: i32, offset: u32) -> OpResult<Block> {
+    pub(crate) fn read_block(&self, n_file: i32, offset: u32) -> OpResult<Block> {
         if let Some(blk_path) = self.files.get(&n_file) {
             let mut r = BufReader::new(File::open(blk_path)?);
             r.seek(SeekFrom::Start(offset as u64 - 4))?;
@@ -28,13 +28,11 @@ impl BlkFile {
             let block = r.read_u8_vec(block_size)?;
             Cursor::new(block).read_block()
         } else {
-            Err(OpError::from(
-                "blk file not found, sync with bitcoin core".to_string(),
-            ))
+            Err(OpError::from("blk file not found, sync with bitcoin core"))
         }
     }
 
-    pub fn read_transaction(
+    pub(crate) fn read_transaction(
         &self,
         n_file: i32,
         n_pos: u32,
@@ -47,9 +45,7 @@ impl BlkFile {
             r.seek(SeekFrom::Current(n_tx_offset as i64))?;
             r.read_transaction()
         } else {
-            Err(OpError::from(
-                "blk file not found, sync with bitcoin core".to_string(),
-            ))
+            Err(OpError::from("blk file not found, sync with bitcoin core"))
         }
     }
 

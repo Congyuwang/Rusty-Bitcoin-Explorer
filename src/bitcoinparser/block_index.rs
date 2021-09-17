@@ -120,7 +120,7 @@ impl BlockIndex {
     }
 }
 
-/// load block index from disk
+/// load all block index in memory from disk (i.e. `blocks/index` path)
 pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
     let mut block_index = Vec::with_capacity(800000);
     let mut db = DB::open(path, Options::default())?;

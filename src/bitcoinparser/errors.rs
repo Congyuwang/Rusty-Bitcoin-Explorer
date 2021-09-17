@@ -100,19 +100,19 @@ impl From<io::Error> for OpError {
 
 impl From<bitcoin::consensus::encode::Error> for OpError {
     fn from(_: bitcoin::consensus::encode::Error) -> Self {
-        Self::from("block decode error".to_string())
+        Self::from("block decode error")
     }
 }
 
 impl From<bitcoin::hashes::hex::Error> for OpError {
     fn from(_: Error) -> Self {
-        Self::from("not a valid hash".to_string())
+        Self::from("not a valid hash")
     }
 }
 
 impl From<bitcoin_hashes::Error> for OpError {
     fn from(_: bitcoin_hashes::Error) -> Self {
-        Self::from("bitcoin_hash error".to_string())
+        Self::from("bitcoin_hash error")
     }
 }
 
@@ -122,9 +122,9 @@ impl convert::From<i32> for OpError {
     }
 }
 
-impl convert::From<String> for OpError {
-    fn from(err: String) -> Self {
-        Self::new(OpErrorKind::None).join_msg(&err)
+impl convert::From<&str> for OpError {
+    fn from(err: &str) -> Self {
+        Self::new(OpErrorKind::None).join_msg(err)
     }
 }
 
