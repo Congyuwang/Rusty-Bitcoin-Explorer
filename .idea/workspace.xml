@@ -12,13 +12,13 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c89ef381-e9b2-4acf-a4bd-4038a746f20f" name="Changes" comment="connect outpoints to actual outputs">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="c89ef381-e9b2-4acf-a4bd-4038a746f20f" name="Changes" comment="improve transaction reading">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/blk_file.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/blk_file.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/block_index.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/block_index.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/errors.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/errors.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/tx_index.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/tx_index.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,19 +74,17 @@
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
+    <property name="org.rust.disableDetachedFileInspection/Users/congyuwang/CLionProjects/bitcoinquerypy/src/bitcoinparser/database/key.rs" value="true" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/bitcoinparser/database" />
+      <recent name="$PROJECT_DIR$/src/bitcoinparser" />
       <recent name="$PROJECT_DIR$/src/bitcoinparser/proto" />
     </key>
   </component>
-  <component name="RunManager">
-    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Cargo.Test test::test_txdb">
     <configuration name="Test script" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package bitcoinquery --lib bitcoinparser::script" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -103,6 +101,32 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test test::test_txdb" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package bitcoinquery --lib test::test_txdb -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Cargo.Test test::test_txdb" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="RustProjectSettings">
     <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
@@ -120,6 +144,8 @@
       <workItem from="1631810332288" duration="3003000" />
       <workItem from="1631838936784" duration="24936000" />
       <workItem from="1631869178507" duration="6223000" />
+      <workItem from="1631881328544" duration="6000" />
+      <workItem from="1631889290084" duration="13527000" />
     </task>
     <task id="LOCAL-00001" summary="add `simplify` option">
       <created>1631812600374</created>
@@ -163,7 +189,14 @@
       <option name="project" value="LOCAL" />
       <updated>1631873500772</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="improve transaction reading">
+      <created>1631879460385</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1631879460385</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -184,7 +217,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="add `simplify` option" />
     <MESSAGE value="connect outpoints to actual outputs" />
-    <option name="LAST_COMMIT_MESSAGE" value="connect outpoints to actual outputs" />
+    <MESSAGE value="improve transaction reading" />
+    <option name="LAST_COMMIT_MESSAGE" value="improve transaction reading" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

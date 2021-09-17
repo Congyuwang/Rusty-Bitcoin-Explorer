@@ -1,18 +1,35 @@
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use log::{info, warn};
-use rusty_leveldb::{Options, DB};
 use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::path::Path;
-
+use leveldb::database::Database;
+use leveldb::options::{ReadOptions, Options};
+use leveldb::kv::KV;
 use crate::bitcoinparser::block_index::BlockIndex;
 use crate::bitcoinparser::errors::{OpError, OpResult};
 use crate::bitcoinparser::reader::BlockchainRead;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
+
+struct TxKey {
+    key: Vec<u8>
+}
+
+impl db_key::Key for TxKey {
+    fn from_u8(key: &[u8]) -> Self {
+        TxKey {
+            key: Vec::from(key)
+        }
+    }
+
+    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+        f(&self.key)
+    }
+}
 
 pub struct TxDB {
-    db: Option<Arc<Mutex<DB>>>,
+    db: Option<Database<TxKey>>,
     // used for reverse looking up to block height
     pub file_pos_to_height: BTreeMap<i32, Arc<RwLock<BTreeMap<u32, i32>>>>,
 }
@@ -38,7 +55,7 @@ impl TxDB {
                 map.insert(b.n_data_pos, height);
             }
             TxDB {
-                db: Some(Arc::new(Mutex::new(db))),
+                db: Some(db),
                 file_pos_to_height,
             }
         } else {
@@ -53,8 +70,9 @@ impl TxDB {
         }
     }
 
-    fn try_open_db(path: &Path) -> Option<DB> {
-        match DB::open(path, Options::default()) {
+    fn try_open_db(path: &Path) -> Option<Database<TxKey>> {
+        let options = Options::new();
+        match Database::open(path, options) {
             Ok(db) => {
                 info! {"Successfully opened tx_index DB!"}
                 Some(db)
@@ -72,11 +90,14 @@ impl TxDB {
             let mut key = Vec::with_capacity(inner.len() + 1);
             key.push(b't');
             key.extend(inner);
-            let key = key.as_slice();
-            let db = db.clone();
-            let mut db_lock = db.lock().unwrap();
-            if let Some(value) = db_lock.get(key) {
-                Ok(TransactionRecord::from(&key[1..], value.as_slice())?)
+            let key = TxKey{ key };
+            let read_options = ReadOptions::new();
+            if let Ok(value) = db.get(read_options, &key) {
+                if let Some(value) = value {
+                    Ok(TransactionRecord::from(&key.key[1..], value.as_slice())?)
+                } else {
+                    Err(OpError::from("null value read"))
+                }
             } else {
                 Err(OpError::from("value not found"))
             }

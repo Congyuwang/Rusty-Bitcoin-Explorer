@@ -2,15 +2,17 @@ use bitcoin::hashes::hex::ToHex;
 use bitcoin::hashes::Hash;
 use bitcoin::{BlockHash, BlockHeader};
 use log::info;
-use rusty_leveldb::{LdbIterator, Options, DB};
+use leveldb::options::{Options, ReadOptions};
+use leveldb::database::Database;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
-
 use crate::bitcoinparser::errors::OpResult;
 use crate::bitcoinparser::reader::BlockchainRead;
+use leveldb::iterator::Iterable;
+use leveldb::database::iterator::LevelDBIterator;
 
 const BLOCK_VALID_HEADER: u32 = 1;
 const BLOCK_VALID_TREE: u32 = 2;
@@ -120,18 +122,38 @@ impl BlockIndex {
     }
 }
 
+struct BlockKey {
+    key: Vec<u8>
+}
+
+impl db_key::Key for BlockKey {
+    fn from_u8(key: &[u8]) -> Self {
+        BlockKey {
+            key: Vec::from(key)
+        }
+    }
+
+    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+        f(&self.key)
+    }
+}
+
 /// load all block index in memory from disk (i.e. `blocks/index` path)
 pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
     let mut block_index = Vec::with_capacity(800000);
-    let mut db = DB::open(path, Options::default())?;
+
     info!("Start loading block_index");
-    let mut iter = db.new_iter()?;
-    let (mut k, mut v) = (vec![], vec![]);
+    let mut options = Options::new();
+    options.create_if_missing = false;
+    let db: Database<BlockKey> = Database::open(path, options)?;
+    let options = ReadOptions::new();
+    let mut iter = db.iter(options);
 
     while iter.advance() {
-        iter.current(&mut k, &mut v);
-        if is_block_index_record(&k) {
-            let record = BlockIndexRecord::from(&k[1..], &v)?;
+        let k = iter.key();
+        let v = iter.value();
+        if is_block_index_record(&k.key) {
+            let record = BlockIndexRecord::from(&k.key[1..], &v)?;
             if record.n_status & (BLOCK_VALID_MASK | BLOCK_HAVE_DATA) > 0 {
                 block_index.push(record);
             }

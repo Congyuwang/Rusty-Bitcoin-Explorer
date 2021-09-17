@@ -4,9 +4,7 @@ use std::fmt;
 use std::io;
 use std::string;
 use std::sync;
-
 use bitcoin::hashes::hex::Error;
-use rusty_leveldb::Status;
 
 pub type OpResult<T> = Result<T, OpError>;
 
@@ -62,7 +60,6 @@ pub enum OpErrorKind {
     RuntimeError,
     PoisonError,
     SendError,
-    LevelDBError(String),
 }
 
 impl fmt::Display for OpErrorKind {
@@ -70,7 +67,6 @@ impl fmt::Display for OpErrorKind {
         match *self {
             OpErrorKind::IoError(ref err) => write!(f, "I/O Error: {}", err),
             OpErrorKind::Utf8Error(ref err) => write!(f, "Utf8 Conversion: {}", err),
-            OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB: {}", err),
             ref err @ OpErrorKind::PoisonError => write!(f, "Threading Error: {}", err),
             ref err @ OpErrorKind::SendError => write!(f, "Sync: {}", err),
             ref err @ OpErrorKind::RuntimeError => write!(f, "RuntimeError: {}", err),
@@ -84,7 +80,6 @@ impl error::Error for OpErrorKind {
         match *self {
             OpErrorKind::IoError(ref err) => Some(err),
             OpErrorKind::Utf8Error(ref err) => Some(err),
-            // OpErrorKind::ScriptError(ref err) => Some(err),
             ref err @ OpErrorKind::PoisonError => Some(err),
             ref err @ OpErrorKind::SendError => Some(err),
             _ => None,
@@ -146,8 +141,8 @@ impl convert::From<string::FromUtf8Error> for OpError {
     }
 }
 
-impl convert::From<rusty_leveldb::Status> for OpError {
-    fn from(status: Status) -> Self {
-        Self::new(OpErrorKind::LevelDBError(status.err))
+impl convert::From<leveldb::error::Error> for OpError {
+    fn from(err: leveldb::error::Error) -> Self {
+        Self::from(err.to_string().as_ref())
     }
 }

@@ -1,12 +1,16 @@
 [package]
 name = "bitcoinquery"
-version = "0.1.5"
+version = "0.1.7"
 edition = "2018"
+readme = "README.md"
+license-file = "LICENSE.txt"
+description = "A Package for Reading from Bitcoin Core Binary Blockchain"
+homepage = "https://github.com/Congyuwang/BitcoinQueryPy"
+repository = "https://github.com/Congyuwang/BitcoinQueryPy"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rusty-leveldb = "^0.3"
 byteorder = "^1.4"
 bitcoin_hashes = "0.10.0"
 pythonize = "0.14.0"
@@ -15,10 +19,12 @@ pyo3-log = "0.4.0"
 rayon = "1.5.1"
 serde_json = "1.0.68"
 log = "^0.4"
+leveldb = "0.8.6"
+db-key = "0.0.5"
 
 [lib]
 name = "bitcoinquery"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies.bitcoin]
 version = "^0.27"
