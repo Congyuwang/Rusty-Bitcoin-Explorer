@@ -40,9 +40,7 @@ impl BlkFile {
     ) -> OpResult<Transaction> {
         if let Some(blk_path) = self.files.get(&n_file) {
             let mut r = BufReader::new(File::open(blk_path)?);
-            r.seek(SeekFrom::Start(n_pos as u64))?;
-            r.read_block_header()?;
-            r.seek(SeekFrom::Current(n_tx_offset as i64))?;
+            r.seek(SeekFrom::Start(n_pos as u64 + n_tx_offset as u64 + 80))?;
             r.read_transaction()
         } else {
             Err(OpError::from("blk file not found, sync with bitcoin core"))
