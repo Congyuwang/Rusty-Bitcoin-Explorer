@@ -54,3 +54,8 @@ db.get_height_from_txid("some txid")
 # get the script type and addresses from a script public key
 db.parse_script("some hex script pubic key")
 ```
+
+## How to Build
+
+This is a PyO3 project. Use maturin to build and publish.
+`pip install maturin`.
