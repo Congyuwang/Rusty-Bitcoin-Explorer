@@ -14,10 +14,10 @@
   <component name="ChangeListManager">
     <list default="true" id="c89ef381-e9b2-4acf-a4bd-4038a746f20f" name="Changes" comment="connect outpoints to actual outputs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitcoinquery/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/bitcoinquery/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/proto/connected_proto.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/proto/connected_proto.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/script.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/script.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bitcoinparser/tx_index.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/bitcoinparser/tx_index.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -118,7 +118,7 @@
       <workItem from="1631806477893" duration="121000" />
       <workItem from="1631810332288" duration="3003000" />
       <workItem from="1631838936784" duration="24936000" />
-      <workItem from="1631869178507" duration="3960000" />
+      <workItem from="1631869178507" duration="6223000" />
     </task>
     <task id="LOCAL-00001" summary="add `simplify` option">
       <created>1631812600374</created>
@@ -155,7 +155,14 @@
       <option name="project" value="LOCAL" />
       <updated>1631869969608</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="connect outpoints to actual outputs">
+      <created>1631873500772</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1631873500772</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

@@ -16,8 +16,8 @@ struct BitcoinDB {
 #[pymethods]
 impl BitcoinDB {
     ///
-    /// `tx_index`: whether to open tx_index levelDB.
-    /// Setting `tx_index` to `false` allows easy python parallelization.
+    /// `path`: bitcoind --datadir option.
+    /// `tx_index`: whether to try to open tx_index levelDB.
     ///
     #[new]
     fn new(path: &str, tx_index: bool) -> PyResult<Self> {
