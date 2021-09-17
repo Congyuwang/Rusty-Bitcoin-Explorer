@@ -1,5 +1,5 @@
-mod api;
-mod bitcoinparser;
+pub mod api;
+pub mod bitcoinparser;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::Txid;

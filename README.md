@@ -29,6 +29,9 @@ db.get_max_height()
 # get block of a certain height
 db.get_block(1000)
 
+# to retrieve the connected outputs of each inputs as well
+db.get_block(1000, connected=True)
+
 # get block hash of a certain height.
 db.get_hash(1000)
 
@@ -59,3 +62,20 @@ db.parse_script("some hex script pubic key")
 
 This is a PyO3 project. Use maturin to build and publish.
 `pip install maturin`.
+
+On mac, when using cargo to build, add the following into `.cargo/cargo.toml`.
+
+```toml
+[target.x86_64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+
+```

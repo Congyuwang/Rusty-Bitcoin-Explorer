@@ -55,10 +55,7 @@ impl ScriptInfo {
     }
 
     pub fn new_from_vec(addresses: Vec<Address>, pattern: Type) -> Self {
-        Self {
-            addresses,
-            pattern,
-        }
+        Self { addresses, pattern }
     }
 }
 

@@ -1,18 +1,18 @@
+use crate::bitcoinparser::errors::OpResult;
+use crate::bitcoinparser::reader::BlockchainRead;
 use bitcoin::hashes::hex::ToHex;
 use bitcoin::hashes::Hash;
 use bitcoin::{BlockHash, BlockHeader};
-use log::info;
-use leveldb::options::{Options, ReadOptions};
+use leveldb::database::iterator::LevelDBIterator;
 use leveldb::database::Database;
+use leveldb::iterator::Iterable;
+use leveldb::options::{Options, ReadOptions};
+use log::info;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
-use crate::bitcoinparser::errors::OpResult;
-use crate::bitcoinparser::reader::BlockchainRead;
-use leveldb::iterator::Iterable;
-use leveldb::database::iterator::LevelDBIterator;
 
 const BLOCK_VALID_HEADER: u32 = 1;
 const BLOCK_VALID_TREE: u32 = 2;
@@ -123,13 +123,13 @@ impl BlockIndex {
 }
 
 struct BlockKey {
-    key: Vec<u8>
+    key: Vec<u8>,
 }
 
 impl db_key::Key for BlockKey {
     fn from_u8(key: &[u8]) -> Self {
         BlockKey {
-            key: Vec::from(key)
+            key: Vec::from(key),
         }
     }
 

@@ -1,10 +1,10 @@
+use bitcoin::hashes::hex::Error;
 use std::convert::{self, From};
 use std::error;
 use std::fmt;
 use std::io;
 use std::string;
 use std::sync;
-use bitcoin::hashes::hex::Error;
 
 pub type OpResult<T> = Result<T, OpError>;
 

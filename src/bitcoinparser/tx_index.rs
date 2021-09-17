@@ -1,25 +1,25 @@
+use crate::bitcoinparser::block_index::BlockIndex;
+use crate::bitcoinparser::errors::{OpError, OpResult};
+use crate::bitcoinparser::reader::BlockchainRead;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
+use leveldb::database::Database;
+use leveldb::kv::KV;
+use leveldb::options::{Options, ReadOptions};
 use log::{info, warn};
 use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::path::Path;
-use leveldb::database::Database;
-use leveldb::options::{ReadOptions, Options};
-use leveldb::kv::KV;
-use crate::bitcoinparser::block_index::BlockIndex;
-use crate::bitcoinparser::errors::{OpError, OpResult};
-use crate::bitcoinparser::reader::BlockchainRead;
 use std::sync::{Arc, RwLock};
 
 struct TxKey {
-    key: Vec<u8>
+    key: Vec<u8>,
 }
 
 impl db_key::Key for TxKey {
     fn from_u8(key: &[u8]) -> Self {
         TxKey {
-            key: Vec::from(key)
+            key: Vec::from(key),
         }
     }
 
@@ -45,13 +45,8 @@ impl TxDB {
                 if !file_pos_to_height.contains_key(&b.n_file) {
                     file_pos_to_height.insert(b.n_file, Arc::new(RwLock::new(BTreeMap::new())));
                 }
-                let pos_to_height = file_pos_to_height
-                    .get(&b.n_file)
-                    .unwrap()
-                    .clone();
-                let mut map = pos_to_height
-                    .write()
-                    .unwrap();
+                let pos_to_height = file_pos_to_height.get(&b.n_file).unwrap().clone();
+                let mut map = pos_to_height.write().unwrap();
                 map.insert(b.n_data_pos, height);
             }
             TxDB {
@@ -90,7 +85,7 @@ impl TxDB {
             let mut key = Vec::with_capacity(inner.len() + 1);
             key.push(b't');
             key.extend(inner);
-            let key = TxKey{ key };
+            let key = TxKey { key };
             let read_options = ReadOptions::new();
             if let Ok(value) = db.get(read_options, &key) {
                 if let Some(value) = value {
