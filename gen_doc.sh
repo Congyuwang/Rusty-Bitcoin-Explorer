@@ -1,4 +1,4 @@
 #!/bin/bash
 
 pydocstyle bitcoinquery/
-pdoc -o ./docs/html/ -d google ./bitcoinquery
+pdoc -o ./docs/ -d google ./bitcoinquery
