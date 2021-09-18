@@ -56,6 +56,14 @@ db.get_height_from_txid("some txid")
 
 # get the script type and addresses from a script public key
 db.parse_script("some hex script pubic key")
+
+# use iterator
+for block in db.get_block_iter_range(start=1000, end=2000):
+    do_something_with(block)
+
+# use iterator over heights
+for block in db.get_block_iter_array(list(range(10000, 20000))):
+    do_something_with(block)
 ```
 
 ## How to Build
