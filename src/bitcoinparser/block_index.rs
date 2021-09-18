@@ -29,7 +29,7 @@ const BLOCK_HAVE_UNDO: u32 = 16;
 
 // BLOCK_INDEX RECORD
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct BlockIndexRecord {
     pub block_hash: BlockHash,
     pub n_version: i32,
@@ -102,6 +102,7 @@ fn is_block_index_record(data: &[u8]) -> bool {
     *data.get(0).unwrap() == b'b'
 }
 
+#[derive(Clone)]
 pub struct BlockIndex {
     pub records: Vec<BlockIndexRecord>,
     pub hash_to_height: BTreeMap<String, i32>,

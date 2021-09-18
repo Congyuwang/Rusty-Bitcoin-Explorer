@@ -185,7 +185,7 @@ fn outpoint_connect(tx_in: &TxIn, tx_db: &TxDB, blk_file: &BlkFile) -> Option<Tx
     if !is_coin_base(&tx_in) {
         if let Ok(record) = tx_db.get_tx_record(tx_id) {
             if let Ok(mut tx) =
-            blk_file.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)
+                blk_file.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)
             {
                 let len = tx.output.len();
                 if n >= len as u32 {

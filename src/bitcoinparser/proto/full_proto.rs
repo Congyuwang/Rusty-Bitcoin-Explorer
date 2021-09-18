@@ -72,7 +72,7 @@ impl FTransaction {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct FTxOut {
     pub value: u64,
     pub script_pubkey: bitcoin::Script,

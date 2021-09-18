@@ -1,3 +1,4 @@
+use super::iter::*;
 use crate::bitcoinparser::blk_file::BlkFile;
 use crate::bitcoinparser::block_index::{BlockIndex, BlockIndexRecord};
 use crate::bitcoinparser::errors::{OpError, OpResult};
@@ -92,7 +93,7 @@ impl BitcoinDB {
 
     pub fn get_block_full_connected(&self, height: i32) -> OpResult<FConnectedBlock> {
         if !self.tx_db.is_open() {
-            return Err(OpError::from("TxDB not open"))
+            return Err(OpError::from("TxDB not open"));
         }
         let blk = self.get_block(height)?;
         let blk_parsed = FConnectedBlock::connect(blk, &self.tx_db, &self.blk_file);
@@ -101,7 +102,7 @@ impl BitcoinDB {
 
     pub fn get_block_simple_connected(&self, height: i32) -> OpResult<SConnectedBlock> {
         if !self.tx_db.is_open() {
-            return Err(OpError::from("TxDB not open"))
+            return Err(OpError::from("TxDB not open"));
         }
         let blk = self.get_block(height)?;
         let blk_parsed = SConnectedBlock::connect(blk, &self.tx_db, &self.blk_file);
@@ -110,14 +111,14 @@ impl BitcoinDB {
 
     pub fn get_block_height_of_transaction(&self, txid: &Txid) -> OpResult<i32> {
         if !self.tx_db.is_open() {
-            return Err(OpError::from("TxDB not open"))
+            return Err(OpError::from("TxDB not open"));
         }
         self.tx_db.get_block_height_of_tx(txid)
     }
 
     pub fn get_transaction(&self, txid: &Txid) -> OpResult<Transaction> {
         if !self.tx_db.is_open() {
-            return Err(OpError::from("TxDB not open"))
+            return Err(OpError::from("TxDB not open"));
         }
         let record = self.tx_db.get_tx_record(txid)?;
         let tx = self
@@ -148,5 +149,29 @@ impl BitcoinDB {
         let tx = self.get_transaction(txid)?;
         let tx_parsed = SConnectedTransaction::connect(tx, &self.tx_db, &self.blk_file);
         Ok(tx_parsed)
+    }
+
+    pub fn get_block_full_iter_seq(&self, start: u32, end: u32) -> OpResult<FBlockIteratorSequential> {
+        FBlockIteratorSequential::new(self, start, end)
+    }
+
+    pub fn get_block_simple_iter_seq(&self, start: u32, end: u32) -> OpResult<SBlockIteratorSequential> {
+        SBlockIteratorSequential::new(self, start, end)
+    }
+
+    pub fn get_block_full_iter_arr(&self, heights: Vec<u32>) -> FBlockIteratorArray {
+        FBlockIteratorArray::new(self, heights)
+    }
+
+    pub fn get_block_simple_iter_arr(&self, heights: Vec<u32>) -> SBlockIteratorArray {
+        SBlockIteratorArray::new(self, heights)
+    }
+
+    pub fn get_block_full_connected_iter(&self, end: u32) -> OpResult<FConnectedBlockIterator> {
+        FConnectedBlockIterator::new(self, end)
+    }
+
+    pub fn get_block_simple_connected_iter(&self, end: u32) -> OpResult<SConnectedBlockIterator> {
+        SConnectedBlockIterator::new(self, end)
     }
 }

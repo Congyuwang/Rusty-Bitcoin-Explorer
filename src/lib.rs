@@ -1,5 +1,6 @@
 pub mod api;
 pub mod bitcoinparser;
+pub mod iter;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::Txid;
@@ -7,6 +8,11 @@ use pyo3::prelude::*;
 use pythonize::pythonize;
 use rayon::prelude::*;
 use std::path::Path;
+use pyo3::Python;
+use pyo3::PyIterProtocol;
+use crate::bitcoinparser::proto::connected_proto::{SConnectedBlock, FConnectedBlock};
+use crate::bitcoinparser::proto::simple_proto::SBlock;
+use crate::bitcoinparser::proto::full_proto::FBlock;
 
 #[pyclass]
 struct BitcoinDB {
@@ -175,6 +181,41 @@ impl BitcoinDB {
         }
     }
 
+    #[pyo3(text_signature = "($self, start, stop, /)")]
+    fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIteratorSequential> {
+        FBlockIteratorSequential::new(&self.db, start, stop)
+    }
+
+    #[pyo3(text_signature = "($self, start, stop, /)")]
+    fn iter_block_simple_seq(&self, start: u32, stop: u32) -> PyResult<SBlockIteratorSequential> {
+        SBlockIteratorSequential::new(&self.db, start, stop)
+    }
+
+    #[pyo3(text_signature = "($self, start, stop, /)")]
+    fn iter_block_full_array(&self, heights: Vec<u32>) -> PyResult<FBlockIteratorArray> {
+        Ok(FBlockIteratorArray::new(&self.db, heights))
+    }
+
+    #[pyo3(text_signature = "($self, start, stop, /)")]
+    fn iter_block_simple_array(&self, heights: Vec<u32>) -> PyResult<SBlockIteratorArray> {
+        Ok(SBlockIteratorArray::new(&self.db, heights))
+    }
+
+    #[pyo3(text_signature = "($self, stop, /)")]
+    fn iter_block_full_connected(&self, stop: u32) -> PyResult<FConnectedBlockIterator> {
+        FConnectedBlockIterator::new(&self.db, stop)
+    }
+
+    #[pyo3(text_signature = "($self, stop, /)")]
+    fn iter_block_simple_connected(&self, stop: u32) -> PyResult<SConnectedBlockIterator> {
+        SConnectedBlockIterator::new(&self.db, stop)
+    }
+
+    #[pyo3(text_signature = "($self, /)")]
+    fn get_max_height(&self) -> usize {
+        self.db.block_index.records.len()
+    }
+
     #[staticmethod]
     #[pyo3(text_signature = "($self, script_pub_key, /)")]
     fn parse_script(script_pub_key: String, py: Python) -> PyResult<PyObject> {
@@ -186,10 +227,246 @@ impl BitcoinDB {
             )),
         }
     }
+}
 
-    #[pyo3(text_signature = "($self, /)")]
-    fn get_max_height(&self) -> usize {
-        self.db.block_index.records.len()
+#[pyclass]
+struct FBlockIteratorSequential {
+    iter: iter::FBlockIteratorSequential,
+}
+
+impl FBlockIteratorSequential {
+    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> PyResult<FBlockIteratorSequential> {
+        let inner_iter = iter::FBlockIteratorSequential::new(db, start, end);
+        match inner_iter {
+            Ok(iter) => Ok(FBlockIteratorSequential {
+                iter
+            }),
+            Err(e) => {
+                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
+            }
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for FBlockIteratorSequential {
+
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<FBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[pyclass]
+struct SBlockIteratorSequential {
+    iter: iter::SBlockIteratorSequential,
+}
+
+impl SBlockIteratorSequential {
+    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> PyResult<SBlockIteratorSequential> {
+        let inner_iter = iter::SBlockIteratorSequential::new(db, start, end);
+        match inner_iter {
+            Ok(iter) => Ok(SBlockIteratorSequential {
+                iter
+            }),
+            Err(e) => {
+                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
+            }
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for SBlockIteratorSequential {
+
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<SBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+
+#[pyclass]
+struct FBlockIteratorArray {
+    iter: iter::FBlockIteratorArray,
+}
+
+impl FBlockIteratorArray {
+    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> FBlockIteratorArray {
+        FBlockIteratorArray {
+            iter: iter::FBlockIteratorArray::new(db, heights)
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for FBlockIteratorArray {
+
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<FBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[pyclass]
+struct SBlockIteratorArray {
+    iter: iter::SBlockIteratorArray,
+}
+
+impl SBlockIteratorArray {
+    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> SBlockIteratorArray {
+        SBlockIteratorArray {
+            iter: iter::SBlockIteratorArray::new(db, heights)
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for SBlockIteratorArray {
+
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<SBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[pyclass]
+struct FConnectedBlockIterator {
+    iter: iter::FConnectedBlockIterator,
+}
+
+impl FConnectedBlockIterator {
+    fn new(db: &api::BitcoinDB, end: u32) -> PyResult<FConnectedBlockIterator> {
+        let inner_iter = iter::FConnectedBlockIterator::new(db, end);
+        match inner_iter {
+            Ok(iter) => Ok(FConnectedBlockIterator {
+                iter
+            }),
+            Err(e) => {
+                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
+            }
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for FConnectedBlockIterator {
+
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<FConnectedBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[pyclass]
+struct SConnectedBlockIterator {
+    iter: iter::SConnectedBlockIterator,
+}
+
+impl SConnectedBlockIterator {
+    fn new(db: &api::BitcoinDB, end: u32) -> PyResult<SConnectedBlockIterator> {
+        let inner_iter = iter::SConnectedBlockIterator::new(db, end);
+        match inner_iter {
+            Ok(iter) => Ok(SConnectedBlockIterator {
+                iter
+            }),
+            Err(e) => {
+                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
+            }
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for SConnectedBlockIterator {
+
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<SConnectedBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
 

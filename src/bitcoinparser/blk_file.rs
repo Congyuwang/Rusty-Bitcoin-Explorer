@@ -8,7 +8,7 @@ use std::io::{self, BufReader, Cursor, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 /// Holds all necessary data about a raw blk file
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlkFile {
     files: HashMap<i32, PathBuf>,
 }

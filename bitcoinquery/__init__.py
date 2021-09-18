@@ -13,7 +13,7 @@ class BitcoinDB:
     def __init__(self, path: str, tx_index: bool = True):
         """launch BitcoinDB.
 
-        Note that this cannot be pickled to another process.
+        Pass the bitcoin directory
 
         :param path: the path for bitcoin root directory,
         the same parameter as `--datadir` flag for `bitcoind`.
@@ -23,8 +23,8 @@ class BitcoinDB:
         self.tx_index = tx_index
 
     def get_block(self, height: int, simplify: bool = True, connected: bool = False):
-        """
-        get the block of a specific height.
+        """get the block of a specific height.
+
         :param height: the height of the block
         :param simplify: whether to use simpler format (faster)
         :param connected: whether to replace outpoints by connected outputs
@@ -132,3 +132,41 @@ class BitcoinDB:
                 return self.db.get_block_simple_connected_batch(heights)
             else:
                 return self.db.get_block_full_connected_batch(heights)
+
+    def get_block_iter_range(self,
+                             stop,
+                             start: int = 0,
+                             simplify: bool = True,
+                             connected: bool = False) -> iter:
+        """get an iterator to iterate through blocks in height order.
+
+        :param stop: height for the iteration to end (excluded)
+        :param start: height for the iteration to start (included),
+        this parameter is ignored if `connected` is set to True,
+        since iterating through connected block must start from the genesis block.
+        :param simplify: use simplified block info (default: True)
+        :param connected: whether to connect outpoints to previous output
+        :return: iterator (i.e., for block in iterator:)
+        """
+        if not connected:
+            if simplify:
+                return self.db.iter_block_simple_seq(start, stop)
+            else:
+                return self.db.iter_block_full_seq(start, stop)
+        else:
+            if simplify:
+                return self.db.iter_block_simple_connected(stop)
+            else:
+                return self.db.iter_block_full_connected(stop)
+
+    def get_block_iter_array(self, heights: list[int], simplify: bool = True) -> iter:
+        """get an iterator to iterate through blocks in height order.
+
+        :param heights: parse a list of heights (cannot connect inputs)
+        :param simplify: use simplified block info (default: True)
+        :return: iterator (i.e., for block in iterator:)
+        """
+        if simplify:
+            return self.db.iter_block_simple_array(heights)
+        else:
+            return self.db.iter_block_full_array(heights)

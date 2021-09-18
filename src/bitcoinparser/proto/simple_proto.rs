@@ -75,7 +75,7 @@ impl STxIn {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct STxOut {
     pub value: u64,
     pub script_type: Type,
