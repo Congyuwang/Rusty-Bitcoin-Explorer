@@ -36,6 +36,8 @@ class BitcoinDB:
             else:
                 return self.db.get_block_full(height)
         else:
+            if not self.tx_index:
+                raise Exception("tx_index is set to False")
             if simplify:
                 return self.db.get_block_simple_connected(height)
             else:
@@ -84,6 +86,8 @@ class BitcoinDB:
             else:
                 return self.db.get_transaction_full(txid)
         else:
+            if not self.tx_index:
+                raise Exception("tx_index is set to False")
             if simplify:
                 return self.db.get_transaction_simple_connected(txid)
             else:
@@ -122,6 +126,8 @@ class BitcoinDB:
             else:
                 return self.db.get_block_full_batch(heights)
         else:
+            if not self.tx_index:
+                raise Exception("tx_index is set to False")
             if simplify:
                 return self.db.get_block_simple_connected_batch(heights)
             else:

@@ -58,6 +58,10 @@ impl TxDB {
         }
     }
 
+    pub fn is_open(&self) -> bool {
+        self.db.is_some()
+    }
+
     pub fn null() -> TxDB {
         TxDB {
             db: None,
