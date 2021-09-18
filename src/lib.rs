@@ -80,26 +80,6 @@ impl BitcoinDB {
             .collect())
     }
 
-    #[pyo3(text_signature = "($self, heights, /)")]
-    fn get_block_full_connected_batch(&self, heights: Vec<i32>) -> PyResult<Vec<String>> {
-        let db = &self.db;
-        Ok(heights
-            .par_iter()
-            .filter_map(|h| db.get_block_full_connected(*h).ok())
-            .filter_map(|blk| serde_json::to_string(&blk).ok())
-            .collect())
-    }
-
-    #[pyo3(text_signature = "($self, heights, /)")]
-    fn get_block_simple_connected_batch(&self, heights: Vec<i32>) -> PyResult<Vec<String>> {
-        let db = &self.db;
-        Ok(heights
-            .par_iter()
-            .filter_map(|h| db.get_block_simple_connected(*h).ok())
-            .filter_map(|blk| serde_json::to_string(&blk).ok())
-            .collect())
-    }
-
     /// only get the block header (in memory, no disk access)
     #[pyo3(text_signature = "($self, height, /)")]
     fn get_block_header(&self, height: usize, py: Python) -> PyResult<PyObject> {
