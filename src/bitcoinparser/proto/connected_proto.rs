@@ -126,9 +126,13 @@ fn connect_output_simple(
         let txid = tx.txid();
         for _ in tx.input {
             let connected_out = connected_outputs.pop_front().unwrap();
+            // Do not push None, None is warned in log.warn
+            // although None is caused by error.
             if let Some(out) = connected_out {
-                // do not push None, None is warned in log.warn
-                outputs.push(out);
+                // also do not push the null input connected to coinbase transaction
+                if out.value != 0xffffffffffffffff {
+                    outputs.push(out);
+                }
             }
         }
         connected_tx.push(SConnectedTransaction {
@@ -163,9 +167,13 @@ fn connect_output_full(
         let txid = tx.txid();
         for _ in tx.input {
             let connected_out = connected_outputs.pop_front().unwrap();
+            // Do not push None, None is warned in log.warn
+            // although None is caused by error.
             if let Some(out) = connected_out {
-                // do not push None, None is warned in log.warn
-                outputs.push(out);
+                // also do not push the null input connected to coinbase transaction
+                if out.value != 0xffffffffffffffff {
+                    outputs.push(out);
+                }
             }
         }
         connected_tx.push(FConnectedTransaction {
@@ -189,7 +197,7 @@ fn outpoint_connect(tx_in: &TxIn, tx_db: &TxDB, blk_file: &BlkFile) -> Option<Tx
             {
                 let len = tx.output.len();
                 if n >= len as u32 {
-                    warn!("outpoint {} exceed range", &outpoint);
+                    warn!("outpoint {} exceeds range", &outpoint);
                     None
                 } else {
                     Some(tx.output.swap_remove(n as usize))
@@ -203,6 +211,7 @@ fn outpoint_connect(tx_in: &TxIn, tx_db: &TxDB, blk_file: &BlkFile) -> Option<Tx
             None
         }
     } else {
+        // use default value to connect to coinbase transaction.
         Some(TxOut::default())
     }
 }

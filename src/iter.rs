@@ -273,12 +273,6 @@ impl FConnectedBlockIterator {
             for input in tx.input {
                 // skip coinbase transaction
                 if input.previous_output.is_null() {
-                    output_tx.input.push(FTxOut {
-                        value: u64::MAX,
-                        script_pubkey: Default::default(),
-                        script_type: Type::NotRecognised,
-                        addresses: vec![]
-                    });
                     continue;
                 }
 
@@ -390,11 +384,6 @@ impl SConnectedBlockIterator {
             for input in tx.input {
                 // skip coinbase transaction
                 if input.vout == u32::MAX {
-                    output_tx.input.push(STxOut {
-                        value: u64::MAX,
-                        script_type: Type::NotRecognised,
-                        addresses: vec![]
-                    });
                     continue;
                 }
 
