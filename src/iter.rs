@@ -9,7 +9,6 @@ use bitcoin::{Txid, Block};
 use log::warn;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
-use crate::bitcoinparser::script::Type;
 use crate::bitcoinparser::blk_file::BlkFile;
 use crate::bitcoinparser::block_index::BlockIndex;
 

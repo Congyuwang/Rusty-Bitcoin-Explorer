@@ -25,6 +25,10 @@ impl BitcoinDB {
     /// `path`: bitcoind --datadir option.
     /// `tx_index`: whether to try to open tx_index levelDB.
     ///
+    /// For more detailed information, refer to the python class
+    /// documentation, which corresponds to the underlying
+    /// rust implementation.
+    ///
     #[new]
     fn new(path: &str, tx_index: bool) -> PyResult<Self> {
         let path = Path::new(path);
@@ -86,7 +90,6 @@ impl BitcoinDB {
             .collect())
     }
 
-    /// only get the block header (in memory, no disk access)
     #[pyo3(text_signature = "($self, height, /)")]
     fn get_block_header(&self, height: usize, py: Python) -> PyResult<PyObject> {
         match self.db.get_block_header(height) {
