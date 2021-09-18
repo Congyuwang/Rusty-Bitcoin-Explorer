@@ -117,8 +117,8 @@ and install the <code>whl</code> file use <code>pip install</code> command.</li>
 run Bitcoin Core or <code>bitcoind</code> with flag <code>--txindex=1</code>,
 or rerun Bitcoin Core with <code>--reindex --txindex=1</code>.</li>
 <li>After having the Bitcoin blockchain data, shutdown Bitcoin Core
-or <code>bitcoind</code>. This program cannot run concurrent with another
-process that is using the bitcoin blockchain data files.</li>
+or <code>bitcoind</code>. This program cannot run concurrently with
+Bitcoin Core.</li>
 <li>Open <code>python</code>, import the package, and instantiate <code><a href="#BitcoinDB">BitcoinDB</a></code>.</li>
 </ul></li>
 </ol>
@@ -146,8 +146,8 @@ process that is using the bitcoin blockchain data files.</li>
 <span class="sd">      run Bitcoin Core or `bitcoind` with flag `--txindex=1`,</span>
 <span class="sd">      or rerun Bitcoin Core with `--reindex --txindex=1`.</span>
 <span class="sd">    - After having the Bitcoin blockchain data, shutdown Bitcoin Core</span>
-<span class="sd">      or `bitcoind`. This program cannot run concurrent with another</span>
-<span class="sd">      process that is using the bitcoin blockchain data files.</span>
+<span class="sd">      or `bitcoind`. This program cannot run concurrently with</span>
+<span class="sd">      Bitcoin Core.</span>
 <span class="sd">    - Open `python`, import the package, and instantiate `BitcoinDB`.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
@@ -217,7 +217,7 @@ process that is using the bitcoin blockchain data files.</li>
         <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">_BitcoinDB</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">tx_index</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tx_index</span> <span class="o">=</span> <span class="n">tx_index</span>
 
-    <span class="k">def</span> <span class="nf">get_max_height</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_max_height</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the maximum height found in block index.</span>
 
 <span class="sd">        Notes:</span>
@@ -238,7 +238,7 @@ process that is using the bitcoin blockchain data files.</li>
 
     <span class="k">def</span> <span class="nf">get_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                   <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                  <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+                  <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the block of a specific height.</span>
 
 <span class="sd">        Notes:</span>
@@ -280,7 +280,7 @@ process that is using the bitcoin blockchain data files.</li>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_full_connected</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_block_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_block_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block header information.</span>
 
 <span class="sd">        Notes:</span>
@@ -298,7 +298,7 @@ process that is using the bitcoin blockchain data files.</li>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_header</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_hash_from_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_hash_from_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block hash of a certain height.</span>
 
 <span class="sd">        Notes:</span>
@@ -312,7 +312,7 @@ process that is using the bitcoin blockchain data files.</li>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_hash_from_height</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_height_from_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_height_from_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block height of certain hash.</span>
 
 <span class="sd">        Notes:</span>
@@ -329,7 +329,7 @@ process that is using the bitcoin blockchain data files.</li>
     <span class="k">def</span> <span class="nf">get_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                         <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                         <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                        <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+                        <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get transaction data from transaction ID.</span>
 
 <span class="sd">        Notes:</span>
@@ -343,7 +343,7 @@ process that is using the bitcoin blockchain data files.</li>
 <span class="sd">            connected (bool): whether to replace inputs by</span>
 <span class="sd">                related outputs according to input outpoints.</span>
 
-<span class="sd">        Returns: transaction data (list).</span>
+<span class="sd">        Returns: transaction data.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_index</span><span class="p">:</span>
@@ -361,7 +361,7 @@ process that is using the bitcoin blockchain data files.</li>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_transaction_full_connected</span><span class="p">(</span><span class="n">txid</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_height_from_txid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_height_from_txid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get height of the block that includes a transaction.</span>
 
 <span class="sd">        Notes:</span>
@@ -437,7 +437,7 @@ process that is using the bitcoin blockchain data files.</li>
                              <span class="n">stop</span><span class="p">,</span>
                              <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                              <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                             <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+                             <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in ascending order of heights.</span>
 
 <span class="sd">        Notes:</span>
@@ -478,7 +478,7 @@ process that is using the bitcoin blockchain data files.</li>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in any order of heights.</span>
 
 <span class="sd">        Notes:</span>
@@ -500,7 +500,7 @@ process that is using the bitcoin blockchain data files.</li>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Decode the script type and addresses from script public key.</span>
 
 <span class="sd">        Args:</span>
@@ -579,7 +579,7 @@ process that is using the bitcoin blockchain data files.</li>
         <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">_BitcoinDB</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">tx_index</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tx_index</span> <span class="o">=</span> <span class="n">tx_index</span>
 
-    <span class="k">def</span> <span class="nf">get_max_height</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_max_height</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the maximum height found in block index.</span>
 
 <span class="sd">        Notes:</span>
@@ -600,7 +600,7 @@ process that is using the bitcoin blockchain data files.</li>
 
     <span class="k">def</span> <span class="nf">get_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                   <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                  <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+                  <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the block of a specific height.</span>
 
 <span class="sd">        Notes:</span>
@@ -642,7 +642,7 @@ process that is using the bitcoin blockchain data files.</li>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_full_connected</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_block_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_block_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block header information.</span>
 
 <span class="sd">        Notes:</span>
@@ -660,7 +660,7 @@ process that is using the bitcoin blockchain data files.</li>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_header</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_hash_from_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_hash_from_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block hash of a certain height.</span>
 
 <span class="sd">        Notes:</span>
@@ -674,7 +674,7 @@ process that is using the bitcoin blockchain data files.</li>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_hash_from_height</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_height_from_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_height_from_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block height of certain hash.</span>
 
 <span class="sd">        Notes:</span>
@@ -691,7 +691,7 @@ process that is using the bitcoin blockchain data files.</li>
     <span class="k">def</span> <span class="nf">get_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                         <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                         <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                        <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+                        <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get transaction data from transaction ID.</span>
 
 <span class="sd">        Notes:</span>
@@ -705,7 +705,7 @@ process that is using the bitcoin blockchain data files.</li>
 <span class="sd">            connected (bool): whether to replace inputs by</span>
 <span class="sd">                related outputs according to input outpoints.</span>
 
-<span class="sd">        Returns: transaction data (list).</span>
+<span class="sd">        Returns: transaction data.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_index</span><span class="p">:</span>
@@ -723,7 +723,7 @@ process that is using the bitcoin blockchain data files.</li>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_transaction_full_connected</span><span class="p">(</span><span class="n">txid</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_height_from_txid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_height_from_txid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get height of the block that includes a transaction.</span>
 
 <span class="sd">        Notes:</span>
@@ -799,7 +799,7 @@ process that is using the bitcoin blockchain data files.</li>
                              <span class="n">stop</span><span class="p">,</span>
                              <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                              <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                             <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+                             <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in ascending order of heights.</span>
 
 <span class="sd">        Notes:</span>
@@ -840,7 +840,7 @@ process that is using the bitcoin blockchain data files.</li>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in any order of heights.</span>
 
 <span class="sd">        Notes:</span>
@@ -862,7 +862,7 @@ process that is using the bitcoin blockchain data files.</li>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Decode the script type and addresses from script public key.</span>
 
 <span class="sd">        Args:</span>
@@ -1004,12 +1004,12 @@ and will print a warning if it fails to open.</li>
 
         
             <span class="def">def</span>
-            <span class="name">get_max_height</span><span class="signature">(self)</span>:
+            <span class="name">get_max_height</span><span class="signature">(self) -&gt; int</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_max_height</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_max_height</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the maximum height found in block index.</span>
 
 <span class="sd">        Notes:</span>
@@ -1057,14 +1057,19 @@ and will print a warning if it fails to open.</li>
 
         
             <span class="def">def</span>
-            <span class="name">get_block</span><span class="signature">(self, height: int, simplify: bool = True, connected: bool = False)</span>:
+            <span class="name">get_block</span><span class="signature">(
+    self,
+    height: int,
+    simplify: bool = True,
+    connected: bool = False
+) -&gt; dict</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                   <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                  <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+                  <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get the block of a specific height.</span>
 
 <span class="sd">        Notes:</span>
@@ -1150,12 +1155,12 @@ parsing to ython objecta lot faster.</li>
 
         
             <span class="def">def</span>
-            <span class="name">get_block_header</span><span class="signature">(self, height: int)</span>:
+            <span class="name">get_block_header</span><span class="signature">(self, height: int) -&gt; dict</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_block_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_block_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block header information.</span>
 
 <span class="sd">        Notes:</span>
@@ -1204,12 +1209,12 @@ parsing to ython objecta lot faster.</li>
 
         
             <span class="def">def</span>
-            <span class="name">get_hash_from_height</span><span class="signature">(self, height: int)</span>:
+            <span class="name">get_hash_from_height</span><span class="signature">(self, height: int) -&gt; str</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_hash_from_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_hash_from_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block hash of a certain height.</span>
 
 <span class="sd">        Notes:</span>
@@ -1250,12 +1255,12 @@ parsing to ython objecta lot faster.</li>
 
         
             <span class="def">def</span>
-            <span class="name">get_height_from_hash</span><span class="signature">(self, block_hash: str)</span>:
+            <span class="name">get_height_from_hash</span><span class="signature">(self, block_hash: str) -&gt; int</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_height_from_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_height_from_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get block height of certain hash.</span>
 
 <span class="sd">        Notes:</span>
@@ -1301,7 +1306,7 @@ parsing to ython objecta lot faster.</li>
     txid: str,
     simplify: bool = True,
     connected: bool = False
-) -&gt; list</span>:
+) -&gt; dict</span>:
     </div>
 
                 <details>
@@ -1309,7 +1314,7 @@ parsing to ython objecta lot faster.</li>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                         <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                         <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                        <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+                        <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get transaction data from transaction ID.</span>
 
 <span class="sd">        Notes:</span>
@@ -1323,7 +1328,7 @@ parsing to ython objecta lot faster.</li>
 <span class="sd">            connected (bool): whether to replace inputs by</span>
 <span class="sd">                related outputs according to input outpoints.</span>
 
-<span class="sd">        Returns: transaction data (list).</span>
+<span class="sd">        Returns: transaction data.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_index</span><span class="p">:</span>
@@ -1363,7 +1368,7 @@ parsing to ython objecta lot faster.</li>
 related outputs according to input outpoints.</li>
 </ul>
 
-<p>Returns: transaction data (list).</p>
+<p>Returns: transaction data.</p>
 </div>
 
 
@@ -1373,12 +1378,12 @@ related outputs according to input outpoints.</li>
 
         
             <span class="def">def</span>
-            <span class="name">get_height_from_txid</span><span class="signature">(self, txid: str)</span>:
+            <span class="name">get_height_from_txid</span><span class="signature">(self, txid: str) -&gt; int</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_height_from_txid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_height_from_txid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">txid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get height of the block that includes a transaction.</span>
 
 <span class="sd">        Notes:</span>
@@ -1557,7 +1562,7 @@ for b in range(100):
     start: int = 0,
     simplify: bool = True,
     connected: bool = False
-) -&gt; Iterator</span>:
+) -&gt; Iterator[dict]</span>:
     </div>
 
                 <details>
@@ -1566,7 +1571,7 @@ for b in range(100):
                              <span class="n">stop</span><span class="p">,</span>
                              <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                              <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                             <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+                             <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in ascending order of heights.</span>
 
 <span class="sd">        Notes:</span>
@@ -1654,13 +1659,13 @@ addresses.</li>
 
         
             <span class="def">def</span>
-            <span class="name">get_block_iter_array</span><span class="signature">(self, heights: list, simplify: bool = True) -&gt; Iterator</span>:
+            <span class="name">get_block_iter_array</span><span class="signature">(self, heights: list, simplify: bool = True) -&gt; Iterator[dict]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in any order of heights.</span>
 
 <span class="sd">        Notes:</span>
@@ -1714,12 +1719,12 @@ addresses.</li>
 
         
             <span class="def">def</span>
-            <span class="name">parse_script</span><span class="signature">(self, script_pub_key: str)</span>:
+            <span class="name">parse_script</span><span class="signature">(self, script_pub_key: str) -&gt; dict</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Decode the script type and addresses from script public key.</span>
 
 <span class="sd">        Args:</span>

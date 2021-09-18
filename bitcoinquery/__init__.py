@@ -18,8 +18,8 @@ BitcoinQuery: Query Bitcoin Core Data Files As A Database.
       run Bitcoin Core or `bitcoind` with flag `--txindex=1`,
       or rerun Bitcoin Core with `--reindex --txindex=1`.
     - After having the Bitcoin blockchain data, shutdown Bitcoin Core
-      or `bitcoind`. This program cannot run concurrent with another
-      process that is using the bitcoin blockchain data files.
+      or `bitcoind`. This program cannot run concurrently with
+      Bitcoin Core.
     - Open `python`, import the package, and instantiate `BitcoinDB`.
 
 """
@@ -89,7 +89,7 @@ class BitcoinDB:
         self.db = _BitcoinDB(str(path), tx_index)
         self.tx_index = tx_index
 
-    def get_max_height(self):
+    def get_max_height(self) -> int:
         """Get the maximum height found in block index.
 
         Notes:
@@ -110,7 +110,7 @@ class BitcoinDB:
 
     def get_block(self, height: int,
                   simplify: bool = True,
-                  connected: bool = False):
+                  connected: bool = False) -> dict:
         """Get the block of a specific height.
 
         Notes:
@@ -152,7 +152,7 @@ class BitcoinDB:
             else:
                 return self.db.get_block_full_connected(height)
 
-    def get_block_header(self, height: int):
+    def get_block_header(self, height: int) -> dict:
         """Get block header information.
 
         Notes:
@@ -170,7 +170,7 @@ class BitcoinDB:
         """
         return self.db.get_block_header(height)
 
-    def get_hash_from_height(self, height: int):
+    def get_hash_from_height(self, height: int) -> str:
         """Get block hash of a certain height.
 
         Notes:
@@ -184,7 +184,7 @@ class BitcoinDB:
         """
         return self.db.get_hash_from_height(height)
 
-    def get_height_from_hash(self, block_hash: str):
+    def get_height_from_hash(self, block_hash: str) -> int:
         """Get block height of certain hash.
 
         Notes:
@@ -201,7 +201,7 @@ class BitcoinDB:
     def get_transaction(self,
                         txid: str,
                         simplify: bool = True,
-                        connected: bool = False) -> list:
+                        connected: bool = False) -> dict:
         """Get transaction data from transaction ID.
 
         Notes:
@@ -215,7 +215,7 @@ class BitcoinDB:
             connected (bool): whether to replace inputs by
                 related outputs according to input outpoints.
 
-        Returns: transaction data (list).
+        Returns: transaction data.
 
         """
         if not self.tx_index:
@@ -233,7 +233,7 @@ class BitcoinDB:
             else:
                 return self.db.get_transaction_full_connected(txid)
 
-    def get_height_from_txid(self, txid: str):
+    def get_height_from_txid(self, txid: str) -> int:
         """Get height of the block that includes a transaction.
 
         Notes:
@@ -309,7 +309,7 @@ class BitcoinDB:
                              stop,
                              start: int = 0,
                              simplify: bool = True,
-                             connected: bool = False) -> Iterator:
+                             connected: bool = False) -> Iterator[dict]:
         """Iterate through blocks in ascending order of heights.
 
         Notes:
@@ -350,7 +350,7 @@ class BitcoinDB:
                 return self.db.iter_block_full_connected(stop)
 
     def get_block_iter_array(self, heights: list[int],
-                             simplify: bool = True) -> Iterator:
+                             simplify: bool = True) -> Iterator[dict]:
         """Iterate through blocks in any order of heights.
 
         Notes:
@@ -372,7 +372,7 @@ class BitcoinDB:
         else:
             return self.db.iter_block_full_array(heights)
 
-    def parse_script(self, script_pub_key: str):
+    def parse_script(self, script_pub_key: str) -> dict:
         """Decode the script type and addresses from script public key.
 
         Args:
