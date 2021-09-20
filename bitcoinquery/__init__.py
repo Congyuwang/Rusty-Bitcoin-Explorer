@@ -312,6 +312,8 @@ class BitcoinDB:
                              connected: bool = False) -> Iterator[dict]:
         """Iterate through blocks in ascending order of heights.
 
+        This iterator fails fast. Any error interrupts it.
+
         Notes:
             This is best way to retrieve a large number of input
             addresses (set connected to `True`).
@@ -348,29 +350,6 @@ class BitcoinDB:
                 return self.db.iter_block_simple_connected(stop)
             else:
                 return self.db.iter_block_full_connected(stop)
-
-    def get_block_iter_array(self, heights: list[int],
-                             simplify: bool = True) -> Iterator[dict]:
-        """Iterate through blocks in any order of heights.
-
-        Notes:
-            Since this is not in sequential order, connecting inputs to
-            previous outputs is not implemented.
-
-            The performance of the iterator is similar to calling
-            `get_block(height)` in a python for loop.
-
-        Args:
-            heights: list of heights.
-            simplify: whether to use simpler format (a lot faster).
-
-        Returns: python iterator of block.
-
-        """
-        if simplify:
-            return self.db.iter_block_simple_array(heights)
-        else:
-            return self.db.iter_block_full_array(heights)
 
     def parse_script(self, script_pub_key: str) -> dict:
         """Decode the script type and addresses from script public key.

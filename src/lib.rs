@@ -1,18 +1,18 @@
 pub mod api;
 pub mod bitcoinparser;
-pub mod iter;
+pub mod par_iter;
 
+use crate::bitcoinparser::proto::connected_proto::{FConnectedBlock, SConnectedBlock};
+use crate::bitcoinparser::proto::full_proto::FBlock;
+use crate::bitcoinparser::proto::simple_proto::SBlock;
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::Txid;
 use pyo3::prelude::*;
+use pyo3::PyIterProtocol;
+use pyo3::Python;
 use pythonize::pythonize;
 use rayon::prelude::*;
 use std::path::Path;
-use pyo3::Python;
-use pyo3::PyIterProtocol;
-use crate::bitcoinparser::proto::connected_proto::{SConnectedBlock, FConnectedBlock};
-use crate::bitcoinparser::proto::simple_proto::SBlock;
-use crate::bitcoinparser::proto::full_proto::FBlock;
 
 #[pyclass]
 struct BitcoinDB {
@@ -194,24 +194,14 @@ impl BitcoinDB {
         SBlockIteratorSequential::new(&self.db, start, stop)
     }
 
-    #[pyo3(text_signature = "($self, start, stop, /)")]
-    fn iter_block_full_array(&self, heights: Vec<u32>) -> PyResult<FBlockIteratorArray> {
-        Ok(FBlockIteratorArray::new(&self.db, heights))
-    }
-
-    #[pyo3(text_signature = "($self, start, stop, /)")]
-    fn iter_block_simple_array(&self, heights: Vec<u32>) -> PyResult<SBlockIteratorArray> {
-        Ok(SBlockIteratorArray::new(&self.db, heights))
-    }
-
     #[pyo3(text_signature = "($self, stop, /)")]
     fn iter_block_full_connected(&self, stop: u32) -> PyResult<FConnectedBlockIterator> {
-        FConnectedBlockIterator::new(&self.db, stop)
+        Ok(FConnectedBlockIterator::new(&self.db, stop))
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
     fn iter_block_simple_connected(&self, stop: u32) -> PyResult<SConnectedBlockIterator> {
-        SConnectedBlockIterator::new(&self.db, stop)
+        Ok(SConnectedBlockIterator::new(&self.db, stop))
     }
 
     #[pyo3(text_signature = "($self, /)")]
@@ -234,26 +224,21 @@ impl BitcoinDB {
 
 #[pyclass]
 struct FBlockIteratorSequential {
-    iter: iter::FBlockIteratorSequential,
+    iter: par_iter::FBlockIteratorSequential,
 }
 
 impl FBlockIteratorSequential {
     fn new(db: &api::BitcoinDB, start: u32, end: u32) -> PyResult<FBlockIteratorSequential> {
-        let inner_iter = iter::FBlockIteratorSequential::new(db, start, end);
+        let inner_iter = par_iter::FBlockIteratorSequential::new(db, start, end);
         match inner_iter {
-            Ok(iter) => Ok(FBlockIteratorSequential {
-                iter
-            }),
-            Err(e) => {
-                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
-            }
+            Ok(iter) => Ok(FBlockIteratorSequential { iter }),
+            Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
         }
     }
 }
 
 #[pyproto]
 impl PyIterProtocol for FBlockIteratorSequential {
-
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
@@ -276,99 +261,21 @@ impl PyIterProtocol for FBlockIteratorSequential {
 
 #[pyclass]
 struct SBlockIteratorSequential {
-    iter: iter::SBlockIteratorSequential,
+    iter: par_iter::SBlockIteratorSequential,
 }
 
 impl SBlockIteratorSequential {
     fn new(db: &api::BitcoinDB, start: u32, end: u32) -> PyResult<SBlockIteratorSequential> {
-        let inner_iter = iter::SBlockIteratorSequential::new(db, start, end);
+        let inner_iter = par_iter::SBlockIteratorSequential::new(db, start, end);
         match inner_iter {
-            Ok(iter) => Ok(SBlockIteratorSequential {
-                iter
-            }),
-            Err(e) => {
-                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
-            }
+            Ok(iter) => Ok(SBlockIteratorSequential { iter }),
+            Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
         }
     }
 }
 
 #[pyproto]
 impl PyIterProtocol for SBlockIteratorSequential {
-
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<SBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-}
-
-
-#[pyclass]
-struct FBlockIteratorArray {
-    iter: iter::FBlockIteratorArray,
-}
-
-impl FBlockIteratorArray {
-    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> FBlockIteratorArray {
-        FBlockIteratorArray {
-            iter: iter::FBlockIteratorArray::new(db, heights)
-        }
-    }
-}
-
-#[pyproto]
-impl PyIterProtocol for FBlockIteratorArray {
-
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<FBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-}
-
-#[pyclass]
-struct SBlockIteratorArray {
-    iter: iter::SBlockIteratorArray,
-}
-
-impl SBlockIteratorArray {
-    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> SBlockIteratorArray {
-        SBlockIteratorArray {
-            iter: iter::SBlockIteratorArray::new(db, heights)
-        }
-    }
-}
-
-#[pyproto]
-impl PyIterProtocol for SBlockIteratorArray {
-
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
@@ -391,26 +298,19 @@ impl PyIterProtocol for SBlockIteratorArray {
 
 #[pyclass]
 struct FConnectedBlockIterator {
-    iter: iter::FConnectedBlockIterator,
+    iter: par_iter::FConnectedBlockIterator,
 }
 
 impl FConnectedBlockIterator {
-    fn new(db: &api::BitcoinDB, end: u32) -> PyResult<FConnectedBlockIterator> {
-        let inner_iter = iter::FConnectedBlockIterator::new(db, end);
-        match inner_iter {
-            Ok(iter) => Ok(FConnectedBlockIterator {
-                iter
-            }),
-            Err(e) => {
-                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
-            }
+    fn new(db: &api::BitcoinDB, end: u32) -> FConnectedBlockIterator {
+        FConnectedBlockIterator {
+            iter: par_iter::FConnectedBlockIterator::new(db, end),
         }
     }
 }
 
 #[pyproto]
 impl PyIterProtocol for FConnectedBlockIterator {
-
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
@@ -433,26 +333,19 @@ impl PyIterProtocol for FConnectedBlockIterator {
 
 #[pyclass]
 struct SConnectedBlockIterator {
-    iter: iter::SConnectedBlockIterator,
+    iter: par_iter::SConnectedBlockIterator,
 }
 
 impl SConnectedBlockIterator {
-    fn new(db: &api::BitcoinDB, end: u32) -> PyResult<SConnectedBlockIterator> {
-        let inner_iter = iter::SConnectedBlockIterator::new(db, end);
-        match inner_iter {
-            Ok(iter) => Ok(SConnectedBlockIterator {
-                iter
-            }),
-            Err(e) => {
-                Err(pyo3::exceptions::PyException::new_err(e.to_string()))
-            }
+    fn new(db: &api::BitcoinDB, end: u32) -> SConnectedBlockIterator {
+        SConnectedBlockIterator {
+            iter: par_iter::SConnectedBlockIterator::new(db, end),
         }
     }
 }
 
 #[pyproto]
 impl PyIterProtocol for SConnectedBlockIterator {
-
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
@@ -478,4 +371,22 @@ fn bitcoinquery(_py: Python, m: &PyModule) -> PyResult<()> {
     pyo3_log::init();
     m.add_class::<BitcoinDB>()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use crate::api::BitcoinDB;
+    use std::path::Path;
+
+    #[test]
+    fn test() {
+        let db = BitcoinDB::new(Path::new("/Volumes/Extreme SSD/bitcoin"), true).unwrap();
+        let mut count = 0;
+        for _ in db.get_block_simple_iter_seq(0, 10000).unwrap() {
+            if count % 100 == 0 {
+                println!("{}", count)
+            }
+            count += 1;
+        }
+    }
 }

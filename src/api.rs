@@ -1,4 +1,4 @@
-use super::iter::*;
+use super::par_iter::*;
 use crate::bitcoinparser::blk_file::BlkFile;
 use crate::bitcoinparser::block_index::{BlockIndex, BlockIndexRecord};
 use crate::bitcoinparser::errors::{OpError, OpResult};
@@ -9,6 +9,7 @@ use crate::bitcoinparser::proto::full_proto::{FBlock, FTransaction};
 use crate::bitcoinparser::proto::simple_proto::{SBlock, STransaction};
 use crate::bitcoinparser::script::{evaluate_script, ScriptInfo};
 use crate::bitcoinparser::tx_index::TxDB;
+use crate::par_iter::{FConnectedBlockIterator, SConnectedBlockIterator};
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::{Block, BlockHash, Network, Script, Transaction, Txid};
 use std::path::Path;
@@ -151,27 +152,27 @@ impl BitcoinDB {
         Ok(tx_parsed)
     }
 
-    pub fn get_block_full_iter_seq(&self, start: u32, end: u32) -> OpResult<FBlockIteratorSequential> {
+    pub fn get_block_full_iter_seq(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> OpResult<FBlockIteratorSequential> {
         FBlockIteratorSequential::new(self, start, end)
     }
 
-    pub fn get_block_simple_iter_seq(&self, start: u32, end: u32) -> OpResult<SBlockIteratorSequential> {
+    pub fn get_block_simple_iter_seq(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> OpResult<SBlockIteratorSequential> {
         SBlockIteratorSequential::new(self, start, end)
     }
 
-    pub fn get_block_full_iter_arr(&self, heights: Vec<u32>) -> FBlockIteratorArray {
-        FBlockIteratorArray::new(self, heights)
-    }
-
-    pub fn get_block_simple_iter_arr(&self, heights: Vec<u32>) -> SBlockIteratorArray {
-        SBlockIteratorArray::new(self, heights)
-    }
-
-    pub fn get_block_full_connected_iter(&self, end: u32) -> OpResult<FConnectedBlockIterator> {
+    pub fn get_block_full_connected_iter(&self, end: u32) -> FConnectedBlockIterator {
         FConnectedBlockIterator::new(self, end)
     }
 
-    pub fn get_block_simple_connected_iter(&self, end: u32) -> OpResult<SConnectedBlockIterator> {
+    pub fn get_block_simple_connected_iter(&self, end: u32) -> SConnectedBlockIterator {
         SConnectedBlockIterator::new(self, end)
     }
 }

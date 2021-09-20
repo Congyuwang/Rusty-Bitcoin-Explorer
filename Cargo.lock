@@ -51,6 +51,7 @@ dependencies = [
  "db-key",
  "leveldb",
  "log",
+ "num_cpus",
  "pyo3",
  "pyo3-log",
  "pythonize",

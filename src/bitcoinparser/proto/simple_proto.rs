@@ -25,7 +25,6 @@ impl SBlock {
 #[derive(Serialize, Deserialize)]
 pub struct SBlockHeader {
     pub block_hash: BlockHash,
-    pub prev_block_hash: BlockHash,
     pub time: u32,
 }
 
@@ -33,7 +32,6 @@ impl SBlockHeader {
     pub fn parse(blk: bitcoin::BlockHeader, block_hash: BlockHash) -> SBlockHeader {
         SBlockHeader {
             block_hash,
-            prev_block_hash: blk.prev_blockhash,
             time: blk.time,
         }
     }
@@ -41,7 +39,6 @@ impl SBlockHeader {
 
 #[derive(Serialize, Deserialize)]
 pub struct STransaction {
-    pub lock_time: u32,
     pub txid: Txid,
     /// List of inputs
     pub input: Vec<STxIn>,
@@ -52,7 +49,6 @@ pub struct STransaction {
 impl STransaction {
     pub fn parse(tx: bitcoin::Transaction) -> STransaction {
         STransaction {
-            lock_time: tx.lock_time,
             txid: tx.txid(),
             input: tx.input.into_iter().map(STxIn::parse).collect(),
             output: tx.output.into_iter().map(STxOut::parse).collect(),
