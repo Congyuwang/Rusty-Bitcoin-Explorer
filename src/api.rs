@@ -9,7 +9,6 @@ use crate::bitcoinparser::proto::full_proto::{FBlock, FTransaction};
 use crate::bitcoinparser::proto::simple_proto::{SBlock, STransaction};
 use crate::bitcoinparser::script::{evaluate_script, ScriptInfo};
 use crate::bitcoinparser::tx_index::TxDB;
-use crate::par_iter::{FConnectedBlockIterator, SConnectedBlockIterator};
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::{Block, BlockHash, Network, Script, Transaction, Txid};
 use std::path::Path;

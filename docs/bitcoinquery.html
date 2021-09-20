@@ -70,9 +70,6 @@
                                 <a class="function" href="#BitcoinDB.get_block_iter_range">get_block_iter_range</a>
                         </li>
                         <li>
-                                <a class="function" href="#BitcoinDB.get_block_iter_array">get_block_iter_array</a>
-                        </li>
-                        <li>
                                 <a class="function" href="#BitcoinDB.parse_script">parse_script</a>
                         </li>
                 </ul>
@@ -440,6 +437,8 @@ Bitcoin Core.</li>
                              <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in ascending order of heights.</span>
 
+<span class="sd">        This iterator fails fast. Any error interrupts it.</span>
+
 <span class="sd">        Notes:</span>
 <span class="sd">            This is best way to retrieve a large number of input</span>
 <span class="sd">            addresses (set connected to `True`).</span>
@@ -476,29 +475,6 @@ Bitcoin Core.</li>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Iterate through blocks in any order of heights.</span>
-
-<span class="sd">        Notes:</span>
-<span class="sd">            Since this is not in sequential order, connecting inputs to</span>
-<span class="sd">            previous outputs is not implemented.</span>
-
-<span class="sd">            The performance of the iterator is similar to calling</span>
-<span class="sd">            `get_block(height)` in a python for loop.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            heights: list of heights.</span>
-<span class="sd">            simplify: whether to use simpler format (a lot faster).</span>
-
-<span class="sd">        Returns: python iterator of block.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Decode the script type and addresses from script public key.</span>
@@ -802,6 +778,8 @@ Bitcoin Core.</li>
                              <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in ascending order of heights.</span>
 
+<span class="sd">        This iterator fails fast. Any error interrupts it.</span>
+
 <span class="sd">        Notes:</span>
 <span class="sd">            This is best way to retrieve a large number of input</span>
 <span class="sd">            addresses (set connected to `True`).</span>
@@ -838,29 +816,6 @@ Bitcoin Core.</li>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Iterate through blocks in any order of heights.</span>
-
-<span class="sd">        Notes:</span>
-<span class="sd">            Since this is not in sequential order, connecting inputs to</span>
-<span class="sd">            previous outputs is not implemented.</span>
-
-<span class="sd">            The performance of the iterator is similar to calling</span>
-<span class="sd">            `get_block(height)` in a python for loop.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            heights: list of heights.</span>
-<span class="sd">            simplify: whether to use simpler format (a lot faster).</span>
-
-<span class="sd">        Returns: python iterator of block.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Decode the script type and addresses from script public key.</span>
@@ -1574,6 +1529,8 @@ for b in range(100):
                              <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Iterate through blocks in ascending order of heights.</span>
 
+<span class="sd">        This iterator fails fast. Any error interrupts it.</span>
+
 <span class="sd">        Notes:</span>
 <span class="sd">            This is best way to retrieve a large number of input</span>
 <span class="sd">            addresses (set connected to `True`).</span>
@@ -1616,6 +1573,8 @@ for b in range(100):
 
             <div class="docstring"><p>Iterate through blocks in ascending order of heights.</p>
 
+<p>This iterator fails fast. Any error interrupts it.</p>
+
 <h6 id="notes">Notes</h6>
 
 <blockquote>
@@ -1647,66 +1606,6 @@ since connected iterator can only run from first block.</li>
 <li><strong>simplify:</strong>  default True. Use simpler format.</li>
 <li><strong>connected:</strong>  default False. Set to <code>True</code> to find out input
 addresses.</li>
-</ul>
-
-<p>Returns: python iterator of block.</p>
-</div>
-
-
-                            </div>
-                            <div id="BitcoinDB.get_block_iter_array" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#BitcoinDB.get_block_iter_array">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">get_block_iter_array</span><span class="signature">(self, heights: list, simplify: bool = True) -&gt; Iterator[dict]</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Iterate through blocks in any order of heights.</span>
-
-<span class="sd">        Notes:</span>
-<span class="sd">            Since this is not in sequential order, connecting inputs to</span>
-<span class="sd">            previous outputs is not implemented.</span>
-
-<span class="sd">            The performance of the iterator is similar to calling</span>
-<span class="sd">            `get_block(height)` in a python for loop.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            heights: list of heights.</span>
-<span class="sd">            simplify: whether to use simpler format (a lot faster).</span>
-
-<span class="sd">        Returns: python iterator of block.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_array</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Iterate through blocks in any order of heights.</p>
-
-<h6 id="notes">Notes</h6>
-
-<blockquote>
-  <p>Since this is not in sequential order, connecting inputs to
-  previous outputs is not implemented.</p>
-  
-  <p>The performance of the iterator is similar to calling
-  <code>get_block(height)</code> in a python for loop.</p>
-</blockquote>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>heights:</strong>  list of heights.</li>
-<li><strong>simplify:</strong>  whether to use simpler format (a lot faster).</li>
 </ul>
 
 <p>Returns: python iterator of block.</p>
