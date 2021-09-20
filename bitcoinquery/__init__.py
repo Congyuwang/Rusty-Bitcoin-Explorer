@@ -24,7 +24,7 @@ BitcoinQuery: Query Bitcoin Core Data Files As A Database.
 
 """
 import logging as _log
-from typing import Iterator
+from typing import Iterator, List
 
 from .bitcoinquery import BitcoinDB as _BitcoinDB
 from pathlib import Path
@@ -250,8 +250,8 @@ class BitcoinDB:
             raise Exception("tx_index is set to False")
         return self.db.get_height_from_txid(txid)
 
-    def get_block_batch(self, heights: list[int],
-                        simplify: bool = True) -> list[str]:
+    def get_block_batch(self, heights: List[int],
+                        simplify: bool = True) -> List[str]:
         """Get a list of blocks in batch.
 
         Notes:
