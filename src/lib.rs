@@ -186,12 +186,12 @@ impl BitcoinDB {
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
     fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIteratorSequential> {
-        Ok(FBlockIteratorSequential::new(&self.db, start, stop)?)
+        FBlockIteratorSequential::new(&self.db, start, stop)
     }
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
     fn iter_block_simple_seq(&self, start: u32, stop: u32) -> PyResult<SBlockIteratorSequential> {
-        Ok(SBlockIteratorSequential::new(&self.db, start, stop)?)
+        SBlockIteratorSequential::new(&self.db, start, stop)
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
