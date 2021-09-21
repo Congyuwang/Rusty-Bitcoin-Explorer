@@ -62,11 +62,6 @@ db.get_block_header(1000)
 # get block of height 1000.
 db.get_height_from_hash("some hash")
 
-# get blocks of heights 100..199.
-# (This method uses `rayon` parallel computing to take advantage of multicore)
-# this function returns json string instead of object.
-db.get_block_batch(list(range(100, 200)))
-
 # get transaction from txid.
 # This queries the `levelDB` each time, thus it is relatively slow.
 db.get_transaction("some txid")
