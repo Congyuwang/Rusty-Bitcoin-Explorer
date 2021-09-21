@@ -53,7 +53,7 @@ db.get_block(1000)
 db.get_block(1000, connected=True)
 
 # get block hash of a certain height.
-db.get_hash(1000)
+db.get_hash_from_height(1000)
 
 # a fast method for getting just the header.
 # in memory query, no disk access
