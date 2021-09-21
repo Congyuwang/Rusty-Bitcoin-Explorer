@@ -1,7 +1,10 @@
 """
 BitcoinQuery: Query Bitcoin Core Data Files As A Database.
 
-1. How to build?
+1. How to install?
+    - `pip install bitcoinquery`
+
+2. How to build?
     - install `rust` toolchain.
     - download the complete repo from github.
     - `cd` to the repository root.
@@ -11,7 +14,7 @@ BitcoinQuery: Query Bitcoin Core Data Files As A Database.
       Or you may run `maturin build --release` to build the wheel
       and install the `whl` file use `pip install` command.
 
-2. How to use?
+3. How to use?
     - Download Bitcoin Core app from bitcoin official website.
     - Sync full Bitcoin data.
     - If you wish to query transaction with txid (i.e. transaction id),
@@ -250,61 +253,6 @@ class BitcoinDB:
             raise Exception("tx_index is set to False")
         return self.db.get_height_from_txid(txid)
 
-    def get_block_batch(self, heights: List[int],
-                        simplify: bool = True) -> List[str]:
-        """Get a list of blocks in batch.
-
-        Notes:
-            This is implemented to run in parallelism in rust.
-            This is the fastest way to retrieve a large number
-            of transactions to python.
-
-            However, the data is returned in raw json string,
-            and is not parsed to python format.
-            This is because constructing python objects requires
-            the python GIL lock, which prevents the program from
-            multithreading.
-
-            Depending on your memory size, you may decide on the
-            number of blocks to be retrieved per call.
-
-            This method does not support retrieving connected blocks.
-            Tracing block inputs requiring extensive query to
-            txindex levelDB, and random reading of disk, which is too
-            slow.  It takes several seconds to get just one big block
-            (i.e., blocks with 1 thousand or more transactions) if
-            connected is set to `True`.
-
-        Examples:
-            ::
-
-                # heights to be retrieved
-                all_heights = list(range(10000, 20000))
-
-                # something you wish to do for a batch
-                def write_lines(strings: list[str], file):
-                    for block in strings:
-                        pass
-
-                # retrieve in 100 batch, each batch holding 100 blocks
-                for b in range(100):
-                    batch_heights = all_heights[(b * 100): (b * 100 + 100)]
-                    blocks = db.get_block_batch(batch_heights, simple=True)
-                    with open(filename, "a") as file:
-                        write_lines(blocks, file)
-
-        Args:
-            heights: the list of heights of the blocks.
-            simplify: whether to use simpler format (a lot faster).
-
-        Returns: list of json string.
-
-        """
-        if simplify:
-            return self.db.get_block_simple_batch(heights)
-        else:
-            return self.db.get_block_full_batch(heights)
-
     def get_block_iter_range(self,
                              stop,
                              start: int = 0,
@@ -350,6 +298,38 @@ class BitcoinDB:
                 return self.db.iter_block_simple_connected(stop)
             else:
                 return self.db.iter_block_full_connected(stop)
+
+    def get_block_iter_array(self,
+                             heights: List[int],
+                             simplify: bool = True) -> Iterator[dict]:
+        """Iterate through blocks of a given list of heights.
+
+        This iterator fails fast. Any error interrupts it.
+
+        Notes:
+            This iterator is also implemented to execute in parallel.
+            However, the throughput might be restricted by python.
+
+            This iterator does not support connecting outpoints.
+
+        Examples:
+            ::
+
+                # get connected blocks use a `for in loop`
+                for block in db.get_block_iter_array(list(range(2000, 3000))):
+                    do_some_computation_with_the_block(block)
+
+        Args:
+            heights: a list of heights.
+            simplify: default True. Use simpler format.
+
+        Returns: python iterator of block.
+
+        """
+        if simplify:
+            return self.db.iter_block_simple_arr(heights)
+        else:
+            return self.db.iter_block_full_arr(heights)
 
     def parse_script(self, script_pub_key: str) -> dict:
         """Decode the script type and addresses from script public key.

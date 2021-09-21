@@ -64,10 +64,10 @@
                                 <a class="function" href="#BitcoinDB.get_height_from_txid">get_height_from_txid</a>
                         </li>
                         <li>
-                                <a class="function" href="#BitcoinDB.get_block_batch">get_block_batch</a>
+                                <a class="function" href="#BitcoinDB.get_block_iter_range">get_block_iter_range</a>
                         </li>
                         <li>
-                                <a class="function" href="#BitcoinDB.get_block_iter_range">get_block_iter_range</a>
+                                <a class="function" href="#BitcoinDB.get_block_iter_array">get_block_iter_array</a>
                         </li>
                         <li>
                                 <a class="function" href="#BitcoinDB.parse_script">parse_script</a>
@@ -93,6 +93,11 @@ bitcoinquery    </h1>
                         <div class="docstring"><p>BitcoinQuery: Query Bitcoin Core Data Files As A Database.</p>
 
 <ol>
+<li><p>How to install?</p>
+
+<ul>
+<li><code>pip install bitcoinquery</code></li>
+</ul></li>
 <li><p>How to build?</p>
 
 <ul>
@@ -126,7 +131,10 @@ Bitcoin Core.</li>
             <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">BitcoinQuery: Query Bitcoin Core Data Files As A Database.</span>
 
-<span class="sd">1. How to build?</span>
+<span class="sd">1. How to install?</span>
+<span class="sd">    - `pip install bitcoinquery`</span>
+
+<span class="sd">2. How to build?</span>
 <span class="sd">    - install `rust` toolchain.</span>
 <span class="sd">    - download the complete repo from github.</span>
 <span class="sd">    - `cd` to the repository root.</span>
@@ -136,7 +144,7 @@ Bitcoin Core.</li>
 <span class="sd">      Or you may run `maturin build --release` to build the wheel</span>
 <span class="sd">      and install the `whl` file use `pip install` command.</span>
 
-<span class="sd">2. How to use?</span>
+<span class="sd">3. How to use?</span>
 <span class="sd">    - Download Bitcoin Core app from bitcoin official website.</span>
 <span class="sd">    - Sync full Bitcoin data.</span>
 <span class="sd">    - If you wish to query transaction with txid (i.e. transaction id),</span>
@@ -375,61 +383,6 @@ Bitcoin Core.</li>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;tx_index is set to False&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_height_from_txid</span><span class="p">(</span><span class="n">txid</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_block_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                        <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get a list of blocks in batch.</span>
-
-<span class="sd">        Notes:</span>
-<span class="sd">            This is implemented to run in parallelism in rust.</span>
-<span class="sd">            This is the fastest way to retrieve a large number</span>
-<span class="sd">            of transactions to python.</span>
-
-<span class="sd">            However, the data is returned in raw json string,</span>
-<span class="sd">            and is not parsed to python format.</span>
-<span class="sd">            This is because constructing python objects requires</span>
-<span class="sd">            the python GIL lock, which prevents the program from</span>
-<span class="sd">            multithreading.</span>
-
-<span class="sd">            Depending on your memory size, you may decide on the</span>
-<span class="sd">            number of blocks to be retrieved per call.</span>
-
-<span class="sd">            This method does not support retrieving connected blocks.</span>
-<span class="sd">            Tracing block inputs requiring extensive query to</span>
-<span class="sd">            txindex levelDB, and random reading of disk, which is too</span>
-<span class="sd">            slow.  It takes several seconds to get just one big block</span>
-<span class="sd">            (i.e., blocks with 1 thousand or more transactions) if</span>
-<span class="sd">            connected is set to `True`.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            ::</span>
-
-<span class="sd">                # heights to be retrieved</span>
-<span class="sd">                all_heights = list(range(10000, 20000))</span>
-
-<span class="sd">                # something you wish to do for a batch</span>
-<span class="sd">                def write_lines(strings: list[str], file):</span>
-<span class="sd">                    for block in strings:</span>
-<span class="sd">                        pass</span>
-
-<span class="sd">                # retrieve in 100 batch, each batch holding 100 blocks</span>
-<span class="sd">                for b in range(100):</span>
-<span class="sd">                    batch_heights = all_heights[(b * 100): (b * 100 + 100)]</span>
-<span class="sd">                    blocks = db.get_block_batch(batch_heights, simple=True)</span>
-<span class="sd">                    with open(filename, &quot;a&quot;) as file:</span>
-<span class="sd">                        write_lines(blocks, file)</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            heights: the list of heights of the blocks.</span>
-<span class="sd">            simplify: whether to use simpler format (a lot faster).</span>
-
-<span class="sd">        Returns: list of json string.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_simple_batch</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_full_batch</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">get_block_iter_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">stop</span><span class="p">,</span>
                              <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -475,6 +428,38 @@ Bitcoin Core.</li>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">heights</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Iterate through blocks of a given list of heights.</span>
+
+<span class="sd">        This iterator fails fast. Any error interrupts it.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            This iterator is also implemented to execute in parallel.</span>
+<span class="sd">            However, the throughput might be restricted by python.</span>
+
+<span class="sd">            This iterator does not support connecting outpoints.</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            ::</span>
+
+<span class="sd">                # get connected blocks use a `for in loop`</span>
+<span class="sd">                for block in db.get_block_iter_array(list(range(2000, 3000))):</span>
+<span class="sd">                    do_some_computation_with_the_block(block)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            heights: a list of heights.</span>
+<span class="sd">            simplify: default True. Use simpler format.</span>
+
+<span class="sd">        Returns: python iterator of block.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_arr</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_arr</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Decode the script type and addresses from script public key.</span>
@@ -716,61 +701,6 @@ Bitcoin Core.</li>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;tx_index is set to False&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_height_from_txid</span><span class="p">(</span><span class="n">txid</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_block_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                        <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get a list of blocks in batch.</span>
-
-<span class="sd">        Notes:</span>
-<span class="sd">            This is implemented to run in parallelism in rust.</span>
-<span class="sd">            This is the fastest way to retrieve a large number</span>
-<span class="sd">            of transactions to python.</span>
-
-<span class="sd">            However, the data is returned in raw json string,</span>
-<span class="sd">            and is not parsed to python format.</span>
-<span class="sd">            This is because constructing python objects requires</span>
-<span class="sd">            the python GIL lock, which prevents the program from</span>
-<span class="sd">            multithreading.</span>
-
-<span class="sd">            Depending on your memory size, you may decide on the</span>
-<span class="sd">            number of blocks to be retrieved per call.</span>
-
-<span class="sd">            This method does not support retrieving connected blocks.</span>
-<span class="sd">            Tracing block inputs requiring extensive query to</span>
-<span class="sd">            txindex levelDB, and random reading of disk, which is too</span>
-<span class="sd">            slow.  It takes several seconds to get just one big block</span>
-<span class="sd">            (i.e., blocks with 1 thousand or more transactions) if</span>
-<span class="sd">            connected is set to `True`.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            ::</span>
-
-<span class="sd">                # heights to be retrieved</span>
-<span class="sd">                all_heights = list(range(10000, 20000))</span>
-
-<span class="sd">                # something you wish to do for a batch</span>
-<span class="sd">                def write_lines(strings: list[str], file):</span>
-<span class="sd">                    for block in strings:</span>
-<span class="sd">                        pass</span>
-
-<span class="sd">                # retrieve in 100 batch, each batch holding 100 blocks</span>
-<span class="sd">                for b in range(100):</span>
-<span class="sd">                    batch_heights = all_heights[(b * 100): (b * 100 + 100)]</span>
-<span class="sd">                    blocks = db.get_block_batch(batch_heights, simple=True)</span>
-<span class="sd">                    with open(filename, &quot;a&quot;) as file:</span>
-<span class="sd">                        write_lines(blocks, file)</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            heights: the list of heights of the blocks.</span>
-<span class="sd">            simplify: whether to use simpler format (a lot faster).</span>
-
-<span class="sd">        Returns: list of json string.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_simple_batch</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_full_batch</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">get_block_iter_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">stop</span><span class="p">,</span>
                              <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -816,6 +746,38 @@ Bitcoin Core.</li>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_connected</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">heights</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Iterate through blocks of a given list of heights.</span>
+
+<span class="sd">        This iterator fails fast. Any error interrupts it.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            This iterator is also implemented to execute in parallel.</span>
+<span class="sd">            However, the throughput might be restricted by python.</span>
+
+<span class="sd">            This iterator does not support connecting outpoints.</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            ::</span>
+
+<span class="sd">                # get connected blocks use a `for in loop`</span>
+<span class="sd">                for block in db.get_block_iter_array(list(range(2000, 3000))):</span>
+<span class="sd">                    do_some_computation_with_the_block(block)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            heights: a list of heights.</span>
+<span class="sd">            simplify: default True. Use simpler format.</span>
+
+<span class="sd">        Returns: python iterator of block.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_arr</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_arr</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">parse_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_pub_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Decode the script type and addresses from script public key.</span>
@@ -1378,134 +1340,6 @@ related outputs according to input outpoints.</li>
 
 
                             </div>
-                            <div id="BitcoinDB.get_block_batch" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#BitcoinDB.get_block_batch">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">get_block_batch</span><span class="signature">(self, heights: List[int], simplify: bool = True) -&gt; List[str]</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_block_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-                        <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get a list of blocks in batch.</span>
-
-<span class="sd">        Notes:</span>
-<span class="sd">            This is implemented to run in parallelism in rust.</span>
-<span class="sd">            This is the fastest way to retrieve a large number</span>
-<span class="sd">            of transactions to python.</span>
-
-<span class="sd">            However, the data is returned in raw json string,</span>
-<span class="sd">            and is not parsed to python format.</span>
-<span class="sd">            This is because constructing python objects requires</span>
-<span class="sd">            the python GIL lock, which prevents the program from</span>
-<span class="sd">            multithreading.</span>
-
-<span class="sd">            Depending on your memory size, you may decide on the</span>
-<span class="sd">            number of blocks to be retrieved per call.</span>
-
-<span class="sd">            This method does not support retrieving connected blocks.</span>
-<span class="sd">            Tracing block inputs requiring extensive query to</span>
-<span class="sd">            txindex levelDB, and random reading of disk, which is too</span>
-<span class="sd">            slow.  It takes several seconds to get just one big block</span>
-<span class="sd">            (i.e., blocks with 1 thousand or more transactions) if</span>
-<span class="sd">            connected is set to `True`.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            ::</span>
-
-<span class="sd">                # heights to be retrieved</span>
-<span class="sd">                all_heights = list(range(10000, 20000))</span>
-
-<span class="sd">                # something you wish to do for a batch</span>
-<span class="sd">                def write_lines(strings: list[str], file):</span>
-<span class="sd">                    for block in strings:</span>
-<span class="sd">                        pass</span>
-
-<span class="sd">                # retrieve in 100 batch, each batch holding 100 blocks</span>
-<span class="sd">                for b in range(100):</span>
-<span class="sd">                    batch_heights = all_heights[(b * 100): (b * 100 + 100)]</span>
-<span class="sd">                    blocks = db.get_block_batch(batch_heights, simple=True)</span>
-<span class="sd">                    with open(filename, &quot;a&quot;) as file:</span>
-<span class="sd">                        write_lines(blocks, file)</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            heights: the list of heights of the blocks.</span>
-<span class="sd">            simplify: whether to use simpler format (a lot faster).</span>
-
-<span class="sd">        Returns: list of json string.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_simple_batch</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_block_full_batch</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Get a list of blocks in batch.</p>
-
-<h6 id="notes">Notes</h6>
-
-<blockquote>
-  <p>This is implemented to run in parallelism in rust.
-  This is the fastest way to retrieve a large number
-  of transactions to python.</p>
-  
-  <p>However, the data is returned in raw json string,
-  and is not parsed to python format.
-  This is because constructing python objects requires
-  the python GIL lock, which prevents the program from
-  multithreading.</p>
-  
-  <p>Depending on your memory size, you may decide on the
-  number of blocks to be retrieved per call.</p>
-  
-  <p>This method does not support retrieving connected blocks.
-  Tracing block inputs requiring extensive query to
-  txindex levelDB, and random reading of disk, which is too
-  slow.  It takes several seconds to get just one big block
-  (i.e., blocks with 1 thousand or more transactions) if
-  connected is set to <code>True</code>.</p>
-</blockquote>
-
-<h6 id="examples">Examples</h6>
-
-<blockquote>
-  <p>::</p>
-
-<pre><code># heights to be retrieved
-all_heights = list(range(10000, 20000))
-
-# something you wish to do for a batch
-def write_lines(strings: list[str], file):
-    for block in strings:
-        pass
-
-# retrieve in 100 batch, each batch holding 100 blocks
-for b in range(100):
-    batch_heights = all_heights[(b * 100): (b * 100 + 100)]
-    blocks = db.get_block_batch(batch_heights, simple=True)
-    with open(filename, "a") as file:
-        write_lines(blocks, file)
-</code></pre>
-</blockquote>
-
-<h6 id="args">Args</h6>
-
-<ul>
-<li><strong>heights:</strong>  the list of heights of the blocks.</li>
-<li><strong>simplify:</strong>  whether to use simpler format (a lot faster).</li>
-</ul>
-
-<p>Returns: list of json string.</p>
-</div>
-
-
-                            </div>
                             <div id="BitcoinDB.get_block_iter_range" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BitcoinDB.get_block_iter_range">#&nbsp;&nbsp</a>
 
@@ -1606,6 +1440,87 @@ since connected iterator can only run from first block.</li>
 <li><strong>simplify:</strong>  default True. Use simpler format.</li>
 <li><strong>connected:</strong>  default False. Set to <code>True</code> to find out input
 addresses.</li>
+</ul>
+
+<p>Returns: python iterator of block.</p>
+</div>
+
+
+                            </div>
+                            <div id="BitcoinDB.get_block_iter_array" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#BitcoinDB.get_block_iter_array">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_block_iter_array</span><span class="signature">(self, heights: List[int], simplify: bool = True) -&gt; Iterator[dict]</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_block_iter_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">heights</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                             <span class="n">simplify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Iterate through blocks of a given list of heights.</span>
+
+<span class="sd">        This iterator fails fast. Any error interrupts it.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            This iterator is also implemented to execute in parallel.</span>
+<span class="sd">            However, the throughput might be restricted by python.</span>
+
+<span class="sd">            This iterator does not support connecting outpoints.</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            ::</span>
+
+<span class="sd">                # get connected blocks use a `for in loop`</span>
+<span class="sd">                for block in db.get_block_iter_array(list(range(2000, 3000))):</span>
+<span class="sd">                    do_some_computation_with_the_block(block)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            heights: a list of heights.</span>
+<span class="sd">            simplify: default True. Use simpler format.</span>
+
+<span class="sd">        Returns: python iterator of block.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">simplify</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_simple_arr</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">iter_block_full_arr</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Iterate through blocks of a given list of heights.</p>
+
+<p>This iterator fails fast. Any error interrupts it.</p>
+
+<h6 id="notes">Notes</h6>
+
+<blockquote>
+  <p>This iterator is also implemented to execute in parallel.
+  However, the throughput might be restricted by python.</p>
+  
+  <p>This iterator does not support connecting outpoints.</p>
+</blockquote>
+
+<h6 id="examples">Examples</h6>
+
+<blockquote>
+  <p>::</p>
+
+<pre><code># get connected blocks use a `for in loop`
+for block in db.get_block_iter_array(list(range(2000, 3000))):
+    do_some_computation_with_the_block(block)
+</code></pre>
+</blockquote>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>heights:</strong>  a list of heights.</li>
+<li><strong>simplify:</strong>  default True. Use simpler format.</li>
 </ul>
 
 <p>Returns: python iterator of block.</p>

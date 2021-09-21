@@ -6,9 +6,11 @@ use crate::api::BitcoinDB;
 use crate::bitcoinparser::blk_file::BlkFile;
 use crate::bitcoinparser::block_index::BlockIndex;
 use crate::bitcoinparser::errors::{OpError, OpResult};
-use crate::bitcoinparser::proto::connected_proto::{FConnectedBlock, SConnectedBlock, FConnectedTransaction, SConnectedTransaction};
-use crate::bitcoinparser::proto::full_proto::{FBlock, FTxOut, FBlockHeader};
-use crate::bitcoinparser::proto::simple_proto::{SBlock, STxOut, SBlockHeader};
+use crate::bitcoinparser::proto::connected_proto::{
+    FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction,
+};
+use crate::bitcoinparser::proto::full_proto::{FBlock, FBlockHeader, FTxOut};
+use crate::bitcoinparser::proto::simple_proto::{SBlock, SBlockHeader, STxOut};
 use bitcoin::Txid;
 use log::warn;
 use num_cpus;
@@ -22,7 +24,7 @@ use std::thread::JoinHandle;
 
 struct SVecMap {
     size: u16,
-    inner: Box<[Option<STxOut>]>
+    inner: Box<[Option<STxOut>]>,
 }
 
 impl SVecMap {
@@ -37,7 +39,7 @@ impl SVecMap {
         let inner_vec: Vec<Option<STxOut>> = vec.into_iter().map(|o| Some(o)).collect();
         SVecMap {
             size: size as u16,
-            inner: inner_vec.into_boxed_slice()
+            inner: inner_vec.into_boxed_slice(),
         }
     }
 
@@ -53,7 +55,7 @@ impl SVecMap {
 
 struct FVecMap {
     size: u16,
-    inner: Box<[Option<FTxOut>]>
+    inner: Box<[Option<FTxOut>]>,
 }
 
 impl FVecMap {
@@ -68,7 +70,7 @@ impl FVecMap {
         let inner_vec: Vec<Option<FTxOut>> = vec.into_iter().map(|o| Some(o)).collect();
         FVecMap {
             size: size as u16,
-            inner: inner_vec.into_boxed_slice()
+            inner: inner_vec.into_boxed_slice(),
         }
     }
 
@@ -102,15 +104,17 @@ impl DBCopy {
 
 #[derive(Debug)]
 struct STask {
+    task_number: u32,
     height: u32,
-    result_height: Arc<(Mutex<u32>, Condvar)>,
+    output_number: Arc<(Mutex<u32>, Condvar)>,
     sender: SyncSender<SBlock>,
     error_state: Arc<AtomicBool>,
 }
 
 struct FTask {
+    task_number: u32,
     height: u32,
-    result_height: Arc<(Mutex<u32>, Condvar)>,
+    output_number: Arc<(Mutex<u32>, Condvar)>,
     sender: SyncSender<FBlock>,
     error_state: Arc<AtomicBool>,
 }
@@ -133,11 +137,11 @@ struct FTask2 {
 
 fn mutate_error_state_s(mut task: STask) {
     // before return, always increase lock condition
-    let (lock, cond) = &*task.result_height;
+    let (lock, cond) = &*task.output_number;
     let mut result_height = lock.lock().unwrap();
-    if *result_height != task.height {
+    if *result_height != task.task_number {
         result_height = cond
-            .wait_while(result_height, |h| *h != task.height)
+            .wait_while(result_height, |h| *h != task.task_number)
             .unwrap();
     }
     // wait until the prior ones have finished before changing error state
@@ -153,11 +157,11 @@ fn mutate_error_state_s(mut task: STask) {
 fn mutate_error_state_f(mut task: FTask) {
     // before return, always increase lock condition
     {
-        let (lock, cond) = &*task.result_height;
+        let (lock, cond) = &*task.output_number;
         let mut result_height = lock.lock().unwrap();
-        if *result_height != task.height {
+        if *result_height != task.task_number {
             result_height = cond
-                .wait_while(result_height, |h| *h != task.height)
+                .wait_while(result_height, |h| *h != task.task_number)
                 .unwrap();
         }
         // wait until the prior ones have finished before changing error state
@@ -249,28 +253,29 @@ fn fetch_block_s(db: &DBCopy, task: STask) {
         // over unfinished tasks
         return;
     }
-    let my_height = task.height;
+    let task_number = task.task_number;
 
-    if let Some(index) = db.block_index.records.get(my_height as usize) {
+    if let Some(index) = db.block_index.records.get(task.height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(blk) => {
                 // send data when it is my turn to send
                 {
-                    let (lock, cond) = &*task.result_height;
-                    let mut result_height = lock.lock().unwrap();
-                    if *result_height != my_height {
-                        result_height =
-                            cond.wait_while(result_height, |h| *h != my_height).unwrap();
+                    let (lock, cond) = &*task.output_number;
+                    let mut output_number = lock.lock().unwrap();
+                    if *output_number != task_number {
+                        output_number = cond
+                            .wait_while(output_number, |h| *h != task_number)
+                            .unwrap();
                     }
                     // this block kills waiting threads after error
                     if task.error_state.load(Ordering::SeqCst) {
-                        *result_height += 1;
+                        *output_number += 1;
                         cond.notify_all();
                         // before return, always increase lock condition
                         return;
                     }
                     task.sender.send(SBlock::parse(blk)).unwrap();
-                    *result_height += 1;
+                    *output_number += 1;
                     cond.notify_all();
                 }
             }
@@ -294,28 +299,29 @@ fn fetch_block_f(db: &DBCopy, task: FTask) {
         // over unfinished tasks
         return;
     }
-    let my_height = task.height;
+    let task_number = task.task_number;
 
-    if let Some(index) = db.block_index.records.get(my_height as usize) {
+    if let Some(index) = db.block_index.records.get(task.height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(blk) => {
                 // send data when it is my turn to send
                 {
-                    let (lock, cond) = &*task.result_height;
-                    let mut result_height = lock.lock().unwrap();
-                    if *result_height != my_height {
-                        result_height =
-                            cond.wait_while(result_height, |h| *h != my_height).unwrap();
+                    let (lock, cond) = &*task.output_number;
+                    let mut output_number = lock.lock().unwrap();
+                    if *output_number != task_number {
+                        output_number = cond
+                            .wait_while(output_number, |h| *h != task_number)
+                            .unwrap();
                     }
                     // this block kills waiting threads after error
                     if task.error_state.load(Ordering::SeqCst) {
-                        *result_height += 1;
+                        *output_number += 1;
                         cond.notify_all();
                         // before return, always increase lock condition
                         return;
                     }
                     task.sender.send(FBlock::parse(blk)).unwrap();
-                    *result_height += 1;
+                    *output_number += 1;
                     cond.notify_all();
                 }
             }
@@ -474,9 +480,7 @@ fn fetch_fblock_connected(
                         cond.notify_all();
                         return;
                     }
-                    task.sender
-                        .send(output_block)
-                        .unwrap();
+                    task.sender.send(output_block).unwrap();
                     *result_height += 1;
                     cond.notify_all();
                 }
@@ -579,9 +583,7 @@ fn fetch_sblock_connected(
                     cond.notify_all();
                 }
 
-                for ((txid, ins), outs) in
-                    tx_ids.iter().zip(inputs).zip(outputs_copy)
-                {
+                for ((txid, ins), outs) in tx_ids.iter().zip(inputs).zip(outputs_copy) {
                     let mut output_tx = SConnectedTransaction {
                         txid: txid.clone(),
                         input: Vec::new(),
@@ -649,9 +651,7 @@ fn fetch_sblock_connected(
                         cond.notify_all();
                         return;
                     }
-                    task.sender
-                        .send(output_block)
-                        .unwrap();
+                    task.sender.send(output_block).unwrap();
                     *result_height += 1;
                     cond.notify_all();
                 }
@@ -684,14 +684,13 @@ fn fetch_sblock_connected(
         mutate_error_both_lock_s(&mut task);
     }
 }
-
-pub struct SBlockIteratorSequential {
+pub struct SBlockIteratorArray {
     receiver: Receiver<SBlock>,
     worker_thread: Option<JoinHandle<()>>,
     error_state: Arc<AtomicBool>,
 }
 
-impl Drop for SBlockIteratorSequential {
+impl Drop for SBlockIteratorArray {
     // attempt to stop the worker threads
     fn drop(&mut self) {
         {
@@ -702,64 +701,61 @@ impl Drop for SBlockIteratorSequential {
     }
 }
 
-impl SBlockIteratorSequential {
+impl SBlockIteratorArray {
     /// the worker threads are dispatched in this `new` constructor!
-    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> OpResult<SBlockIteratorSequential> {
-        if end <= start {
-            Err(OpError::from("invalid iterator range"))
-        } else {
-            let heights: Vec<u32> = (start..end).collect();
-            let cpus = num_cpus::get();
-            let output_height = Arc::new((Mutex::new(*heights.get(0).unwrap()), Condvar::new()));
-            let error_state = Arc::new(AtomicBool::new(false));
-            let (sender, receiver) = sync_channel(cpus * 10);
-            let db = DBCopy::from_bitcoin_db(db);
-            // worker master
-            let error_state_copy = error_state.clone();
-            let worker_thread = thread::spawn(move || {
-                let mut tasks: VecDeque<STask> = VecDeque::with_capacity(heights.len());
-                for height in heights {
-                    tasks.push_back(STask {
-                        height,
-                        result_height: output_height.clone(),
-                        sender: sender.clone(),
-                        error_state: error_state_copy.clone(),
-                    })
-                }
+    pub fn new(db: &BitcoinDB, heights: Vec<u32>) -> SBlockIteratorArray {
+        let cursor: Vec<u32> = (0..heights.len() as u32).collect();
+        let cpus = num_cpus::get();
+        let output_number = Arc::new((Mutex::new(*cursor.get(0).unwrap()), Condvar::new()));
+        let error_state = Arc::new(AtomicBool::new(false));
+        let (sender, receiver) = sync_channel(cpus * 10);
+        let db = DBCopy::from_bitcoin_db(db);
+        // worker master
+        let error_state_copy = error_state.clone();
+        let worker_thread = thread::spawn(move || {
+            let mut tasks: VecDeque<STask> = VecDeque::with_capacity(cursor.len());
+            for task_number in cursor {
+                tasks.push_back(STask {
+                    task_number,
+                    height: *heights.get(task_number as usize).unwrap(),
+                    output_number: output_number.clone(),
+                    sender: sender.clone(),
+                    error_state: error_state_copy.clone(),
+                })
+            }
 
-                let tasks = Arc::new(Mutex::new(tasks));
-                let mut handles = Vec::with_capacity(cpus);
+            let tasks = Arc::new(Mutex::new(tasks));
+            let mut handles = Vec::with_capacity(cpus);
 
-                for _ in 0..cpus {
-                    let task = tasks.clone();
-                    let db_copy = db.clone();
-                    // actual worker
-                    let handle = thread::spawn(move || {
-                        loop {
-                            let task = {
-                                // drop mutex immediately
-                                let mut task = task.lock().unwrap();
-                                task.pop_front()
-                            };
-                            match task {
-                                // finish
-                                None => break,
-                                Some(task) => fetch_block_s(&db_copy, task),
-                            }
+            for _ in 0..cpus {
+                let task = tasks.clone();
+                let db_copy = db.clone();
+                // actual worker
+                let handle = thread::spawn(move || {
+                    loop {
+                        let task = {
+                            // drop mutex immediately
+                            let mut task = task.lock().unwrap();
+                            task.pop_front()
+                        };
+                        match task {
+                            // finish
+                            None => break,
+                            Some(task) => fetch_block_s(&db_copy, task),
                         }
-                    });
-                    handles.push(handle);
-                }
+                    }
+                });
+                handles.push(handle);
+            }
 
-                for handle in handles {
-                    handle.join().unwrap();
-                }
-            });
-            Ok(SBlockIteratorSequential {
-                receiver,
-                worker_thread: Some(worker_thread),
-                error_state,
-            })
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+        SBlockIteratorArray {
+            receiver,
+            worker_thread: Some(worker_thread),
+            error_state,
         }
     }
 
@@ -768,7 +764,7 @@ impl SBlockIteratorSequential {
     }
 }
 
-impl Iterator for SBlockIteratorSequential {
+impl Iterator for SBlockIteratorArray {
     type Item = SBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -779,13 +775,39 @@ impl Iterator for SBlockIteratorSequential {
     }
 }
 
-pub struct FBlockIteratorSequential {
+pub struct SBlockIteratorSequential {
+    inner: SBlockIteratorArray,
+}
+
+impl SBlockIteratorSequential {
+    /// the worker threads are dispatched in this `new` constructor!
+    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> OpResult<SBlockIteratorSequential> {
+        if end <= start {
+            Err(OpError::from("invalid iterator range"))
+        } else {
+            let heights: Vec<u32> = (start..end).collect();
+            Ok(SBlockIteratorSequential {
+                inner: SBlockIteratorArray::new(db, heights),
+            })
+        }
+    }
+}
+
+impl Iterator for SBlockIteratorSequential {
+    type Item = SBlock;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+}
+
+pub struct FBlockIteratorArray {
     receiver: Receiver<FBlock>,
     worker_thread: Option<JoinHandle<()>>,
     error_state: Arc<AtomicBool>,
 }
 
-impl Drop for FBlockIteratorSequential {
+impl Drop for FBlockIteratorArray {
     // attempt to stop the worker threads
     fn drop(&mut self) {
         {
@@ -796,64 +818,61 @@ impl Drop for FBlockIteratorSequential {
     }
 }
 
-impl FBlockIteratorSequential {
+impl FBlockIteratorArray {
     /// the worker threads are dispatched in this `new` constructor!
-    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> OpResult<FBlockIteratorSequential> {
-        if end <= start {
-            Err(OpError::from("invalid iterator range"))
-        } else {
-            let heights: Vec<u32> = (start..end).collect();
-            let cpus = num_cpus::get();
-            let output_height = Arc::new((Mutex::new(*heights.get(0).unwrap()), Condvar::new()));
-            let error_state = Arc::new(AtomicBool::new(false));
-            let (sender, receiver) = sync_channel(cpus * 10);
-            let db = DBCopy::from_bitcoin_db(db);
-            // worker master
-            let error_state_copy = error_state.clone();
-            let worker_thread = thread::spawn(move || {
-                let mut tasks: VecDeque<FTask> = VecDeque::with_capacity(heights.len());
-                for height in heights {
-                    tasks.push_back(FTask {
-                        height,
-                        result_height: output_height.clone(),
-                        sender: sender.clone(),
-                        error_state: error_state_copy.clone(),
-                    })
-                }
+    pub fn new(db: &BitcoinDB, heights: Vec<u32>) -> FBlockIteratorArray {
+        let cursor: Vec<u32> = (0..heights.len() as u32).collect();
+        let cpus = num_cpus::get();
+        let output_number = Arc::new((Mutex::new(*cursor.get(0).unwrap()), Condvar::new()));
+        let error_state = Arc::new(AtomicBool::new(false));
+        let (sender, receiver) = sync_channel(cpus * 10);
+        let db = DBCopy::from_bitcoin_db(db);
+        // worker master
+        let error_state_copy = error_state.clone();
+        let worker_thread = thread::spawn(move || {
+            let mut tasks: VecDeque<FTask> = VecDeque::with_capacity(cursor.len());
+            for task_number in cursor {
+                tasks.push_back(FTask {
+                    task_number,
+                    height: *heights.get(task_number as usize).unwrap(),
+                    output_number: output_number.clone(),
+                    sender: sender.clone(),
+                    error_state: error_state_copy.clone(),
+                })
+            }
 
-                let tasks = Arc::new(Mutex::new(tasks));
-                let mut handles = Vec::with_capacity(cpus);
+            let tasks = Arc::new(Mutex::new(tasks));
+            let mut handles = Vec::with_capacity(cpus);
 
-                for _ in 0..cpus {
-                    let task = tasks.clone();
-                    let db_copy = db.clone();
-                    // actual worker
-                    let handle = thread::spawn(move || {
-                        loop {
-                            let task = {
-                                // drop mutex immediately
-                                let mut task = task.lock().unwrap();
-                                task.pop_front()
-                            };
-                            match task {
-                                // finish
-                                None => break,
-                                Some(task) => fetch_block_f(&db_copy, task),
-                            }
+            for _ in 0..cpus {
+                let task = tasks.clone();
+                let db_copy = db.clone();
+                // actual worker
+                let handle = thread::spawn(move || {
+                    loop {
+                        let task = {
+                            // drop mutex immediately
+                            let mut task = task.lock().unwrap();
+                            task.pop_front()
+                        };
+                        match task {
+                            // finish
+                            None => break,
+                            Some(task) => fetch_block_f(&db_copy, task),
                         }
-                    });
-                    handles.push(handle);
-                }
+                    }
+                });
+                handles.push(handle);
+            }
 
-                for handle in handles {
-                    handle.join().unwrap();
-                }
-            });
-            Ok(FBlockIteratorSequential {
-                receiver,
-                worker_thread: Some(worker_thread),
-                error_state,
-            })
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+        FBlockIteratorArray {
+            receiver,
+            worker_thread: Some(worker_thread),
+            error_state,
         }
     }
 
@@ -862,7 +881,7 @@ impl FBlockIteratorSequential {
     }
 }
 
-impl Iterator for FBlockIteratorSequential {
+impl Iterator for FBlockIteratorArray {
     type Item = FBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -870,6 +889,32 @@ impl Iterator for FBlockIteratorSequential {
             Ok(block) => Some(block),
             Err(_) => None,
         }
+    }
+}
+
+pub struct FBlockIteratorSequential {
+    inner: FBlockIteratorArray,
+}
+
+impl FBlockIteratorSequential {
+    /// the worker threads are dispatched in this `new` constructor!
+    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> OpResult<FBlockIteratorSequential> {
+        if end <= start {
+            Err(OpError::from("invalid iterator range"))
+        } else {
+            let heights: Vec<u32> = (start..end).collect();
+            Ok(FBlockIteratorSequential {
+                inner: FBlockIteratorArray::new(db, heights),
+            })
+        }
+    }
+}
+
+impl Iterator for FBlockIteratorSequential {
+    type Item = FBlock;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
     }
 }
 
@@ -1061,9 +1106,9 @@ impl Iterator for FConnectedBlockIterator {
 
 #[cfg(test)]
 mod test_vec_map {
-    use crate::par_iter::{SVecMap};
-    use bitcoin::TxOut;
     use crate::bitcoinparser::proto::simple_proto::STxOut;
+    use crate::par_iter::SVecMap;
+    use bitcoin::TxOut;
 
     #[test]
     fn test_vec_map() {

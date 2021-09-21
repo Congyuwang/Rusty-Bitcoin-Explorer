@@ -167,6 +167,14 @@ impl BitcoinDB {
         SBlockIteratorSequential::new(self, start, end)
     }
 
+    pub fn get_block_full_iter_arr(&self, heights: Vec<u32>) -> FBlockIteratorArray {
+        FBlockIteratorArray::new(self, heights)
+    }
+
+    pub fn get_block_simple_iter_arr(&self, heights: Vec<u32>) -> SBlockIteratorArray {
+        SBlockIteratorArray::new(self, heights)
+    }
+
     pub fn get_block_full_connected_iter(&self, end: u32) -> FConnectedBlockIterator {
         FConnectedBlockIterator::new(self, end)
     }

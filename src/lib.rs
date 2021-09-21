@@ -11,7 +11,6 @@ use pyo3::prelude::*;
 use pyo3::PyIterProtocol;
 use pyo3::Python;
 use pythonize::pythonize;
-use rayon::prelude::*;
 use std::path::Path;
 
 #[pyclass]
@@ -68,26 +67,6 @@ impl BitcoinDB {
             Ok(block) => Ok(pythonize(py, &block)?),
             Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
         }
-    }
-
-    #[pyo3(text_signature = "($self, heights, /)")]
-    fn get_block_full_batch(&self, heights: Vec<i32>) -> PyResult<Vec<String>> {
-        let db = &self.db;
-        Ok(heights
-            .par_iter()
-            .filter_map(|h| db.get_block_full(*h).ok())
-            .filter_map(|blk| serde_json::to_string(&blk).ok())
-            .collect())
-    }
-
-    #[pyo3(text_signature = "($self, heights, /)")]
-    fn get_block_simple_batch(&self, heights: Vec<i32>) -> PyResult<Vec<String>> {
-        let db = &self.db;
-        Ok(heights
-            .par_iter()
-            .filter_map(|h| db.get_block_simple(*h).ok())
-            .filter_map(|blk| serde_json::to_string(&blk).ok())
-            .collect())
     }
 
     #[pyo3(text_signature = "($self, height, /)")]
@@ -184,6 +163,16 @@ impl BitcoinDB {
         }
     }
 
+    #[pyo3(text_signature = "($self, stop, /)")]
+    fn iter_block_full_arr(&self, heights: Vec<u32>) -> PyResult<FBlockIteratorArray> {
+        Ok(FBlockIteratorArray::new(&self.db, heights))
+    }
+
+    #[pyo3(text_signature = "($self, stop, /)")]
+    fn iter_block_simple_arr(&self, heights: Vec<u32>) -> PyResult<SBlockIteratorArray> {
+        Ok(SBlockIteratorArray::new(&self.db, heights))
+    }
+
     #[pyo3(text_signature = "($self, start, stop, /)")]
     fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIteratorSequential> {
         FBlockIteratorSequential::new(&self.db, start, stop)
@@ -218,6 +207,76 @@ impl BitcoinDB {
             Err(_) => Err(pyo3::exceptions::PyException::new_err(
                 "failed to parse script_pub_key",
             )),
+        }
+    }
+}
+
+#[pyclass]
+struct SBlockIteratorArray {
+    iter: par_iter::SBlockIteratorArray,
+}
+
+impl SBlockIteratorArray {
+    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> SBlockIteratorArray {
+        SBlockIteratorArray {
+            iter: par_iter::SBlockIteratorArray::new(db, heights),
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for SBlockIteratorArray {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<SBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[pyclass]
+struct FBlockIteratorArray {
+    iter: par_iter::FBlockIteratorArray,
+}
+
+impl FBlockIteratorArray {
+    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> FBlockIteratorArray {
+        FBlockIteratorArray {
+            iter: par_iter::FBlockIteratorArray::new(db, heights),
+        }
+    }
+}
+
+#[pyproto]
+impl PyIterProtocol for FBlockIteratorArray {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+        let option_block: Option<FBlock> = slf.iter.next();
+        if let Some(output) = option_block {
+            let gil_guard = Python::acquire_gil();
+            let py = gil_guard.python();
+            if let Ok(py_obj) = pythonize(py, &output) {
+                Some(py_obj)
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 }
