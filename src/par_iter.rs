@@ -439,9 +439,17 @@ fn fetch_fblock_connected(
                         };
                         if let Some(prev_tx) = prev_tx {
                             // temporarily lock prev_tx
-                            let unspent: Option<FTxOut> = prev_tx.lock().unwrap().remove(n);
-                            if let Some(unspent) = unspent {
-                                output_tx.input.push(unspent);
+                            let tx_out = {
+                                let mut prev_tx_lock = prev_tx.lock().unwrap();
+                                let out = prev_tx_lock.remove(n);
+                                // remove a key immediately when the key contains no transaction
+                                if prev_tx_lock.is_empty() {
+                                    unspent.lock().unwrap().remove(txid);
+                                }
+                                out
+                            };
+                            if let Some(out) = tx_out {
+                                output_tx.input.push(out);
                             } else {
                                 warn!("cannot find previous outpoint, bad data");
                                 {
@@ -483,24 +491,6 @@ fn fetch_fblock_connected(
                     task.sender.send(output_block).unwrap();
                     *result_height += 1;
                     cond.notify_all();
-                }
-
-                // clean up for every 1000 * num_cpus blocks
-                if my_height % (1000 * (num_cpus::get() as u32)) == 0 {
-                    // clean up after processing a block
-                    let mut to_remove: Vec<Txid> = Vec::new();
-                    // might lock for a relatively long time
-                    for (txid, unspent) in unspent.lock().unwrap().iter() {
-                        if unspent.lock().unwrap().is_empty() {
-                            to_remove.push(txid.clone())
-                        }
-                    }
-                    {
-                        let mut unspent_lock = unspent.lock().unwrap();
-                        for txid in to_remove {
-                            unspent_lock.remove(&txid);
-                        }
-                    }
                 }
             }
             Err(_) => {
@@ -610,9 +600,17 @@ fn fetch_sblock_connected(
                         };
                         if let Some(prev_tx) = prev_tx {
                             // temporarily lock prev_tx
-                            let unspent: Option<STxOut> = prev_tx.lock().unwrap().remove(n);
-                            if let Some(unspent) = unspent {
-                                output_tx.input.push(unspent);
+                            let tx_out = {
+                                let mut prev_tx_lock = prev_tx.lock().unwrap();
+                                let out = prev_tx_lock.remove(n);
+                                // remove a key immediately when the key contains no transaction
+                                if prev_tx_lock.is_empty() {
+                                    unspent.lock().unwrap().remove(txid);
+                                }
+                                out
+                            };
+                            if let Some(out) = tx_out {
+                                output_tx.input.push(out);
                             } else {
                                 warn!("cannot find previous outpoint, bad data");
                                 {
@@ -654,24 +652,6 @@ fn fetch_sblock_connected(
                     task.sender.send(output_block).unwrap();
                     *result_height += 1;
                     cond.notify_all();
-                }
-
-                // clean up for every 1000 * num_cpus blocks
-                if my_height % (1000 * num_cpus::get() as u32) == 0 {
-                    // clean up after processing a block
-                    let mut to_remove: Vec<Txid> = Vec::new();
-                    // might lock for a relatively long time
-                    for (txid, unspent) in unspent.lock().unwrap().iter() {
-                        if unspent.lock().unwrap().is_empty() {
-                            to_remove.push(txid.clone())
-                        }
-                    }
-                    {
-                        let mut unspent_lock = unspent.lock().unwrap();
-                        for txid in to_remove {
-                            unspent_lock.remove(&txid);
-                        }
-                    }
                 }
             }
             Err(_) => {
