@@ -9,7 +9,7 @@ This library is designed for both python and rust.
 
 For python users, `pip install bitcoinquery`.
 
-For rust users, include `bitcoinquey=0.1` in `Cargo.toml`.
+For rust users, include `bitcoinquey="0.1"` in `Cargo.toml`.
 
 ### Install Requirements
 
@@ -81,29 +81,7 @@ db.parse_script("some hex script pubic key")
 for block in db.get_block_iter_range(start=1000, end=2000):
     do_something_with(block)
 
-# use iterator over heights
-for block in db.get_block_iter_array(list(range(10000, 20000))):
+# use iterator, connect outpoints
+for block in db.get_block_iter_range(end=700000, connected-True):
     do_something_with(block)
-```
-
-## How to Build
-
-This is a PyO3 project. Use maturin to build and publish.
-`pip install maturin`.
-
-On mac, when using cargo to build, add the following into `.cargo/cargo.toml`.
-
-```toml
-[target.x86_64-apple-darwin]
-rustflags = [
-  "-C", "link-arg=-undefined",
-  "-C", "link-arg=dynamic_lookup",
-]
-
-[target.aarch64-apple-darwin]
-rustflags = [
-  "-C", "link-arg=-undefined",
-  "-C", "link-arg=dynamic_lookup",
-]
-
 ```
