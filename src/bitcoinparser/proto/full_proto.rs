@@ -14,7 +14,7 @@ pub struct FBlock {
 impl FBlock {
     /// obtain addresses for each output of each transactions
     pub fn parse(block: bitcoin::Block) -> FBlock {
-        let block_hash = *&block.block_hash();
+        let block_hash = block.header.block_hash();
         FBlock {
             header: FBlockHeader::parse(block.header, block_hash),
             txdata: block.txdata.into_iter().map(FTransaction::parse).collect(),

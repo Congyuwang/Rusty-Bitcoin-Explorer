@@ -2,27 +2,11 @@ use crate::bitcoinparser::blk_file::BlkFile;
 use crate::bitcoinparser::proto::full_proto::{FBlockHeader, FTxOut};
 use crate::bitcoinparser::proto::simple_proto::{SBlockHeader, STxOut};
 use crate::bitcoinparser::tx_index::TxDB;
-use bitcoin::{Block, BlockHeader, Transaction, TxIn, TxOut, Txid};
+use bitcoin::{Block, Transaction, TxIn, TxOut, Txid};
 use log::warn;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-
-#[derive(Serialize, Deserialize)]
-pub struct ConnectedBlock {
-    pub header: BlockHeader,
-    pub txdata: Vec<ConnectedTransaction>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct ConnectedTransaction {
-    pub lock_time: u32,
-    pub txid: Txid,
-    /// List of inputs
-    pub input: Vec<TxOut>,
-    /// List of outputs
-    pub output: Vec<TxOut>,
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct SConnectedBlock {
@@ -37,22 +21,10 @@ impl SConnectedBlock {
     /// and also simplify the format.
     ///
     pub fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> SConnectedBlock {
-        let block_hash = *&block.block_hash();
-        SConnectedBlock {
-            header: SBlockHeader::parse(block.header, block_hash),
-            txdata: connect_output_simple(block.txdata, tx_db, blk_file),
-        }
-    }
-
-    pub fn from_connected(block: ConnectedBlock) -> SConnectedBlock {
         let block_hash = block.header.block_hash();
         SConnectedBlock {
             header: SBlockHeader::parse(block.header, block_hash),
-            txdata: block
-                .txdata
-                .into_iter()
-                .map(SConnectedTransaction::from_connected)
-                .collect(),
+            txdata: connect_output_simple(block.txdata, tx_db, blk_file),
         }
     }
 }
@@ -77,14 +49,6 @@ impl SConnectedTransaction {
             output: tx.output.into_iter().map(STxOut::parse).collect(),
         }
     }
-
-    pub fn from_connected(tx: ConnectedTransaction) -> SConnectedTransaction {
-        SConnectedTransaction {
-            txid: tx.txid,
-            input: tx.input.into_iter().map(STxOut::parse).collect(),
-            output: tx.output.into_iter().map(STxOut::parse).collect(),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -99,22 +63,10 @@ impl FConnectedBlock {
     /// add addresses, block_hash, tx_id to the bitcoin library format.
     ///
     pub fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> FConnectedBlock {
-        let block_hash = *&block.block_hash();
-        FConnectedBlock {
-            header: FBlockHeader::parse(block.header, block_hash),
-            txdata: connect_output_full(block.txdata, tx_db, blk_file),
-        }
-    }
-
-    pub fn from_connected(block: ConnectedBlock) -> FConnectedBlock {
         let block_hash = block.header.block_hash();
         FConnectedBlock {
             header: FBlockHeader::parse(block.header, block_hash),
-            txdata: block
-                .txdata
-                .into_iter()
-                .map(FConnectedTransaction::from_connected)
-                .collect(),
+            txdata: connect_output_full(block.txdata, tx_db, blk_file),
         }
     }
 }
@@ -138,15 +90,6 @@ impl FConnectedTransaction {
                 .into_iter()
                 .map(FTxOut::parse)
                 .collect(),
-            output: tx.output.into_iter().map(FTxOut::parse).collect(),
-        }
-    }
-
-    pub fn from_connected(tx: ConnectedTransaction) -> FConnectedTransaction {
-        FConnectedTransaction {
-            lock_time: tx.lock_time,
-            txid: tx.txid,
-            input: tx.input.into_iter().map(FTxOut::parse).collect(),
             output: tx.output.into_iter().map(FTxOut::parse).collect(),
         }
     }

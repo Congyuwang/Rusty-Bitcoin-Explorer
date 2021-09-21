@@ -1,6 +1,6 @@
 [project]
 name = "bitcoinquery"
-version = "0.1.21"
+version = "0.1.22"
 classifiers = ["Programming Language :: Python"]
 description = "Read Bitcoin Core Blockchain Binary File Concurrently"
 long_description_content_type="text/markdown"

@@ -6,21 +6,81 @@ use crate::api::BitcoinDB;
 use crate::bitcoinparser::blk_file::BlkFile;
 use crate::bitcoinparser::block_index::BlockIndex;
 use crate::bitcoinparser::errors::{OpError, OpResult};
-use crate::bitcoinparser::proto::connected_proto::{
-    ConnectedBlock, ConnectedTransaction, FConnectedBlock, SConnectedBlock,
-};
-use crate::bitcoinparser::proto::full_proto::FBlock;
-use crate::bitcoinparser::proto::simple_proto::SBlock;
-use bitcoin::{TxOut, Txid};
+use crate::bitcoinparser::proto::connected_proto::{FConnectedBlock, SConnectedBlock, FConnectedTransaction, SConnectedTransaction};
+use crate::bitcoinparser::proto::full_proto::{FBlock, FTxOut, FBlockHeader};
+use crate::bitcoinparser::proto::simple_proto::{SBlock, STxOut, SBlockHeader};
+use bitcoin::Txid;
 use log::warn;
 use num_cpus;
 use std::borrow::BorrowMut;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
+
+struct SVecMap {
+    size: u16,
+    inner: Box<[Option<STxOut>]>
+}
+
+impl SVecMap {
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
+    }
+
+    #[inline]
+    pub fn from(vec: Vec<STxOut>) -> SVecMap {
+        let size = vec.len();
+        let inner_vec: Vec<Option<STxOut>> = vec.into_iter().map(|o| Some(o)).collect();
+        SVecMap {
+            size: size as u16,
+            inner: inner_vec.into_boxed_slice()
+        }
+    }
+
+    #[inline]
+    pub fn remove(&mut self, n: usize) -> Option<STxOut> {
+        let element = &mut self.inner[n];
+        if let Some(_) = element {
+            self.size -= 1;
+        };
+        element.take()
+    }
+}
+
+struct FVecMap {
+    size: u16,
+    inner: Box<[Option<FTxOut>]>
+}
+
+impl FVecMap {
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.size == 0
+    }
+
+    #[inline]
+    fn from(vec: Vec<FTxOut>) -> FVecMap {
+        let size = vec.len();
+        let inner_vec: Vec<Option<FTxOut>> = vec.into_iter().map(|o| Some(o)).collect();
+        FVecMap {
+            size: size as u16,
+            inner: inner_vec.into_boxed_slice()
+        }
+    }
+
+    #[inline]
+    fn remove(&mut self, n: usize) -> Option<FTxOut> {
+        let element = &mut self.inner[n];
+        if let Some(_) = element {
+            self.size -= 1;
+        };
+        element.take()
+    }
+}
 
 /// python iterator implementation does not allow lifetime.
 /// Thus, we must own the necessary resource for the iterator
@@ -272,7 +332,7 @@ fn fetch_block_f(db: &DBCopy, task: FTask) {
 }
 
 fn fetch_fblock_connected(
-    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<BTreeMap<u16, TxOut>>>>>>,
+    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<FVecMap>>>>>,
     db: &DBCopy,
     mut task: FTask2,
 ) {
@@ -294,34 +354,27 @@ fn fetch_fblock_connected(
                 for tx in block.txdata {
                     lock_times.push(tx.lock_time);
                     tx_ids.push(tx.txid());
-                    outputs.push(tx.output);
+                    let outs: Vec<FTxOut> = tx.output.into_iter().map(FTxOut::parse).collect();
+                    outputs.push(outs);
                     inputs.push(tx.input);
                 }
                 let outputs_copy = outputs.clone();
-                let mut output_block = ConnectedBlock {
-                    header: block.header,
+                let block_hash = block.header.block_hash();
+                let mut output_block = FConnectedBlock {
+                    header: FBlockHeader::parse(block.header, block_hash),
                     txdata: Vec::new(),
                 };
 
                 // insert new transactions
                 for (txid, outs) in tx_ids.iter().zip(outputs) {
-                    let new_unspent: Arc<Mutex<BTreeMap<u16, TxOut>>> =
-                        Arc::new(Mutex::new(BTreeMap::new()));
-                    let mut n: u16 = 0;
+                    let new_unspent: Arc<Mutex<FVecMap>> =
+                        Arc::new(Mutex::new(FVecMap::from(outs)));
 
                     // the new transaction should not be in unspent
                     if unspent.lock().unwrap().contains_key(txid) {
                         warn!("found duplicate key {}", txid);
                     }
 
-                    // long locking of new_unspent_inner, no query anyway
-                    {
-                        let mut new_unspent_inner = new_unspent.lock().unwrap();
-                        for output in outs {
-                            new_unspent_inner.insert(n, output);
-                            n += 1;
-                        }
-                    }
                     // temporary borrow locking of unspent
                     unspent
                         .borrow_mut()
@@ -353,7 +406,7 @@ fn fetch_fblock_connected(
                 for (((txid, ins), outs), lock_time) in
                     tx_ids.iter().zip(inputs).zip(outputs_copy).zip(lock_times)
                 {
-                    let mut output_tx = ConnectedTransaction {
+                    let mut output_tx = FConnectedTransaction {
                         lock_time,
                         txid: txid.clone(),
                         input: Vec::new(),
@@ -368,7 +421,7 @@ fn fetch_fblock_connected(
                         }
 
                         let prev_txid = &input.previous_output.txid;
-                        let n = *&input.previous_output.vout as u16;
+                        let n = *&input.previous_output.vout as usize;
 
                         // temporarily lock unspent
                         let prev_tx = {
@@ -380,7 +433,7 @@ fn fetch_fblock_connected(
                         };
                         if let Some(prev_tx) = prev_tx {
                             // temporarily lock prev_tx
-                            let unspent: Option<TxOut> = prev_tx.lock().unwrap().remove(&n);
+                            let unspent: Option<FTxOut> = prev_tx.lock().unwrap().remove(n);
                             if let Some(unspent) = unspent {
                                 output_tx.input.push(unspent);
                             } else {
@@ -407,21 +460,6 @@ fn fetch_fblock_connected(
                     output_block.txdata.push(output_tx);
                 }
 
-                // clean up after processing a block
-                let mut to_remove: Vec<Txid> = Vec::new();
-                // might lock for a relatively long time
-                for (txid, unspent) in unspent.lock().unwrap().iter() {
-                    if unspent.lock().unwrap().len() == 0 {
-                        to_remove.push(txid.clone())
-                    }
-                }
-                {
-                    let mut unspent_lock = unspent.lock().unwrap();
-                    for txid in to_remove {
-                        unspent_lock.remove(&txid);
-                    }
-                }
-
                 // send when it is my turn
                 {
                     let (lock, cond) = &*task.result_height;
@@ -437,10 +475,28 @@ fn fetch_fblock_connected(
                         return;
                     }
                     task.sender
-                        .send(FConnectedBlock::from_connected(output_block))
+                        .send(output_block)
                         .unwrap();
                     *result_height += 1;
                     cond.notify_all();
+                }
+
+                // clean up for every 2 num_cpus time
+                if my_height % (2 * (num_cpus::get() as u32)) == 0 {
+                    // clean up after processing a block
+                    let mut to_remove: Vec<Txid> = Vec::new();
+                    // might lock for a relatively long time
+                    for (txid, unspent) in unspent.lock().unwrap().iter() {
+                        if unspent.lock().unwrap().is_empty() {
+                            to_remove.push(txid.clone())
+                        }
+                    }
+                    {
+                        let mut unspent_lock = unspent.lock().unwrap();
+                        for txid in to_remove {
+                            unspent_lock.remove(&txid);
+                        }
+                    }
                 }
             }
             Err(_) => {
@@ -455,7 +511,7 @@ fn fetch_fblock_connected(
 }
 
 fn fetch_sblock_connected(
-    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<BTreeMap<u16, TxOut>>>>>>,
+    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<SVecMap>>>>>,
     db: &DBCopy,
     mut task: STask2,
 ) {
@@ -470,40 +526,30 @@ fn fetch_sblock_connected(
     if let Some(index) = db.block_index.records.get(my_height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(block) => {
-                let mut lock_times = Vec::new();
                 let mut tx_ids = Vec::new();
                 let mut outputs = Vec::new();
                 let mut inputs = Vec::new();
                 for tx in block.txdata {
-                    lock_times.push(tx.lock_time);
                     tx_ids.push(tx.txid());
-                    outputs.push(tx.output);
+                    let outs: Vec<STxOut> = tx.output.into_iter().map(STxOut::parse).collect();
+                    outputs.push(outs);
                     inputs.push(tx.input);
                 }
                 let outputs_copy = outputs.clone();
-                let mut output_block = ConnectedBlock {
-                    header: block.header,
+                let block_hash = block.header.block_hash();
+                let mut output_block = SConnectedBlock {
+                    header: SBlockHeader::parse(block.header, block_hash),
                     txdata: Vec::new(),
                 };
 
                 // insert new transactions
                 for (txid, outs) in tx_ids.iter().zip(outputs) {
-                    let new_unspent: Arc<Mutex<BTreeMap<u16, TxOut>>> =
-                        Arc::new(Mutex::new(BTreeMap::new()));
-                    let mut n: u16 = 0;
+                    let new_unspent: Arc<Mutex<SVecMap>> =
+                        Arc::new(Mutex::new(SVecMap::from(outs)));
 
                     // the new transaction should not be in unspent
                     if unspent.lock().unwrap().contains_key(txid) {
                         warn!("found duplicate key {}", txid);
-                    }
-
-                    // long locking of new_unspent_inner, no query anyway
-                    {
-                        let mut new_unspent_inner = new_unspent.lock().unwrap();
-                        for output in outs {
-                            new_unspent_inner.insert(n, output);
-                            n += 1;
-                        }
                     }
                     // temporary borrow locking of unspent
                     unspent
@@ -533,11 +579,10 @@ fn fetch_sblock_connected(
                     cond.notify_all();
                 }
 
-                for (((txid, ins), outs), lock_time) in
-                    tx_ids.iter().zip(inputs).zip(outputs_copy).zip(lock_times)
+                for ((txid, ins), outs) in
+                    tx_ids.iter().zip(inputs).zip(outputs_copy)
                 {
-                    let mut output_tx = ConnectedTransaction {
-                        lock_time,
+                    let mut output_tx = SConnectedTransaction {
                         txid: txid.clone(),
                         input: Vec::new(),
                         output: outs,
@@ -551,7 +596,7 @@ fn fetch_sblock_connected(
                         }
 
                         let prev_txid = &input.previous_output.txid;
-                        let n = *&input.previous_output.vout as u16;
+                        let n = *&input.previous_output.vout as usize;
 
                         // temporarily lock unspent
                         let prev_tx = {
@@ -563,7 +608,7 @@ fn fetch_sblock_connected(
                         };
                         if let Some(prev_tx) = prev_tx {
                             // temporarily lock prev_tx
-                            let unspent: Option<TxOut> = prev_tx.lock().unwrap().remove(&n);
+                            let unspent: Option<STxOut> = prev_tx.lock().unwrap().remove(n);
                             if let Some(unspent) = unspent {
                                 output_tx.input.push(unspent);
                             } else {
@@ -590,21 +635,6 @@ fn fetch_sblock_connected(
                     output_block.txdata.push(output_tx);
                 }
 
-                // clean up after processing a block
-                let mut to_remove: Vec<Txid> = Vec::new();
-                // might lock for a relatively long time
-                for (txid, unspent) in unspent.lock().unwrap().iter() {
-                    if unspent.lock().unwrap().len() == 0 {
-                        to_remove.push(txid.clone())
-                    }
-                }
-                {
-                    let mut unspent_lock = unspent.lock().unwrap();
-                    for txid in to_remove {
-                        unspent_lock.remove(&txid);
-                    }
-                }
-
                 // send when it is my turn
                 {
                     let (lock, cond) = &*task.result_height;
@@ -620,10 +650,28 @@ fn fetch_sblock_connected(
                         return;
                     }
                     task.sender
-                        .send(SConnectedBlock::from_connected(output_block))
+                        .send(output_block)
                         .unwrap();
                     *result_height += 1;
                     cond.notify_all();
+                }
+
+                // clean up for every 2 num_cpus time
+                if my_height % (num_cpus::get() as u32) == 0 {
+                    // clean up after processing a block
+                    let mut to_remove: Vec<Txid> = Vec::new();
+                    // might lock for a relatively long time
+                    for (txid, unspent) in unspent.lock().unwrap().iter() {
+                        if unspent.lock().unwrap().is_empty() {
+                            to_remove.push(txid.clone())
+                        }
+                    }
+                    {
+                        let mut unspent_lock = unspent.lock().unwrap();
+                        for txid in to_remove {
+                            unspent_lock.remove(&txid);
+                        }
+                    }
                 }
             }
             Err(_) => {
@@ -1008,5 +1056,33 @@ impl Iterator for FConnectedBlockIterator {
             Ok(block) => Some(block),
             Err(_) => None,
         }
+    }
+}
+
+#[cfg(test)]
+mod test_vec_map {
+    use crate::par_iter::{SVecMap};
+    use bitcoin::TxOut;
+    use crate::bitcoinparser::proto::simple_proto::STxOut;
+
+    #[test]
+    fn test_vec_map() {
+        let mut vec: SVecMap = SVecMap::from(vec![
+            STxOut::parse(TxOut::default()),
+            STxOut::parse(TxOut::default()),
+            STxOut::parse(TxOut::default()),
+        ]);
+        assert_eq!(vec.size, 3);
+        assert!(vec.remove(1).is_some());
+        assert_eq!(vec.size, 2);
+        assert!(vec.remove(1).is_none());
+        assert_eq!(vec.size, 2);
+        assert!(vec.remove(0).is_some());
+        assert_eq!(vec.size, 1);
+        assert!(vec.remove(0).is_none());
+        assert_eq!(vec.size, 1);
+        assert!(!vec.is_empty());
+        assert!(vec.remove(2).is_some());
+        assert!(vec.is_empty());
     }
 }

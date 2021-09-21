@@ -14,7 +14,7 @@ impl SBlock {
     /// and also simplify the format.
     ///
     pub fn parse(block: bitcoin::Block) -> SBlock {
-        let block_hash = *&block.block_hash();
+        let block_hash = block.header.block_hash();
         SBlock {
             header: SBlockHeader::parse(block.header, block_hash),
             txdata: block.txdata.into_iter().map(STransaction::parse).collect(),
