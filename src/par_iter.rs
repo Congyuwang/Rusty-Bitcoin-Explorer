@@ -485,8 +485,8 @@ fn fetch_fblock_connected(
                     cond.notify_all();
                 }
 
-                // clean up for every 2 num_cpus time
-                if my_height % (2 * (num_cpus::get() as u32)) == 0 {
+                // clean up for every 1000 * num_cpus blocks
+                if my_height % (1000 * (num_cpus::get() as u32)) == 0 {
                     // clean up after processing a block
                     let mut to_remove: Vec<Txid> = Vec::new();
                     // might lock for a relatively long time
@@ -656,8 +656,8 @@ fn fetch_sblock_connected(
                     cond.notify_all();
                 }
 
-                // clean up for every 2 num_cpus time
-                if my_height % (num_cpus::get() as u32) == 0 {
+                // clean up for every 1000 * num_cpus blocks
+                if my_height % (1000 * num_cpus::get() as u32) == 0 {
                     // clean up after processing a block
                     let mut to_remove: Vec<Txid> = Vec::new();
                     // might lock for a relatively long time
