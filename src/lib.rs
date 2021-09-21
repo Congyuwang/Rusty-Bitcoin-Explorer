@@ -431,21 +431,3 @@ fn bitcoinquery(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<BitcoinDB>()?;
     Ok(())
 }
-
-#[cfg(test)]
-mod test {
-    use crate::api::BitcoinDB;
-    use std::path::Path;
-
-    #[test]
-    fn test() {
-        let db = BitcoinDB::new(Path::new("/Volumes/Extreme SSD/bitcoin"), true).unwrap();
-        let mut count = 0;
-        for _ in db.get_block_simple_iter_seq(0, 10000).unwrap() {
-            if count % 100 == 0 {
-                println!("{}", count)
-            }
-            count += 1;
-        }
-    }
-}

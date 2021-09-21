@@ -102,7 +102,6 @@ impl DBCopy {
     }
 }
 
-#[derive(Debug)]
 struct STask {
     task_number: u32,
     height: u32,
@@ -175,16 +174,24 @@ fn mutate_error_state_f(mut task: FTask) {
     }
 }
 
-fn increment_result_lock_s(task: &STask2) {
+fn increment_result_lock_s(task: &mut STask2) {
     let (lock, cond) = &*task.result_height;
     let mut result_height = lock.lock().unwrap();
+    {
+        let err = task.error_state.borrow_mut();
+        err.fetch_or(true, Ordering::SeqCst);
+    }
     *result_height += 1;
     cond.notify_all();
 }
 
-fn increment_result_lock_f(task: &FTask2) {
+fn increment_result_lock_f(task: &mut FTask2) {
     let (lock, cond) = &*task.result_height;
     let mut result_height = lock.lock().unwrap();
+    {
+        let err = task.error_state.borrow_mut();
+        err.fetch_or(true, Ordering::SeqCst);
+    }
     *result_height += 1;
     cond.notify_all();
 }
@@ -245,13 +252,13 @@ fn mutate_error_both_lock_f(task: &mut FTask2) {
     cond.notify_all();
 }
 
-fn fetch_block_s(db: &DBCopy, task: STask) {
+fn fetch_block_s(db: &DBCopy, task: STask) -> bool {
     // check error state at beginning, preventing new works generated
     // which might result in deadlock
     if task.error_state.load(Ordering::SeqCst) {
         // should never increment lock condition here!! Otherwise later tasks might skip
         // over unfinished tasks
-        return;
+        return false;
     }
     let task_number = task.task_number;
 
@@ -272,32 +279,33 @@ fn fetch_block_s(db: &DBCopy, task: STask) {
                         *output_number += 1;
                         cond.notify_all();
                         // before return, always increase lock condition
-                        return;
+                        return false;
                     }
                     task.sender.send(SBlock::parse(blk)).unwrap();
                     *output_number += 1;
                     cond.notify_all();
                 }
+                true
             }
             Err(_) => {
                 mutate_error_state_s(task);
-                return;
+                return false;
             }
         }
     } else {
         // set error_state to true
         mutate_error_state_s(task);
-        return;
+        return false;
     }
 }
 
-fn fetch_block_f(db: &DBCopy, task: FTask) {
+fn fetch_block_f(db: &DBCopy, task: FTask) -> bool {
     // check error state at beginning, preventing new works generated
     // which might result in deadlock
     if task.error_state.load(Ordering::SeqCst) {
         // should never increment lock condition here!! Otherwise later tasks might skip
         // over unfinished tasks
-        return;
+        return false;
     }
     let task_number = task.task_number;
 
@@ -318,22 +326,23 @@ fn fetch_block_f(db: &DBCopy, task: FTask) {
                         *output_number += 1;
                         cond.notify_all();
                         // before return, always increase lock condition
-                        return;
+                        return false;
                     }
                     task.sender.send(FBlock::parse(blk)).unwrap();
                     *output_number += 1;
                     cond.notify_all();
                 }
+                true
             }
             Err(_) => {
                 mutate_error_state_f(task);
-                return;
+                return false;
             }
         }
     } else {
         // set error_state to true
         mutate_error_state_f(task);
-        return;
+        return false;
     }
 }
 
@@ -341,12 +350,12 @@ fn fetch_fblock_connected(
     mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<FVecMap>>>>>,
     db: &DBCopy,
     mut task: FTask2,
-) {
+) -> bool {
     // stop new tasks from loading
     if task.error_state.load(Ordering::SeqCst) {
         // should never increment lock condition here!! Otherwise later tasks might skip
         // over unfinished tasks
-        return;
+        return false;
     }
     let my_height = task.height;
 
@@ -401,9 +410,12 @@ fn fetch_fblock_connected(
                     // this block ends task in waiting in the first period
                     if task.error_state.load(Ordering::SeqCst) {
                         *outputs_insertion_height += 1;
-                        // may be the later tasks are waiting in the second lock, increment lock
-                        increment_result_lock_f(&task);
-                        return;
+                        cond.notify_all();
+                        let (lock, cond2) = &*task.result_height;
+                        let mut result_height = lock.lock().unwrap();
+                        *result_height += 1;
+                        cond2.notify_all();
+                        return false;
                     }
                     *outputs_insertion_height += 1;
                     cond.notify_all();
@@ -444,7 +456,7 @@ fn fetch_fblock_connected(
                                 let out = prev_tx_lock.remove(n);
                                 // remove a key immediately when the key contains no transaction
                                 if prev_tx_lock.is_empty() {
-                                    unspent.lock().unwrap().remove(txid);
+                                    unspent.lock().unwrap().remove(prev_txid);
                                 }
                                 out
                             };
@@ -452,23 +464,15 @@ fn fetch_fblock_connected(
                                 output_tx.input.push(out);
                             } else {
                                 warn!("cannot find previous outpoint, bad data");
-                                {
-                                    let err = task.error_state.borrow_mut();
-                                    err.fetch_or(true, Ordering::SeqCst);
-                                }
                                 // only increment result lock
-                                increment_result_lock_f(&task);
-                                return;
+                                increment_result_lock_f(&mut task);
+                                return false;
                             }
                         } else {
                             warn!("cannot find previous transactions, bad data");
-                            {
-                                let err = task.error_state.borrow_mut();
-                                err.fetch_or(true, Ordering::SeqCst);
-                            }
                             // only increment result lock
-                            increment_result_lock_f(&task);
-                            return;
+                            increment_result_lock_f(&mut task);
+                            return false;
                         }
                     }
                     output_block.txdata.push(output_tx);
@@ -486,21 +490,24 @@ fn fetch_fblock_connected(
                     if task.error_state.load(Ordering::SeqCst) {
                         *result_height += 1;
                         cond.notify_all();
-                        return;
+                        return false;
                     }
                     task.sender.send(output_block).unwrap();
                     *result_height += 1;
                     cond.notify_all();
                 }
+                true
             }
             Err(_) => {
                 // set error_state to true
                 mutate_error_both_lock_f(&mut task);
+                false
             }
         }
     } else {
         // set error_state to true
         mutate_error_both_lock_f(&mut task);
+        false
     }
 }
 
@@ -508,12 +515,12 @@ fn fetch_sblock_connected(
     mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<SVecMap>>>>>,
     db: &DBCopy,
     mut task: STask2,
-) {
+) -> bool {
     // stop new tasks from loading
     if task.error_state.load(Ordering::SeqCst) {
         // should never increment lock condition here!! Otherwise later tasks might skip
         // over unfinished tasks
-        return;
+        return false;
     }
     let my_height = task.height;
 
@@ -564,10 +571,14 @@ fn fetch_sblock_connected(
                     }
                     // this block ends task in waiting in the first period
                     if task.error_state.load(Ordering::SeqCst) {
-                        *outputs_insertion_height += 1;
                         // may be the later tasks are waiting in the second lock, increment lock
-                        increment_result_lock_s(&task);
-                        return;
+                        *outputs_insertion_height += 1;
+                        cond.notify_all();
+                        let (lock, cond2) = &*task.result_height;
+                        let mut result_height = lock.lock().unwrap();
+                        *result_height += 1;
+                        cond2.notify_all();
+                        return false;
                     }
                     *outputs_insertion_height += 1;
                     cond.notify_all();
@@ -605,7 +616,7 @@ fn fetch_sblock_connected(
                                 let out = prev_tx_lock.remove(n);
                                 // remove a key immediately when the key contains no transaction
                                 if prev_tx_lock.is_empty() {
-                                    unspent.lock().unwrap().remove(txid);
+                                    unspent.lock().unwrap().remove(prev_txid);
                                 }
                                 out
                             };
@@ -618,18 +629,14 @@ fn fetch_sblock_connected(
                                     err.fetch_or(true, Ordering::SeqCst);
                                 }
                                 // only increment result lock
-                                increment_result_lock_s(&task);
-                                return;
+                                increment_result_lock_s(&mut task);
+                                return false;
                             }
                         } else {
                             warn!("cannot find previous transactions, bad data");
-                            {
-                                let err = task.error_state.borrow_mut();
-                                err.fetch_or(true, Ordering::SeqCst);
-                            }
                             // only increment result lock
-                            increment_result_lock_s(&task);
-                            return;
+                            increment_result_lock_s(&mut task);
+                            return false;
                         }
                     }
                     output_block.txdata.push(output_tx);
@@ -647,21 +654,24 @@ fn fetch_sblock_connected(
                     if task.error_state.load(Ordering::SeqCst) {
                         *result_height += 1;
                         cond.notify_all();
-                        return;
+                        return false;
                     }
                     task.sender.send(output_block).unwrap();
                     *result_height += 1;
                     cond.notify_all();
                 }
+                true
             }
             Err(_) => {
                 // set error_state to true
                 mutate_error_both_lock_s(&mut task);
+                false
             }
         }
     } else {
         // set error_state to true
         mutate_error_both_lock_s(&mut task);
+        false
     }
 }
 pub struct SBlockIteratorArray {
@@ -721,7 +731,11 @@ impl SBlockIteratorArray {
                         match task {
                             // finish
                             None => break,
-                            Some(task) => fetch_block_s(&db_copy, task),
+                            Some(task) => {
+                                if !fetch_block_s(&db_copy, task) {
+                                    break;
+                                }
+                            }
                         }
                     }
                 });
@@ -838,7 +852,11 @@ impl FBlockIteratorArray {
                         match task {
                             // finish
                             None => break,
-                            Some(task) => fetch_block_f(&db_copy, task),
+                            Some(task) => {
+                                if !fetch_block_f(&db_copy, task) {
+                                    break;
+                                }
+                            }
                         }
                     }
                 });
@@ -957,7 +975,11 @@ impl SConnectedBlockIterator {
                         match task {
                             // finish
                             None => break,
-                            Some(task) => fetch_sblock_connected(&unspent_copy, &db_copy, task),
+                            Some(task) => {
+                                if !fetch_sblock_connected(&unspent_copy, &db_copy, task) {
+                                    break;
+                                }
+                            }
                         }
                     }
                 });
@@ -1050,7 +1072,11 @@ impl FConnectedBlockIterator {
                         match task {
                             // finish
                             None => break,
-                            Some(task) => fetch_fblock_connected(&unspent_copy, &db_copy, task),
+                            Some(task) => {
+                                if !fetch_fblock_connected(&unspent_copy, &db_copy, task) {
+                                    break;
+                                }
+                            }
                         }
                     }
                 });

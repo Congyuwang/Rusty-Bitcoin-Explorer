@@ -1,6 +1,6 @@
 [package]
 name = "bitcoinquery"
-version = "0.1.25"
+version = "0.1.30"
 edition = "2018"
 readme = "README.md"
 license-file = "LICENSE.txt"
