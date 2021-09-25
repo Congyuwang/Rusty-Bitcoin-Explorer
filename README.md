@@ -1,4 +1,4 @@
-# bitcoinquery
+# bitcoin-query
 
 `bitcoinquery` is a python package developed in `rust` 
 for accessing bitcoin-core binary files as a database.
@@ -7,9 +7,9 @@ for accessing bitcoin-core binary files as a database.
 
 This library is designed for both python and rust.
 
-For python users, `pip install bitcoinquery`.
+For python users, `pip install bitcoin-query`.
 
-For rust users, include `bitcoinquey="0.1"` in `Cargo.toml`.
+For rust users, include `bitcoinquery="0.1"` in `Cargo.toml`.
 
 ### Install Requirements
 

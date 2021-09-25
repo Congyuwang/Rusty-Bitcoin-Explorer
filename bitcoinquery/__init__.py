@@ -2,7 +2,7 @@
 BitcoinQuery: Query Bitcoin Core Data Files As A Database.
 
 1. How to install?
-    - `pip install bitcoinquery`
+    - `pip install bitcoin-query`
 
 2. How to build?
     - install `rust` toolchain.

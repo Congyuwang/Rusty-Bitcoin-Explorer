@@ -1,10 +1,12 @@
 [package]
-name = "bitcoinquery"
+name = "bitcoin-query"
 version = "0.1.31"
 edition = "2018"
 readme = "README.md"
 license-file = "LICENSE.txt"
-description = "A Package for Reading from Bitcoin Core Binary Blockchain"
+keywords = ["blockchain", "bitcoin", "explorer", "parser", "concurrency"]
+description = "A Package for Querying Bitcoin Core Binary Files"
+documentation = "https://congyuwang.github.io/Rusty-Bitcoin-Explorer/bitcoinquery.html"
 homepage = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
 repository = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
 
