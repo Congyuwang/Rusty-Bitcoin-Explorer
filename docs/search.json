@@ -1,1 +1,0 @@
-{"version": "0.9.5", "fields": ["qualname", "fullname", "doc"], "ref": "fullname", "documentStore": {"docs": {}, "docInfo": {}, "length": 0, "save": true}, "index": {"qualname": {"root": {"docs": {}, "df": 0}}, "fullname": {"root": {"docs": {}, "df": 0}}, "doc": {"root": {"docs": {}, "df": 0}}}, "pipeline": ["trimmer", "stopWordFilter", "stemmer"], "_isPrebuiltIndex": true}

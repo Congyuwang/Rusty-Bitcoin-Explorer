@@ -1,10 +1,10 @@
 pub mod api;
-pub mod bitcoinparser;
+pub mod parser;
 pub mod par_iter;
 
-use crate::bitcoinparser::proto::connected_proto::{FConnectedBlock, SConnectedBlock};
-use crate::bitcoinparser::proto::full_proto::FBlock;
-use crate::bitcoinparser::proto::simple_proto::SBlock;
+use crate::parser::proto::connected_proto::{FConnectedBlock, SConnectedBlock};
+use crate::parser::proto::full_proto::FBlock;
+use crate::parser::proto::simple_proto::SBlock;
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::Txid;
 use pyo3::prelude::*;
@@ -426,7 +426,7 @@ impl PyIterProtocol for SConnectedBlockIterator {
 }
 
 #[pymodule]
-fn bitcoinquery(_py: Python, m: &PyModule) -> PyResult<()> {
+fn bitcoin_explorer(_py: Python, m: &PyModule) -> PyResult<()> {
     pyo3_log::init();
     m.add_class::<BitcoinDB>()?;
     Ok(())

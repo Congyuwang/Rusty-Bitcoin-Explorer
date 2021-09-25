@@ -1,7 +1,7 @@
-use crate::bitcoinparser::blk_file::BlkFile;
-use crate::bitcoinparser::proto::full_proto::{FBlockHeader, FTxOut};
-use crate::bitcoinparser::proto::simple_proto::{SBlockHeader, STxOut};
-use crate::bitcoinparser::tx_index::TxDB;
+use crate::parser::blk_file::BlkFile;
+use crate::parser::proto::full_proto::{FBlockHeader, FTxOut};
+use crate::parser::proto::simple_proto::{SBlockHeader, STxOut};
+use crate::parser::tx_index::TxDB;
 use bitcoin::{Block, Transaction, TxIn, TxOut, Txid};
 use log::warn;
 use rayon::prelude::*;

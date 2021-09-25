@@ -1,5 +1,5 @@
-use crate::bitcoinparser::errors::{OpError, OpErrorKind, OpResult};
-use crate::bitcoinparser::reader::BlockchainRead;
+use crate::parser::errors::{OpError, OpErrorKind, OpResult};
+use crate::parser::reader::BlockchainRead;
 use bitcoin::{Block, Transaction};
 use std::collections::HashMap;
 use std::convert::From;

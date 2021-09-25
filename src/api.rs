@@ -1,14 +1,14 @@
 use super::par_iter::*;
-use crate::bitcoinparser::blk_file::BlkFile;
-use crate::bitcoinparser::block_index::{BlockIndex, BlockIndexRecord};
-use crate::bitcoinparser::errors::{OpError, OpResult};
-use crate::bitcoinparser::proto::connected_proto::{
+use crate::parser::blk_file::BlkFile;
+use crate::parser::block_index::{BlockIndex, BlockIndexRecord};
+use crate::parser::errors::{OpError, OpResult};
+use crate::parser::proto::connected_proto::{
     FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction,
 };
-use crate::bitcoinparser::proto::full_proto::{FBlock, FTransaction};
-use crate::bitcoinparser::proto::simple_proto::{SBlock, STransaction};
-use crate::bitcoinparser::script::{evaluate_script, ScriptInfo};
-use crate::bitcoinparser::tx_index::TxDB;
+use crate::parser::proto::full_proto::{FBlock, FTransaction};
+use crate::parser::proto::simple_proto::{SBlock, STransaction};
+use crate::parser::script::{evaluate_script, ScriptInfo};
+use crate::parser::tx_index::TxDB;
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::{Block, BlockHash, Network, Script, Transaction, Txid};
 use std::path::Path;

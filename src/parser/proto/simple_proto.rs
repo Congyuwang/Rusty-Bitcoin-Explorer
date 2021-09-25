@@ -1,4 +1,4 @@
-use crate::bitcoinparser::script::{evaluate_script, Type};
+use crate::parser::script::{evaluate_script, Type};
 use bitcoin::{Address, BlockHash, Txid};
 use serde::{Deserialize, Serialize};
 

@@ -3,14 +3,14 @@
 /// Join the threads to the main after consuming the iterators!
 ///
 use crate::api::BitcoinDB;
-use crate::bitcoinparser::blk_file::BlkFile;
-use crate::bitcoinparser::block_index::BlockIndex;
-use crate::bitcoinparser::errors::{OpError, OpResult};
-use crate::bitcoinparser::proto::connected_proto::{
+use crate::parser::blk_file::BlkFile;
+use crate::parser::block_index::BlockIndex;
+use crate::parser::errors::{OpError, OpResult};
+use crate::parser::proto::connected_proto::{
     FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction,
 };
-use crate::bitcoinparser::proto::full_proto::{FBlock, FBlockHeader, FTxOut};
-use crate::bitcoinparser::proto::simple_proto::{SBlock, SBlockHeader, STxOut};
+use crate::parser::proto::full_proto::{FBlock, FBlockHeader, FTxOut};
+use crate::parser::proto::simple_proto::{SBlock, SBlockHeader, STxOut};
 use bitcoin::Txid;
 use log::warn;
 use num_cpus;
@@ -1112,7 +1112,7 @@ impl Iterator for FConnectedBlockIterator {
 
 #[cfg(test)]
 mod test_vec_map {
-    use crate::bitcoinparser::proto::simple_proto::STxOut;
+    use crate::parser::proto::simple_proto::STxOut;
     use crate::par_iter::SVecMap;
     use bitcoin::TxOut;
 

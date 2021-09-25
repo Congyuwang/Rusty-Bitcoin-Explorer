@@ -1,5 +1,5 @@
 [project]
-name = "bitcoin-query"
+name = "bitcoin-explorer"
 version = "0.1.31"
 classifiers = ["Programming Language :: Python"]
 description = "Read Bitcoin Core Blockchain Binary File Concurrently"
@@ -7,12 +7,12 @@ long_description_content_type="text/markdown"
 readme = "README.md"
 homepage = 'https://github.com/Congyuwang/Rusty-Bitcoin-Explorer'
 repository = 'https://github.com/Congyuwang/Rusty-Bitcoin-Explorer'
-documentation = 'https://congyuwang.github.io/Rusty-Bitcoin-Explorer/bitcoinquery.html'
+documentation = 'https://congyuwang.github.io/Rusty-Bitcoin-Explorer/bitcoin_explorer.html'
 
 keywords = ["rust", "bitcoin", "levelDB", "blockchain", "deserialize", "parser", "explorer", "python"]
 
 [package.metadata.maturin]
-python-source = "bitcoinquery"
+python-source = "bitcoin_explorer"
 
 classifiers=[
     "Programming Language :: Python :: 3",

@@ -1,5 +1,5 @@
-use crate::bitcoinparser::errors::OpResult;
-use crate::bitcoinparser::reader::BlockchainRead;
+use crate::parser::errors::OpResult;
+use crate::parser::reader::BlockchainRead;
 use bitcoin::hashes::hex::ToHex;
 use bitcoin::hashes::Hash;
 use bitcoin::{BlockHash, BlockHeader};

@@ -1,4 +1,4 @@
-use crate::bitcoinparser::errors::OpResult;
+use crate::parser::errors::OpResult;
 use bitcoin::consensus::Decodable;
 use bitcoin::{Block, BlockHeader, Transaction};
 use byteorder::{LittleEndian, ReadBytesExt};

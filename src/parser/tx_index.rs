@@ -1,6 +1,6 @@
-use crate::bitcoinparser::block_index::BlockIndex;
-use crate::bitcoinparser::errors::{OpError, OpResult};
-use crate::bitcoinparser::reader::BlockchainRead;
+use crate::parser::block_index::BlockIndex;
+use crate::parser::errors::{OpError, OpResult};
+use crate::parser::reader::BlockchainRead;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use leveldb::database::Database;
