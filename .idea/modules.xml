@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/bitcoinquerypy.iml" filepath="$PROJECT_DIR$/.idea/bitcoinquerypy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Rusty-Bitcoin-Explorer.iml" filepath="$PROJECT_DIR$/.idea/Rusty-Bitcoin-Explorer.iml" />
     </modules>
   </component>
 </project>
