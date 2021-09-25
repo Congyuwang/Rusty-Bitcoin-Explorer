@@ -1,15 +1,15 @@
 [project]
 name = "bitcoinquery"
-version = "0.1.30"
+version = "0.1.31"
 classifiers = ["Programming Language :: Python"]
 description = "Read Bitcoin Core Blockchain Binary File Concurrently"
 long_description_content_type="text/markdown"
 readme = "README.md"
-homepage = 'https://github.com/Congyuwang/bitcoinquery'
-repository = 'https://github.com/Congyuwang/bitcoinquery'
-documentation = 'https://congyuwang.github.io/BitcoinQueryPy/bitcoinquery.html'
+homepage = 'https://github.com/Congyuwang/Rusty-Bitcoin-Explorer'
+repository = 'https://github.com/Congyuwang/Rusty-Bitcoin-Explorer'
+documentation = 'https://congyuwang.github.io/Rusty-Bitcoin-Explorer/bitcoinquery.html'
 
-keywords = ["rust", "bitcoin", "levelDB", "blockchain", "deserialize", "parser"]
+keywords = ["rust", "bitcoin", "levelDB", "blockchain", "deserialize", "parser", "explorer", "python"]
 
 [package.metadata.maturin]
 python-source = "bitcoinquery"

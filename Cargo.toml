@@ -1,12 +1,12 @@
 [package]
 name = "bitcoinquery"
-version = "0.1.30"
+version = "0.1.31"
 edition = "2018"
 readme = "README.md"
 license-file = "LICENSE.txt"
 description = "A Package for Reading from Bitcoin Core Binary Blockchain"
-homepage = "https://github.com/Congyuwang/BitcoinQueryPy"
-repository = "https://github.com/Congyuwang/BitcoinQueryPy"
+homepage = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
+repository = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
