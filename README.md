@@ -1,4 +1,4 @@
-# bitcoin-query
+# bitcoin-explorer
 
 `bitcoin_explorer` is a python package developed in `rust` 
 for accessing bitcoin-core binary files as a database.
