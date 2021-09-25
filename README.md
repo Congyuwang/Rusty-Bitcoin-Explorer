@@ -1,13 +1,13 @@
 # bitcoin-query
 
-`bitcoinquery` is a python package developed in `rust` 
+`bitcoin_explorer` is a python package developed in `rust` 
 for accessing bitcoin-core binary files as a database.
 
 ## How to install?
 
 This library is designed for both python and rust.
 
-For python users, `pip install bitcoin-query`.
+For python users, `pip install bitcoin-explorer`.
 
 For rust users, include `bitcoinquery="0.1"` in `Cargo.toml`.
 
@@ -21,7 +21,7 @@ and `cmake` is also installed.
 
 ## Documentation
 
-For API documentation, go to [Documentation](https://congyuwang.github.io/BitcoinQueryPy/bitcoinquery.html).
+For API documentation, go to [Documentation](https://congyuwang.github.io/Rusty-Bitcoin-Explorer/bitcoin_explorer.html).
 
 ## Compatibility Note
 
@@ -38,10 +38,10 @@ Copyright (C) 2009-2020 The Bitcoin Core developers`.
 It contains one class `BitcoinDB`.
 
 ```python
-import bitcoinquery as bq
+import bitcoin_explorer as bex
 
 # parse the same path as `--datadir` argument for `bitcoind`.
-db = bq.BitcoinDB("~/Bitcoin")
+db = bex.BitcoinDB("~/Bitcoin")
 
 # get the length of the longest chain currently on disk.
 db.get_max_height()

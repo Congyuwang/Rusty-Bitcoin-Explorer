@@ -1,4 +1,4 @@
-use crate::bitcoinparser::errors::{OpError, OpResult};
+use crate::parser::errors::{OpError, OpResult};
 use bitcoin::blockdata::opcodes::{all, All};
 use bitcoin::blockdata::script::Instruction;
 use bitcoin::util::address::Payload;

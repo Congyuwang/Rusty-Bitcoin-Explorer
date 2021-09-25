@@ -1,7 +1,7 @@
 ///
 /// Add addresses, block_hash, tx_id to the bitcoin library format
 ///
-use crate::bitcoinparser::script::{evaluate_script, Type};
+use crate::parser::script::{evaluate_script, Type};
 use bitcoin::{Address, BlockHash, TxMerkleNode, Txid};
 use serde::{Deserialize, Serialize};
 
