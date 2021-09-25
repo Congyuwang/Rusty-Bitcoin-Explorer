@@ -1,4 +1,4 @@
-# bitcoin-query
+# bitcoin-explorer
 
 `bitcoin_explorer` is a python package developed in `rust` 
 for accessing bitcoin-core binary files as a database.
@@ -9,7 +9,7 @@ This library is designed for both python and rust.
 
 For python users, `pip install bitcoin-explorer`.
 
-For rust users, include `bitcoinquery="0.1"` in `Cargo.toml`.
+For rust users, include `bitcoin-explorer="0.1"` in `Cargo.toml`.
 
 ### Install Requirements
 
