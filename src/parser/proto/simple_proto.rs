@@ -2,6 +2,22 @@ use crate::parser::script::{evaluate_script, Type};
 use bitcoin::{Address, BlockHash, Txid};
 use serde::{Deserialize, Serialize};
 
+/// A `SBlock` compared to a `Block` has the following more
+/// attributes precomputed:
+/// - `block hash`
+/// - `transaction id`
+/// - `output addresses`
+/// - `output script types`
+///
+/// But is has the following attributes removed:
+/// - `nounce`
+/// - `previous block hash`
+/// - `merkle root`
+/// - `bits`
+/// - `input witness`
+/// - `output public script key hash`
+///
+/// `SBlock` reduces the amount of data memorized or transferred.
 #[derive(Serialize, Deserialize)]
 pub struct SBlock {
     pub header: SBlockHeader,
@@ -37,6 +53,17 @@ impl SBlockHeader {
     }
 }
 
+/// `STransaction` compared to `Transaction` has the following
+/// precomputed:
+/// - `transaction ID`
+/// - `output script type`
+/// - `output addresses`
+///
+/// It has the following removed:
+/// - `input witness`
+/// - `output public script key hash`
+///
+/// It reduces the amount of data memorized or transferred (to python).
 #[derive(Serialize, Deserialize)]
 pub struct STransaction {
     pub txid: Txid,

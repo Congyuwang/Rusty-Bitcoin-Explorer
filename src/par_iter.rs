@@ -5,7 +5,6 @@
 use crate::api::BitcoinDB;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::block_index::BlockIndex;
-use crate::parser::errors::{OpError, OpResult};
 use crate::parser::proto::connected_proto::{
     FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction,
 };
@@ -775,14 +774,16 @@ pub struct SBlockIteratorSequential {
 
 impl SBlockIteratorSequential {
     /// the worker threads are dispatched in this `new` constructor!
-    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> OpResult<SBlockIteratorSequential> {
+    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> SBlockIteratorSequential {
         if end <= start {
-            Err(OpError::from("invalid iterator range"))
+            SBlockIteratorSequential {
+                inner: SBlockIteratorArray::new(db, Vec::new()),
+            }
         } else {
             let heights: Vec<u32> = (start..end).collect();
-            Ok(SBlockIteratorSequential {
+            SBlockIteratorSequential {
                 inner: SBlockIteratorArray::new(db, heights),
-            })
+            }
         }
     }
 }
@@ -896,14 +897,16 @@ pub struct FBlockIteratorSequential {
 
 impl FBlockIteratorSequential {
     /// the worker threads are dispatched in this `new` constructor!
-    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> OpResult<FBlockIteratorSequential> {
+    pub fn new(db: &BitcoinDB, start: u32, end: u32) -> FBlockIteratorSequential {
         if end <= start {
-            Err(OpError::from("invalid iterator range"))
+            FBlockIteratorSequential {
+                inner: FBlockIteratorArray::new(db, Vec::new()),
+            }
         } else {
             let heights: Vec<u32> = (start..end).collect();
-            Ok(FBlockIteratorSequential {
+            FBlockIteratorSequential {
                 inner: FBlockIteratorArray::new(db, heights),
-            })
+            }
         }
     }
 }
@@ -1112,8 +1115,8 @@ impl Iterator for FConnectedBlockIterator {
 
 #[cfg(test)]
 mod test_vec_map {
-    use crate::parser::proto::simple_proto::STxOut;
     use crate::par_iter::SVecMap;
+    use crate::parser::proto::simple_proto::STxOut;
     use bitcoin::TxOut;
 
     #[test]

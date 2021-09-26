@@ -5,6 +5,14 @@ use crate::parser::script::{evaluate_script, Type};
 use bitcoin::{Address, BlockHash, TxMerkleNode, Txid};
 use serde::{Deserialize, Serialize};
 
+///
+/// A `FBlock` compared to a `Block` has the following more
+/// attributes computed:
+/// - `block hash`
+/// - `transaction id`
+/// - `output addresses`
+/// - `output script types`
+///
 #[derive(Serialize, Deserialize)]
 pub struct FBlock {
     pub header: FBlockHeader,
@@ -48,6 +56,11 @@ impl FBlockHeader {
     }
 }
 
+/// `FTransaction` compared to `Transaction` has the following
+/// precomputed:
+/// - `transaction ID`
+/// - `output script type`
+/// - `output addresses`
 #[derive(Serialize, Deserialize)]
 pub struct FTransaction {
     pub version: i32,

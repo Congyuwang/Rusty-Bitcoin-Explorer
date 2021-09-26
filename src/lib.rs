@@ -1,10 +1,48 @@
-pub mod api;
-pub mod parser;
-pub mod par_iter;
+//!
+//! # Introduction
+//!
+//! This library is designed for efficient and massive deserialization
+//! of the binary Bitcoin Core block files.
+//!
+//! It decodes all transactions, addresses, script types,
+//! connects outpoints of inputs to outputs, to figure out
+//! input addresses.
+//!
+//! This library allows efficient and versatile reading of all
+//! bitcoin transaction records. This is good for analysis and research on
+//! bitcoin trading behaviour.
+//!
+//! ## Caveat
+//!
+//! Currently it only supports all standard script types.
+//!
+//! ## Rust vs Python
+//!
+//! For `Rust` users. Please use `bitcoin_explorer::api`.
+//! The structures and functions defined in `lib` here
+//! are intended for `python` users.
+//!
+//! # Example
+//!
+//! ```rust
+//! use bitcoin_explorer::api::BitcoinDB;
+//! use std::path::Path;
+//!
+//! let path = Path::new("/Users/me/bitcoin").unwrap();
+//!
+//! // launch without reading txindex
+//! let db = BitcoinDB::new(path, false).unwrap();
+//!
+//! // launch attempting to read txindex
+//! let db = BitcoinDB::new(path, true).unwrap();
+//! ```
+//!
 
-use crate::parser::proto::connected_proto::{FConnectedBlock, SConnectedBlock};
-use crate::parser::proto::full_proto::FBlock;
-use crate::parser::proto::simple_proto::SBlock;
+pub mod api;
+pub mod par_iter;
+pub mod parser;
+
+use crate::api::{FBlock, FConnectedBlock, SBlock, SConnectedBlock};
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::Txid;
 use pyo3::prelude::*;
@@ -20,14 +58,6 @@ struct BitcoinDB {
 
 #[pymethods]
 impl BitcoinDB {
-    ///
-    /// `path`: bitcoind --datadir option.
-    /// `tx_index`: whether to try to open tx_index levelDB.
-    ///
-    /// For more detailed information, refer to the python class
-    /// documentation, which corresponds to the underlying
-    /// rust implementation.
-    ///
     #[new]
     fn new(path: &str, tx_index: bool) -> PyResult<Self> {
         let path = Path::new(path);
@@ -175,12 +205,12 @@ impl BitcoinDB {
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
     fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIteratorSequential> {
-        FBlockIteratorSequential::new(&self.db, start, stop)
+        Ok(FBlockIteratorSequential::new(&self.db, start, stop))
     }
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
     fn iter_block_simple_seq(&self, start: u32, stop: u32) -> PyResult<SBlockIteratorSequential> {
-        SBlockIteratorSequential::new(&self.db, start, stop)
+        Ok(SBlockIteratorSequential::new(&self.db, start, stop))
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
@@ -287,11 +317,9 @@ struct FBlockIteratorSequential {
 }
 
 impl FBlockIteratorSequential {
-    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> PyResult<FBlockIteratorSequential> {
-        let inner_iter = par_iter::FBlockIteratorSequential::new(db, start, end);
-        match inner_iter {
-            Ok(iter) => Ok(FBlockIteratorSequential { iter }),
-            Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
+    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> FBlockIteratorSequential {
+        FBlockIteratorSequential {
+            iter: par_iter::FBlockIteratorSequential::new(db, start, end),
         }
     }
 }
@@ -324,11 +352,9 @@ struct SBlockIteratorSequential {
 }
 
 impl SBlockIteratorSequential {
-    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> PyResult<SBlockIteratorSequential> {
-        let inner_iter = par_iter::SBlockIteratorSequential::new(db, start, end);
-        match inner_iter {
-            Ok(iter) => Ok(SBlockIteratorSequential { iter }),
-            Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
+    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> SBlockIteratorSequential {
+        SBlockIteratorSequential {
+            iter: par_iter::SBlockIteratorSequential::new(db, start, end),
         }
     }
 }
