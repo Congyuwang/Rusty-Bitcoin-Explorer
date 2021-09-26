@@ -1,6 +1,9 @@
 //!
 //! Crates APIs, essential structs, functions, methods are all here!
 //!
+//! To quickly understand how to use this crate, have a look at the
+//! documentation for `bitcoin_explorer::api::BitcoinDB`!!.
+//!
 //! # Example
 //!
 //! ```rust
@@ -42,6 +45,11 @@ pub fn parse_script(script_pub_key: &str) -> OpResult<ScriptInfo> {
     Ok(evaluate_script(&script, Network::Bitcoin))
 }
 
+///
+/// This is the main struct of this crate!! Click and read the doc.
+///
+/// All queries start from initializing `BitcoinDB`.
+///
 pub struct BitcoinDB {
     pub block_index: BlockIndex,
     pub blk_file: BlkFile,
