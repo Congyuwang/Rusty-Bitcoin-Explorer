@@ -40,6 +40,7 @@ impl BlkFile {
     ) -> OpResult<Transaction> {
         if let Some(blk_path) = self.files.get(&n_file) {
             let mut r = BufReader::new(File::open(blk_path)?);
+            // the size of a header is 80.
             r.seek(SeekFrom::Start(n_pos as u64 + n_tx_offset as u64 + 80))?;
             r.read_transaction()
         } else {

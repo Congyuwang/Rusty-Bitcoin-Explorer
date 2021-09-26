@@ -31,7 +31,7 @@ impl db_key::Key for TxKey {
 pub struct TxDB {
     db: Option<Database<TxKey>>,
     // used for reverse looking up to block height
-    pub file_pos_to_height: BTreeMap<i32, Arc<RwLock<BTreeMap<u32, i32>>>>,
+    file_pos_to_height: BTreeMap<i32, Arc<RwLock<BTreeMap<u32, i32>>>>,
 }
 
 impl TxDB {
