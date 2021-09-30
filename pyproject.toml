@@ -1,6 +1,6 @@
 [project]
 name = "bitcoin-explorer"
-version = "0.1.36"
+version = "0.2.0"
 classifiers = ["Programming Language :: Python"]
 description = "Read Bitcoin Core Blockchain Binary File Efficiently"
 long_description_content_type="text/markdown"

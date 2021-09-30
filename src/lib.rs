@@ -42,25 +42,25 @@ pub mod api;
 pub mod iter;
 pub mod parser;
 
-use crate::api::{BlockIterator, FBlock, FConnectedBlock, FTransaction, FromHex, SBlock, SConnectedBlock, STransaction, ToHex, Txid, FConnectedTransaction, SConnectedTransaction};
+pub use crate::api::*;
 use pyo3::prelude::*;
 use pyo3::PyIterProtocol;
 use pyo3::Python;
 use pythonize::pythonize;
 use std::path::Path;
 
-#[pyclass]
-struct BitcoinDB {
+#[pyclass(name = "BitcoinDB")]
+struct BitcoinDBPy {
     db: api::BitcoinDB,
 }
 
 #[pymethods]
-impl BitcoinDB {
+impl BitcoinDBPy {
     #[new]
     fn new(path: &str, tx_index: bool) -> PyResult<Self> {
         let path = Path::new(path);
         match api::BitcoinDB::new(path, tx_index) {
-            Ok(db) => Ok(BitcoinDB { db }),
+            Ok(db) => Ok(BitcoinDBPy { db }),
             Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
         }
     }
@@ -452,6 +452,6 @@ impl PyIterProtocol for SConnectedBlockIterator {
 #[pymodule]
 fn bitcoin_explorer(_py: Python, m: &PyModule) -> PyResult<()> {
     pyo3_log::init();
-    m.add_class::<BitcoinDB>()?;
+    m.add_class::<BitcoinDBPy>()?;
     Ok(())
 }
