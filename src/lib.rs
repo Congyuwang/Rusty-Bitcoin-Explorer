@@ -39,10 +39,10 @@
 //!
 
 pub mod api;
-pub mod par_iter;
+pub mod iter;
 pub mod parser;
 
-use crate::api::{FBlock, FConnectedBlock, SBlock, SConnectedBlock};
+use crate::api::{BlockIterator, FBlock, FConnectedBlock, SBlock, SConnectedBlock};
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::Txid;
 use pyo3::prelude::*;
@@ -243,13 +243,13 @@ impl BitcoinDB {
 
 #[pyclass]
 struct SBlockIteratorArray {
-    iter: par_iter::SBlockIteratorArray,
+    iter: BlockIterator<SBlock>,
 }
 
 impl SBlockIteratorArray {
-    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> SBlockIteratorArray {
+    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> Self {
         SBlockIteratorArray {
-            iter: par_iter::SBlockIteratorArray::new(db, heights),
+            iter: db.get_block_simple_iter_arr(heights),
         }
     }
 }
@@ -278,13 +278,13 @@ impl PyIterProtocol for SBlockIteratorArray {
 
 #[pyclass]
 struct FBlockIteratorArray {
-    iter: par_iter::FBlockIteratorArray,
+    iter: BlockIterator<FBlock>,
 }
 
 impl FBlockIteratorArray {
-    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> FBlockIteratorArray {
+    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> Self {
         FBlockIteratorArray {
-            iter: par_iter::FBlockIteratorArray::new(db, heights),
+            iter: db.get_block_full_iter_arr(heights),
         }
     }
 }
@@ -313,13 +313,13 @@ impl PyIterProtocol for FBlockIteratorArray {
 
 #[pyclass]
 struct FBlockIteratorSequential {
-    iter: par_iter::FBlockIteratorSequential,
+    iter: BlockIterator<FBlock>,
 }
 
 impl FBlockIteratorSequential {
-    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> FBlockIteratorSequential {
+    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> Self {
         FBlockIteratorSequential {
-            iter: par_iter::FBlockIteratorSequential::new(db, start, end),
+            iter: db.get_block_full_iter_seq(start, end),
         }
     }
 }
@@ -348,13 +348,13 @@ impl PyIterProtocol for FBlockIteratorSequential {
 
 #[pyclass]
 struct SBlockIteratorSequential {
-    iter: par_iter::SBlockIteratorSequential,
+    iter: BlockIterator<SBlock>,
 }
 
 impl SBlockIteratorSequential {
     fn new(db: &api::BitcoinDB, start: u32, end: u32) -> SBlockIteratorSequential {
         SBlockIteratorSequential {
-            iter: par_iter::SBlockIteratorSequential::new(db, start, end),
+            iter: db.get_block_simple_iter_seq(start, end),
         }
     }
 }
@@ -383,13 +383,13 @@ impl PyIterProtocol for SBlockIteratorSequential {
 
 #[pyclass]
 struct FConnectedBlockIterator {
-    iter: par_iter::FConnectedBlockIterator,
+    iter: api::ConnectedBlockIteratorFull,
 }
 
 impl FConnectedBlockIterator {
     fn new(db: &api::BitcoinDB, end: u32) -> FConnectedBlockIterator {
         FConnectedBlockIterator {
-            iter: par_iter::FConnectedBlockIterator::new(db, end),
+            iter: db.get_block_full_connected_iter(end),
         }
     }
 }
@@ -418,13 +418,13 @@ impl PyIterProtocol for FConnectedBlockIterator {
 
 #[pyclass]
 struct SConnectedBlockIterator {
-    iter: par_iter::SConnectedBlockIterator,
+    iter: api::ConnectedBlockIteratorSimple,
 }
 
 impl SConnectedBlockIterator {
     fn new(db: &api::BitcoinDB, end: u32) -> SConnectedBlockIterator {
         SConnectedBlockIterator {
-            iter: par_iter::SConnectedBlockIterator::new(db, end),
+            iter: db.get_block_simple_connected_iter(end),
         }
     }
 }

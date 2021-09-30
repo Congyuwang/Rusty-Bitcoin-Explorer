@@ -20,21 +20,27 @@
 //! ```
 //!
 
-use super::par_iter::*;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::errors::{OpError, OpResult};
 use crate::parser::script::{evaluate_script, ScriptInfo};
 use crate::parser::tx_index::TxDB;
 use std::path::Path;
 // re-exports
+pub use crate::iter::{BlockIterator, ConnectedBlockIterator};
 pub use crate::parser::block_index::{BlockIndex, BlockIndexRecord};
 pub use crate::parser::proto::connected_proto::{
     FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction,
 };
-pub use crate::parser::proto::full_proto::{FBlock, FTransaction};
-pub use crate::parser::proto::simple_proto::{SBlock, STransaction};
+pub use crate::parser::proto::full_proto::{FBlock, FBlockHeader, FTransaction, FTxOut};
+pub use crate::parser::proto::simple_proto::{SBlock, SBlockHeader, STransaction, STxOut};
 pub use bitcoin::hashes::hex::FromHex;
-pub use bitcoin::{Address, Block, BlockHash, Network, Script, Transaction, Txid};
+pub use bitcoin::{Address, Block, BlockHash, BlockHeader, Network, Script, Transaction, Txid};
+
+// Define iterator types
+pub type ConnectedBlockIteratorFull =
+    ConnectedBlockIterator<FConnectedBlock, FConnectedTransaction, FTxOut>;
+pub type ConnectedBlockIteratorSimple =
+    ConnectedBlockIterator<SConnectedBlock, SConnectedTransaction, STxOut>;
 
 ///
 /// Extract addresses from a script public key.
@@ -229,7 +235,7 @@ impl BitcoinDB {
     ///
     pub fn get_block_full(&self, height: i32) -> OpResult<FBlock> {
         let blk = self.get_block(height)?;
-        let blk_parsed = FBlock::parse(blk);
+        let blk_parsed = blk.into();
         Ok(blk_parsed)
     }
 
@@ -269,7 +275,7 @@ impl BitcoinDB {
     ///
     pub fn get_block_simple(&self, height: i32) -> OpResult<SBlock> {
         let blk = self.get_block(height)?;
-        let blk_parsed = SBlock::parse(blk);
+        let blk_parsed = blk.into();
         Ok(blk_parsed)
     }
 
@@ -396,7 +402,7 @@ impl BitcoinDB {
     ///
     pub fn get_transaction_full(&self, txid: &Txid) -> OpResult<FTransaction> {
         let tx = self.get_transaction(txid)?;
-        let tx_parsed = FTransaction::parse(tx);
+        let tx_parsed = tx.into();
         Ok(tx_parsed)
     }
 
@@ -441,7 +447,7 @@ impl BitcoinDB {
     ///
     pub fn get_transaction_simple(&self, txid: &Txid) -> OpResult<STransaction> {
         let tx = self.get_transaction(txid)?;
-        let tx_parsed = STransaction::parse(tx);
+        let tx_parsed = tx.into();
         Ok(tx_parsed)
     }
 
@@ -510,8 +516,8 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn get_block_full_iter_seq(&self, start: u32, end: u32) -> FBlockIteratorSequential {
-        FBlockIteratorSequential::new(self, start, end)
+    pub fn get_block_full_iter_seq(&self, start: u32, end: u32) -> BlockIterator<FBlock> {
+        BlockIterator::from_range(self, start, end)
     }
 
     ///
@@ -553,8 +559,8 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn get_block_simple_iter_seq(&self, start: u32, end: u32) -> SBlockIteratorSequential {
-        SBlockIteratorSequential::new(self, start, end)
+    pub fn get_block_simple_iter_seq(&self, start: u32, end: u32) -> BlockIterator<SBlock> {
+        BlockIterator::from_range(self, start, end)
     }
 
     ///
@@ -598,8 +604,8 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn get_block_full_iter_arr(&self, heights: Vec<u32>) -> FBlockIteratorArray {
-        FBlockIteratorArray::new(self, heights)
+    pub fn get_block_full_iter_arr(&self, heights: Vec<u32>) -> BlockIterator<FBlock> {
+        BlockIterator::new(self, heights)
     }
 
     ///
@@ -645,8 +651,8 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn get_block_simple_iter_arr(&self, heights: Vec<u32>) -> SBlockIteratorArray {
-        SBlockIteratorArray::new(self, heights)
+    pub fn get_block_simple_iter_arr(&self, heights: Vec<u32>) -> BlockIterator<SBlock> {
+        BlockIterator::new(self, heights)
     }
 
     ///
@@ -698,8 +704,8 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn get_block_full_connected_iter(&self, end: u32) -> FConnectedBlockIterator {
-        FConnectedBlockIterator::new(self, end)
+    pub fn get_block_full_connected_iter(&self, end: u32) -> ConnectedBlockIteratorFull {
+        ConnectedBlockIterator::new(self, end)
     }
 
     ///
@@ -751,7 +757,7 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn get_block_simple_connected_iter(&self, end: u32) -> SConnectedBlockIterator {
-        SConnectedBlockIterator::new(self, end)
+    pub fn get_block_simple_connected_iter(&self, end: u32) -> ConnectedBlockIteratorSimple {
+        ConnectedBlockIterator::new(self, end)
     }
 }

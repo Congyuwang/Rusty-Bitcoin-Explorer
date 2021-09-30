@@ -44,9 +44,9 @@ impl SConnectedTransaction {
             txid: tx.txid(),
             input: connect_output_tx_in(tx.input, tx_db, blk_file)
                 .into_iter()
-                .map(STxOut::parse)
+                .map(STxOut::from)
                 .collect(),
-            output: tx.output.into_iter().map(STxOut::parse).collect(),
+            output: tx.output.into_iter().map(STxOut::from).collect(),
         }
     }
 }
@@ -88,9 +88,9 @@ impl FConnectedTransaction {
             txid: tx.txid(),
             input: connect_output_tx_in(tx.input, tx_db, blk_file)
                 .into_iter()
-                .map(FTxOut::parse)
+                .map(|x| x.into())
                 .collect(),
-            output: tx.output.into_iter().map(FTxOut::parse).collect(),
+            output: tx.output.into_iter().map(|x| x.into()).collect(),
         }
     }
 }
@@ -135,8 +135,8 @@ fn connect_output_simple(
         }
         connected_tx.push(SConnectedTransaction {
             txid,
-            input: outputs.into_iter().map(STxOut::parse).collect(),
-            output: tx.output.into_iter().map(STxOut::parse).collect(),
+            input: outputs.into_iter().map(|x| x.into()).collect(),
+            output: tx.output.into_iter().map(|x| x.into()).collect(),
         })
     }
     connected_tx
@@ -176,8 +176,8 @@ fn connect_output_full(
         connected_tx.push(FConnectedTransaction {
             lock_time: tx.lock_time,
             txid,
-            input: outputs.into_iter().map(FTxOut::parse).collect(),
-            output: tx.output.into_iter().map(FTxOut::parse).collect(),
+            input: outputs.into_iter().map(|x| x.into()).collect(),
+            output: tx.output.into_iter().map(|x| x.into()).collect(),
         })
     }
     connected_tx
