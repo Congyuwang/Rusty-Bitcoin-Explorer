@@ -6,7 +6,7 @@ use crate::parser::errors::{OpError, OpResult};
 
 impl BitcoinDB {
     ///
-    /// Get a full block with inputs replaced by connected outputs.
+    /// Get a block with inputs replaced by connected outputs.
     ///
     /// This function requires `txindex` to be set to `true`,
     /// and `txindex=1` when running Bitcoin Core.
@@ -25,7 +25,9 @@ impl BitcoinDB {
     }
 
     ///
-    /// Get `full version` transaction with outpoints replaced by outputs.
+    /// Get a transaction with outpoints replaced by outputs.
+    ///
+    /// Format: `full (FConnectedTransaction)` / `simple (SConnectedTransaction)`.
     ///
     /// # Caveats
     ///
@@ -40,7 +42,7 @@ impl BitcoinDB {
     ///
     /// Iterate through all blocks for a given heights (excluded).
     ///
-    /// Format: `full connected` / `simple connected`.
+    /// Format: `full (FConnectedBlock)` / `simple (SConnectedBlock)`.
     ///
     /// This iterator use `unspent output` to track down the connected
     /// outputs of each outpoints.

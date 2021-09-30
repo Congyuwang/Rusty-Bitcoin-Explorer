@@ -105,8 +105,7 @@ impl BitcoinDB {
     /// Get the maximum height found in block index.
     ///
     /// It is not necessarily true that any height smaller than
-    /// `get_max_height()` can be used to query `get_block()`,
-    /// `get_block_full()` or `get_block_simple()`.
+    /// `get_max_height()` can be used to query `get_block()`.
     ///
     /// This max_height is only the max height of block header
     /// information. The actual block data might not have been
