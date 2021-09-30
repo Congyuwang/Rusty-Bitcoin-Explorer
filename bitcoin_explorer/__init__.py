@@ -10,7 +10,7 @@ BitcoinQuery: Query Bitcoin Core Data Files As A Database.
     - `cd` to the repository root.
     - run `pip install maturin` to install `maturin`.
     - run `maturin develop --release` to install the package directly to
-      the currently available python environtment.
+      the currently available python environment.
       Or you may run `maturin build --release` to build the wheel
       and install the `whl` file use `pip install` command.
 
@@ -70,7 +70,7 @@ class BitcoinDB:
             ::
 
                 # import package
-                import bitcoinquery as bq
+                import bitcoin_explorer as bq
 
                 # launch bitcoinDB
                 db = bq.BitcoinDB("~/Bitcoin", tx_index=True)
@@ -136,7 +136,7 @@ class BitcoinDB:
             height: the height of the block.
             simplify: whether to use simpler format, (i.e., discard
                 witness program, script public hash, etc.), which makes
-                parsing to ython objecta lot faster.
+                parsing to python objects lot faster.
             connected: whether to replace inputs by related previous outputs.
 
         Returns: block data, or error if the height is not yet synced.
