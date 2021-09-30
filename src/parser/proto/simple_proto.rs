@@ -1,7 +1,10 @@
 use crate::parser::script::{evaluate_script, Type};
-use bitcoin::{Address, BlockHash, Txid};
+use bitcoin::{Address, Block, BlockHash, Transaction, TxIn, TxOut, Txid};
 use serde::{Deserialize, Serialize};
 
+///
+/// Block in a `simple` format.
+///
 /// A `SBlock` compared to a `Block` has the following more
 /// attributes precomputed:
 /// - `block hash`
@@ -24,16 +27,16 @@ pub struct SBlock {
     pub txdata: Vec<STransaction>,
 }
 
-impl SBlock {
+impl From<Block> for SBlock {
     ///
     /// Add addresses, block_hash, tx_id to the bitcoin library format,
     /// and also simplify the format.
     ///
-    pub fn parse(block: bitcoin::Block) -> SBlock {
+    fn from(block: Block) -> SBlock {
         let block_hash = block.header.block_hash();
         SBlock {
             header: SBlockHeader::parse(block.header, block_hash),
-            txdata: block.txdata.into_iter().map(STransaction::parse).collect(),
+            txdata: block.txdata.into_iter().map(|x| x.into()).collect(),
         }
     }
 }
@@ -73,12 +76,12 @@ pub struct STransaction {
     pub output: Vec<STxOut>,
 }
 
-impl STransaction {
-    pub fn parse(tx: bitcoin::Transaction) -> STransaction {
+impl From<Transaction> for STransaction {
+    fn from(tx: Transaction) -> STransaction {
         STransaction {
             txid: tx.txid(),
-            input: tx.input.into_iter().map(STxIn::parse).collect(),
-            output: tx.output.into_iter().map(STxOut::parse).collect(),
+            input: tx.input.into_iter().map(|x| x.into()).collect(),
+            output: tx.output.into_iter().map(|x| x.into()).collect(),
         }
     }
 }
@@ -89,8 +92,8 @@ pub struct STxIn {
     pub vout: u32,
 }
 
-impl STxIn {
-    pub fn parse(tx_in: bitcoin::TxIn) -> STxIn {
+impl From<TxIn> for STxIn {
+    fn from(tx_in: TxIn) -> STxIn {
         STxIn {
             txid: tx_in.previous_output.txid,
             vout: tx_in.previous_output.vout,
@@ -105,8 +108,8 @@ pub struct STxOut {
     pub addresses: Vec<Address>,
 }
 
-impl STxOut {
-    pub fn parse(out: bitcoin::TxOut) -> STxOut {
+impl From<TxOut> for STxOut {
+    fn from(out: TxOut) -> STxOut {
         let eval = evaluate_script(&out.script_pubkey, bitcoin::Network::Bitcoin);
         STxOut {
             value: out.value,

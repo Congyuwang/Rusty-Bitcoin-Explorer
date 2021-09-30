@@ -14,5 +14,6 @@ pub mod script;
 pub mod tx_index;
 
 pub mod errors;
+
 /// various formats of blockchain data representation
 pub mod proto;

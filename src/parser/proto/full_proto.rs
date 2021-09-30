@@ -1,10 +1,13 @@
-///
-/// Add addresses, block_hash, tx_id to the bitcoin library format
-///
+//!
+//! Add addresses, block_hash, tx_id to the bitcoin library format
+//!
+use crate::api::Block;
 use crate::parser::script::{evaluate_script, Type};
-use bitcoin::{Address, BlockHash, TxMerkleNode, Txid};
+use bitcoin::{Address, BlockHash, Transaction, TxMerkleNode, TxOut, Txid};
 use serde::{Deserialize, Serialize};
 
+///
+/// Block in a `full` format.
 ///
 /// A `FBlock` compared to a `Block` has the following more
 /// attributes computed:
@@ -19,13 +22,13 @@ pub struct FBlock {
     pub txdata: Vec<FTransaction>,
 }
 
-impl FBlock {
+impl From<Block> for FBlock {
     /// obtain addresses for each output of each transactions
-    pub fn parse(block: bitcoin::Block) -> FBlock {
+    fn from(block: bitcoin::Block) -> FBlock {
         let block_hash = block.header.block_hash();
         FBlock {
             header: FBlockHeader::parse(block.header, block_hash),
-            txdata: block.txdata.into_iter().map(FTransaction::parse).collect(),
+            txdata: block.txdata.into_iter().map(|x| x.into()).collect(),
         }
     }
 }
@@ -72,15 +75,15 @@ pub struct FTransaction {
     pub output: Vec<FTxOut>,
 }
 
-impl FTransaction {
+impl From<Transaction> for FTransaction {
     /// obtain addresses for each output
-    pub fn parse(tx: bitcoin::Transaction) -> FTransaction {
+    fn from(tx: Transaction) -> FTransaction {
         FTransaction {
             version: tx.version,
             lock_time: tx.lock_time,
             txid: tx.txid(),
             input: tx.input,
-            output: tx.output.into_iter().map(FTxOut::parse).collect(),
+            output: tx.output.into_iter().map(FTxOut::from).collect(),
         }
     }
 }
@@ -93,8 +96,8 @@ pub struct FTxOut {
     pub addresses: Vec<Address>,
 }
 
-impl FTxOut {
-    pub fn parse(out: bitcoin::TxOut) -> FTxOut {
+impl From<TxOut> for FTxOut {
+    fn from(out: bitcoin::TxOut) -> FTxOut {
         let eval = evaluate_script(&out.script_pubkey, bitcoin::Network::Bitcoin);
         FTxOut {
             value: out.value,
