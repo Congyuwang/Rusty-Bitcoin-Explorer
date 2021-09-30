@@ -81,7 +81,7 @@ impl BitcoinDB {
     /// # Example
     ///
     /// ```rust
-    /// use bitcoin_explorer::api::BitcoinDB;
+    /// use bitcoin_explorer::BitcoinDB;
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -134,7 +134,7 @@ impl BitcoinDB {
     /// # Example
     ///
     /// ```rust
-    /// use bitcoin_explorer::api::BitcoinDB;
+    /// use bitcoin_explorer::BitcoinDB;
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();

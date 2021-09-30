@@ -2,12 +2,12 @@
 //! Crates APIs, essential structs, functions, methods are all here!
 //!
 //! To quickly understand how to use this crate, have a look at the
-//! documentation for `bitcoin_explorer::api::BitcoinDB`!!.
+//! documentation for `bitcoin_explorer::BitcoinDB`!!.
 //!
 //! # Example
 //!
 //! ```rust
-//! use bitcoin_explorer::api::BitcoinDB;
+//! use bitcoin_explorer::BitcoinDB;
 //! use std::path::Path;
 //!
 //! let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -70,7 +70,7 @@ impl BitcoinDB {
     /// # Example
     ///
     /// ```rust
-    /// use bitcoin_explorer::api::BitcoinDB;
+    /// use bitcoin_explorer::BitcoinDB;
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -128,7 +128,7 @@ impl BitcoinDB {
     ///
     /// ## Compute total number of transactions
     /// ```rust
-    /// use bitcoin_explorer::api::BitcoinDB;
+    /// use bitcoin_explorer::BitcoinDB;
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -181,7 +181,7 @@ impl BitcoinDB {
     ///
     /// # Example
     /// ```rust
-    /// use bitcoin_explorer::api::{BitcoinDB, FBlock, SBlock, Block};
+    /// use bitcoin_explorer::{BitcoinDB, FBlock, SBlock, Block};
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -211,7 +211,7 @@ impl BitcoinDB {
     ///
     /// # Example
     /// ```rust
-    /// use bitcoin_explorer::api::{BitcoinDB, Transaction, FTransaction, STransaction, Txid, FromHex};
+    /// use bitcoin_explorer::{BitcoinDB, Transaction, FTransaction, STransaction, Txid, FromHex};
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -277,7 +277,7 @@ impl BitcoinDB {
     /// # Example
     ///
     /// ```rust
-    /// use bitcoin_explorer::api::{BitcoinDB, Block, SBlock, FBlock};
+    /// use bitcoin_explorer::{BitcoinDB, Block, SBlock, FBlock};
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -337,7 +337,7 @@ impl BitcoinDB {
     /// # Example
     ///
     /// ```rust
-    /// use bitcoin_explorer::api::{BitcoinDB, Block, FBlock, SBlock};
+    /// use bitcoin_explorer::{BitcoinDB, Block, FBlock, SBlock};
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();

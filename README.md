@@ -9,7 +9,7 @@ This package uses pyO3. Thus is also available in python.
 
 This library is designed for both python and rust.
 
-For rust users, include `bitcoin-explorer="0.1"` in `Cargo.toml`.
+For rust users, include `bitcoin-explorer="0.2"` in `Cargo.toml`.
 
 For python users, `pip install bitcoin-explorer`.
 
@@ -49,7 +49,7 @@ Iterating through ``connected blocks`` from 0 to 700000 takes 5 hours.
 
 ### get a block (i.e., see doc for what is full/simple format)
 ```rust
-use bitcoin_explorer::api::{BitcoinDB, FBlock, SBlock, Block};
+use bitcoin_explorer::{BitcoinDB, FBlock, SBlock, Block};
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -66,7 +66,7 @@ let block: SBlock = db.get_block(600000).unwrap();
 ### get a particular transaction (in different formats)
 
 ```rust
-use bitcoin_explorer::api::{BitcoinDB, Transaction, FTransaction, STransaction, Txid, FromHex};
+use bitcoin_explorer::{BitcoinDB, Transaction, FTransaction, STransaction, Txid, FromHex};
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -87,7 +87,7 @@ let tx: STransaction = db.get_transaction(&txid).unwrap();
 
 ### Iterate through blocks (in different formats)
 ```rust
-use bitcoin_explorer::api::{BitcoinDB, Block, SBlock, FBlock};
+use bitcoin_explorer::{BitcoinDB, Block, SBlock, FBlock};
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -119,7 +119,7 @@ for block in db.iter_block::<SBlock>(600000, 700000) {
 
 ### Iterate through blocks (simple format) with outpoints connected to outputs
 ```rust
-use bitcoin_explorer::api::BitcoinDB;
+use bitcoin_explorer::BitcoinDB;
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();

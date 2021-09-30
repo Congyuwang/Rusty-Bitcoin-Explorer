@@ -25,7 +25,7 @@
 //! # Example
 //!
 //! ```rust
-//! use bitcoin_explorer::api::BitcoinDB;
+//! use bitcoin_explorer::BitcoinDB;
 //! use std::path::Path;
 //!
 //! let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -42,6 +42,7 @@ pub mod api;
 pub mod iter;
 pub mod parser;
 
+#[doc(inline)]
 pub use crate::api::*;
 use pyo3::prelude::*;
 use pyo3::PyIterProtocol;
