@@ -1,15 +1,17 @@
 # bitcoin-explorer
 
-`bitcoin_explorer` is a python package developed in `rust` 
-for accessing bitcoin-core binary files as a database.
+`bitcoin_explorer` is an efficient library for reading
+bitcoin-core binary blockchain file as a database (utilising multi-threading).
+
+This package uses pyO3. Thus is also available in python.
 
 ## How to install?
 
 This library is designed for both python and rust.
 
-For python users, `pip install bitcoin-explorer`.
-
 For rust users, include `bitcoin-explorer="0.1"` in `Cargo.toml`.
+
+For python users, `pip install bitcoin-explorer`.
 
 ### Install Requirements
 
@@ -43,7 +45,7 @@ On HDD, iterating from heights 600000 to 700000 takes less than 30 minutes.
 
 Iterating through ``connected blocks`` from 0 to 700000 takes 5 hours.
 
-## Example (rust)
+## Rust Examples
 
 ### get a complete block (full format (i.e., see doc for what is full/simple format))
 ```rust
@@ -113,7 +115,7 @@ for block in db.get_block_simple_connected_iter(700000) {
 }
 ```
 
-## Example (python)
+## Python Examples
 
 It contains one class `BitcoinDB`.
 

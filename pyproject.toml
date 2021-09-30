@@ -1,15 +1,16 @@
 [project]
 name = "bitcoin-explorer"
-version = "0.1.33"
+version = "0.1.36"
 classifiers = ["Programming Language :: Python"]
-description = "Read Bitcoin Core Blockchain Binary File Concurrently"
+description = "Read Bitcoin Core Blockchain Binary File Efficiently"
 long_description_content_type="text/markdown"
 readme = "README.md"
 homepage = 'https://github.com/Congyuwang/Rusty-Bitcoin-Explorer'
 repository = 'https://github.com/Congyuwang/Rusty-Bitcoin-Explorer'
 documentation = 'https://congyuwang.github.io/Rusty-Bitcoin-Explorer/bitcoin_explorer.html'
 
-keywords = ["rust", "bitcoin", "levelDB", "blockchain", "deserialize", "parser", "explorer", "python"]
+keywords = ["rust", "bitcoin", "levelDB", "blockchain", "deserialize",
+    "parser", "explorer", "python", "crypto", "history", "transaction"]
 
 [package.metadata.maturin]
 python-source = "bitcoin_explorer"
