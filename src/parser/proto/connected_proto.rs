@@ -8,53 +8,16 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
-pub trait TxConnectable {
-    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> Self;
-}
-
-pub trait BlockConnectable {
-    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> Self;
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct SConnectedBlock {
     pub header: SBlockHeader,
     pub txdata: Vec<SConnectedTransaction>,
 }
 
-impl BlockConnectable for SConnectedBlock {
-    ///
-    /// Replace inputs by previous outputs.
-    /// add addresses, block_hash, tx_id to the bitcoin library format,
-    /// and also simplify the format.
-    ///
-    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> SConnectedBlock {
-        let block_hash = block.header.block_hash();
-        SConnectedBlock {
-            header: SBlockHeader::parse(block.header, block_hash),
-            txdata: connect_output(block.txdata, tx_db, blk_file),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct FConnectedBlock {
     pub header: FBlockHeader,
     pub txdata: Vec<FConnectedTransaction>,
-}
-
-impl BlockConnectable for FConnectedBlock {
-    ///
-    /// Replace inputs by previous outputs.
-    /// add addresses, block_hash, tx_id to the bitcoin library format.
-    ///
-    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> FConnectedBlock {
-        let block_hash = block.header.block_hash();
-        FConnectedBlock {
-            header: FBlockHeader::parse(block.header, block_hash),
-            txdata: connect_output(block.txdata, tx_db, blk_file),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -64,19 +27,6 @@ pub struct SConnectedTransaction {
     pub input: Vec<STxOut>,
     /// List of outputs
     pub output: Vec<STxOut>,
-}
-
-impl TxConnectable for SConnectedTransaction {
-    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> SConnectedTransaction {
-        SConnectedTransaction {
-            txid: tx.txid(),
-            input: connect_output_tx_in(tx.input, tx_db, blk_file)
-                .into_iter()
-                .map(STxOut::from)
-                .collect(),
-            output: tx.output.into_iter().map(STxOut::from).collect(),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -89,20 +39,6 @@ pub struct FConnectedTransaction {
     pub output: Vec<FTxOut>,
 }
 
-impl TxConnectable for FConnectedTransaction {
-    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> FConnectedTransaction {
-        FConnectedTransaction {
-            lock_time: tx.lock_time,
-            txid: tx.txid(),
-            input: connect_output_tx_in(tx.input, tx_db, blk_file)
-                .into_iter()
-                .map(|x| x.into())
-                .collect(),
-            output: tx.output.into_iter().map(|x| x.into()).collect(),
-        }
-    }
-}
-
 fn connect_output_tx_in(tx_in: Vec<TxIn>, tx_db: &TxDB, blk_file: &BlkFile) -> Vec<TxOut> {
     tx_in
         .par_iter()
@@ -110,13 +46,9 @@ fn connect_output_tx_in(tx_in: Vec<TxIn>, tx_db: &TxDB, blk_file: &BlkFile) -> V
         .collect()
 }
 
-fn connect_output<Tx>(
-    transactions: Vec<Transaction>,
-    tx_db: &TxDB,
-    blk_file: &BlkFile,
-) -> Vec<Tx>
+fn connect_output<Tx>(transactions: Vec<Transaction>, tx_db: &TxDB, blk_file: &BlkFile) -> Vec<Tx>
 where
-    Tx: FromTxComponent,
+    Tx: TxConnectable,
 {
     let all_tx_in = get_all_tx_in(&transactions);
 
@@ -193,14 +125,15 @@ fn is_coin_base(tx_in: &TxIn) -> bool {
     tx_in.previous_output.is_null()
 }
 
-pub trait FromTxComponent {
+pub trait TxConnectable {
     type TOut: 'static + From<TxOut> + Send;
 
     fn from(tx: &Transaction) -> Self;
     fn add_input(&mut self, input: Self::TOut);
+    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> Self;
 }
 
-impl FromTxComponent for FConnectedTransaction {
+impl TxConnectable for FConnectedTransaction {
     type TOut = FTxOut;
 
     fn from(tx: &Transaction) -> Self {
@@ -215,9 +148,21 @@ impl FromTxComponent for FConnectedTransaction {
     fn add_input(&mut self, input: Self::TOut) {
         self.input.push(input);
     }
+
+    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> Self {
+        FConnectedTransaction {
+            lock_time: tx.lock_time,
+            txid: tx.txid(),
+            input: connect_output_tx_in(tx.input, tx_db, blk_file)
+                .into_iter()
+                .map(|x| x.into())
+                .collect(),
+            output: tx.output.into_iter().map(|x| x.into()).collect(),
+        }
+    }
 }
 
-impl FromTxComponent for SConnectedTransaction {
+impl TxConnectable for SConnectedTransaction {
     type TOut = STxOut;
 
     fn from(tx: &Transaction) -> Self {
@@ -231,16 +176,28 @@ impl FromTxComponent for SConnectedTransaction {
     fn add_input(&mut self, input: Self::TOut) {
         self.input.push(input);
     }
+
+    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> Self {
+        SConnectedTransaction {
+            txid: tx.txid(),
+            input: connect_output_tx_in(tx.input, tx_db, blk_file)
+                .into_iter()
+                .map(|x| x.into())
+                .collect(),
+            output: tx.output.into_iter().map(|x| x.into()).collect(),
+        }
+    }
 }
 
-pub trait FromBlockComponent {
-    type Tx: FromTxComponent + Send;
+pub trait BlockConnectable {
+    type Tx: TxConnectable + Send;
 
     fn from(block_header: BlockHeader, block_hash: BlockHash) -> Self;
     fn add_tx(&mut self, tx: Self::Tx);
+    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> Self;
 }
 
-impl FromBlockComponent for FConnectedBlock {
+impl BlockConnectable for FConnectedBlock {
     type Tx = FConnectedTransaction;
 
     fn from(block_header: BlockHeader, block_hash: BlockHash) -> Self {
@@ -253,9 +210,17 @@ impl FromBlockComponent for FConnectedBlock {
     fn add_tx(&mut self, tx: Self::Tx) {
         self.txdata.push(tx);
     }
+
+    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> Self {
+        let block_hash = block.header.block_hash();
+        FConnectedBlock {
+            header: FBlockHeader::parse(block.header, block_hash),
+            txdata: connect_output(block.txdata, tx_db, blk_file),
+        }
+    }
 }
 
-impl FromBlockComponent for SConnectedBlock {
+impl BlockConnectable for SConnectedBlock {
     type Tx = SConnectedTransaction;
 
     fn from(block_header: BlockHeader, block_hash: BlockHash) -> Self {
@@ -267,5 +232,13 @@ impl FromBlockComponent for SConnectedBlock {
 
     fn add_tx(&mut self, tx: Self::Tx) {
         self.txdata.push(tx);
+    }
+
+    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> Self {
+        let block_hash = block.header.block_hash();
+        SConnectedBlock {
+            header: SBlockHeader::parse(block.header, block_hash),
+            txdata: connect_output(block.txdata, tx_db, blk_file),
+        }
     }
 }

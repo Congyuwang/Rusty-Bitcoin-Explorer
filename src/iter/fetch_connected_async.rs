@@ -1,5 +1,5 @@
 use crate::iter::util::{DBCopy, VecMap};
-use crate::parser::proto::connected_proto::{FromBlockComponent, FromTxComponent};
+use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use bitcoin::Txid;
 use log::warn;
 use std::borrow::BorrowMut;
@@ -20,12 +20,14 @@ pub(crate) struct TaskConnected<T> {
 /// fetch_block_connected, thread safe
 ///
 pub(crate) fn fetch_block_connected<TBlock>(
-    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as FromTxComponent>::TOut>>>>>>,
+    mut unspent: &Arc<
+        Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+    >,
     db: &DBCopy,
     mut task: TaskConnected<TBlock>,
 ) -> bool
 where
-    TBlock: FromBlockComponent,
+    TBlock: BlockConnectable,
 {
     // stop new tasks from loading
     if task.error_state.load(Ordering::SeqCst) {
@@ -45,8 +47,10 @@ where
                 // insert new transactions
                 for tx in block.txdata {
                     let (txid, outs) = (tx.txid(), tx.output);
-                    let outs: VecMap<<TBlock::Tx as FromTxComponent>::TOut> = outs.into_iter().map(|x| x.into()).collect();
-                    let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as FromTxComponent>::TOut>>> = Arc::new(Mutex::new(outs));
+                    let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
+                        outs.into_iter().map(|x| x.into()).collect();
+                    let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
+                        Arc::new(Mutex::new(outs));
 
                     // the new transaction should not be in unspent
                     if unspent.lock().unwrap().contains_key(&txid) {
@@ -85,7 +89,7 @@ where
                 }
 
                 for tx in txdata_copy {
-                    let mut output_tx: TBlock::Tx = FromTxComponent::from(&tx);
+                    let mut output_tx: TBlock::Tx = TxConnectable::from(&tx);
 
                     // spend new inputs
                     for input in tx.input {

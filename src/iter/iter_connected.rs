@@ -1,7 +1,7 @@
 use crate::api::{BitcoinDB, Txid};
 use crate::iter::fetch_connected_async::{fetch_block_connected, TaskConnected};
 use crate::iter::util::{DBCopy, VecMap};
-use crate::parser::proto::connected_proto::{FromBlockComponent, FromTxComponent};
+use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use std::borrow::BorrowMut;
 use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -36,7 +36,7 @@ impl<T> Drop for ConnectedBlockIterator<T> {
 
 impl<TBlock> ConnectedBlockIterator<TBlock>
 where
-    TBlock: 'static + FromBlockComponent + Send,
+    TBlock: 'static + BlockConnectable + Send,
 {
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, end: u32) -> Self {
@@ -46,8 +46,9 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         let error_state_copy = error_state.clone();
         let (sender, receiver) = sync_channel(cpus * 10);
-        let unspent: Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as FromTxComponent>::TOut>>>>>> =
-            Arc::new(Mutex::new(HashMap::new()));
+        let unspent: Arc<
+            Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        > = Arc::new(Mutex::new(HashMap::new()));
         let db = DBCopy::from_bitcoin_db(db);
         // worker master
         let worker_thread = thread::spawn(move || {

@@ -31,7 +31,8 @@ use std::path::Path;
 pub use crate::iter::{BlockIterator, ConnectedBlockIterator};
 pub use crate::parser::block_index::{BlockIndex, BlockIndexRecord};
 pub use crate::parser::proto::connected_proto::{
-    FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction, TxConnectable,
+    BlockConnectable, FConnectedBlock, FConnectedTransaction, SConnectedBlock,
+    SConnectedTransaction, TxConnectable,
 };
 pub use crate::parser::proto::full_proto::{FBlock, FBlockHeader, FTransaction, FTxOut};
 pub use crate::parser::proto::simple_proto::{SBlock, SBlockHeader, STransaction, STxOut};
