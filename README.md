@@ -47,9 +47,9 @@ Iterating through ``connected blocks`` from 0 to 700000 takes 5 hours.
 
 ## Rust Examples
 
-### get a complete block (full format (i.e., see doc for what is full/simple format))
+### get a block (i.e., see doc for what is full/simple format)
 ```rust
-use bitcoin_explorer::api::{BitcoinDB, FBlock};
+use bitcoin_explorer::api::{BitcoinDB, FBlock, SBlock, Block};
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -57,14 +57,16 @@ let path = Path::new("/Users/me/bitcoin").unwrap();
 // launch without reading txindex
 let db = BitcoinDB::new(path, false).unwrap();
 
-// get block of height 600000
-let block: FBlock = db.get_block_full(600000).unwrap();
+// get block of height 600000 (in different formats)
+let block: Block = db.get_block(600000).unwrap();
+let block: FBlock = db.get_block(600000).unwrap();
+let block: SBlock = db.get_block(600000).unwrap();
 ```
 
-### get a particular transaction
+### get a particular transaction (in different formats)
 
 ```rust
-use bitcoin_explorer::api::{BitcoinDB, STransaction, Txid, FromHex};
+use bitcoin_explorer::api::{BitcoinDB, Transaction, FTransaction, STransaction, Txid, FromHex};
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -76,12 +78,16 @@ let db = BitcoinDB::new(path, true).unwrap();
 // e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468
 let txid_str = "e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468";
 let txid = Txid::from_hex(txid_str).unwrap();
-let tx: STransaction = db.get_transaction_simple(&txid).unwrap();
+
+// get transactions in different formats
+let tx: Transaction = db.get_transaction(&txid).unwrap();
+let tx: FTransaction = db.get_transaction(&txid).unwrap();
+let tx: STransaction = db.get_transaction(&txid).unwrap();
 ```
 
-### Iterate through blocks
+### Iterate through blocks (in different formats)
 ```rust
-use bitcoin_explorer::api::BitcoinDB;
+use bitcoin_explorer::api::{BitcoinDB, Block, SBlock, FBlock};
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -90,7 +96,21 @@ let path = Path::new("/Users/me/bitcoin").unwrap();
 let db = BitcoinDB::new(path, false).unwrap();
 
 // iterate over block from 600000 to 700000
-for block in db.get_block_full_iter_seq(600000, 700000) {
+for block in db.iter_block::<Block>(600000, 700000) {
+    for tx in block.txdata {
+        println!("do something for this transaction");
+    }
+}
+
+// iterate over block from 600000 to 700000
+for block in db.iter_block::<FBlock>(600000, 700000) {
+    for tx in block.txdata {
+        println!("do something for this transaction");
+    }
+}
+
+// iterate over block from 600000 to 700000
+for block in db.iter_block::<SBlock>(600000, 700000) {
     for tx in block.txdata {
         println!("do something for this transaction");
     }
@@ -108,11 +128,12 @@ let path = Path::new("/Users/me/bitcoin").unwrap();
 let db = BitcoinDB::new(path, false).unwrap();
 
 // iterate over block from 0 to 700000
-for block in db.get_block_simple_connected_iter(700000) {
+for block in db.iter_block_simple_connected(700000) {
     for tx in block.txdata {
         println!("do something for this transaction");
     }
 }
+
 ```
 
 ## Python Examples
