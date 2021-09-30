@@ -16,12 +16,6 @@
 //!
 //! Currently it only supports all standard script types.
 //!
-//! ## Rust vs Python
-//!
-//! For `Rust` users. Please use `bitcoin_explorer::api`.
-//! The structures and functions defined in `lib` here
-//! are intended for `python` users.
-//!
 //! # Example
 //!
 //! ```rust
