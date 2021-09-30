@@ -24,8 +24,7 @@ impl BitcoinDB {
     /// # Caveat!!
     ///
     /// This is a *very slow* function!!
-    /// For massive processing of `connected` blocks, use
-    /// `get_block_full_connected_iter()` or `get_block_simple_connected_iter`.
+    /// For massive processing of `connected` blocks, use `iter`.
     ///
     pub fn get_block_connected<T: BlockConnectable>(&self, height: i32) -> OpResult<T> {
         if !self.tx_db.is_open() {
@@ -41,7 +40,7 @@ impl BitcoinDB {
     ///
     /// # Caveats
     ///
-    /// Slow! Not suitable for massive computation. Use `get_iter`.
+    /// Slow! Not suitable for massive computation. Use `iter`.
     ///
     pub fn get_transaction_connected<T: TxConnectable>(&self, txid: &Txid) -> OpResult<T> {
         let tx = self.get_transaction(txid)?;
