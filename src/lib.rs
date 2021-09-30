@@ -78,7 +78,7 @@ impl BitcoinDBPy {
 
     #[pyo3(text_signature = "($self, height, /)")]
     fn get_block_full_connected(&self, height: i32, py: Python) -> PyResult<PyObject> {
-        match self.db.get_block_connected::<FConnectedBlock>(height) {
+        match self.db.get_connected_block::<FConnectedBlock>(height) {
             Ok(block) => Ok(pythonize(py, &block)?),
             Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
         }
@@ -86,7 +86,7 @@ impl BitcoinDBPy {
 
     #[pyo3(text_signature = "($self, height, /)")]
     fn get_block_simple_connected(&self, height: i32, py: Python) -> PyResult<PyObject> {
-        match self.db.get_block_connected::<SConnectedBlock>(height) {
+        match self.db.get_connected_block::<SConnectedBlock>(height) {
             Ok(block) => Ok(pythonize(py, &block)?),
             Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
         }
@@ -163,7 +163,7 @@ impl BitcoinDBPy {
         if let Ok(txid) = Txid::from_hex(&txid) {
             match self
                 .db
-                .get_transaction_connected::<FConnectedTransaction>(&txid)
+                .get_connected_transaction::<FConnectedTransaction>(&txid)
             {
                 Ok(t) => Ok(pythonize(py, &t)?),
                 Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
@@ -180,7 +180,7 @@ impl BitcoinDBPy {
         if let Ok(txid) = Txid::from_hex(&txid) {
             match self
                 .db
-                .get_transaction_connected::<SConnectedTransaction>(&txid)
+                .get_connected_transaction::<SConnectedTransaction>(&txid)
             {
                 Ok(t) => Ok(pythonize(py, &t)?),
                 Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
