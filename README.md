@@ -117,9 +117,9 @@ for block in db.iter_block::<SBlock>(600000, 700000) {
 }
 ```
 
-### Iterate through blocks (simple format) with outpoints connected to outputs
+### Iterate through blocks (in different format) with outpoints connected to outputs
 ```rust
-use bitcoin_explorer::BitcoinDB;
+use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
 use std::path::Path;
 
 let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -127,13 +127,19 @@ let path = Path::new("/Users/me/bitcoin").unwrap();
 // launch without reading txindex
 let db = BitcoinDB::new(path, false).unwrap();
 
-// iterate over block from 0 to 700000
-for block in db.iter_block_simple_connected(700000) {
+// iterate over block from 0 to 700000, (full format)
+for block in db.iter_connected_block::<FConnectedBlock>(700000) {
     for tx in block.txdata {
         println!("do something for this transaction");
     }
 }
 
+// iterate over block from 0 to 700000, (simple format)
+for block in db.iter_connected_block::<SConnectedBlock>(700000) {
+    for tx in block.txdata {
+        println!("do something for this transaction");
+    }
+}
 ```
 
 ## Python Examples

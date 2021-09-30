@@ -1,12 +1,6 @@
 use crate::api::BitcoinDB;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::block_index::BlockIndex;
-use crate::parser::proto::connected_proto::{
-    FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction,
-};
-use crate::parser::proto::full_proto::{FBlockHeader, FTxOut};
-use crate::parser::proto::simple_proto::{SBlockHeader, STxOut};
-use bitcoin::{BlockHash, BlockHeader, Transaction};
 use std::iter::FromIterator;
 
 /// a light weighted data structure for storing unspent output
@@ -57,71 +51,6 @@ impl DBCopy {
             block_index: db.block_index.clone(),
             blk_file: db.blk_file.clone(),
         }
-    }
-}
-
-pub trait FromTxComponent<TxOut> {
-    fn from(tx: &Transaction) -> Self;
-    fn add_input(&mut self, input: TxOut);
-}
-
-impl FromTxComponent<FTxOut> for FConnectedTransaction {
-    fn from(tx: &Transaction) -> Self {
-        FConnectedTransaction {
-            lock_time: tx.lock_time,
-            txid: tx.txid(),
-            input: Vec::new(),
-            output: tx.output.clone().into_iter().map(|x| x.into()).collect(),
-        }
-    }
-
-    fn add_input(&mut self, input: FTxOut) {
-        self.input.push(input);
-    }
-}
-
-impl FromTxComponent<STxOut> for SConnectedTransaction {
-    fn from(tx: &Transaction) -> Self {
-        SConnectedTransaction {
-            txid: tx.txid(),
-            input: Vec::new(),
-            output: tx.output.clone().into_iter().map(|x| x.into()).collect(),
-        }
-    }
-
-    fn add_input(&mut self, input: STxOut) {
-        self.input.push(input);
-    }
-}
-
-pub trait FromBlockComponent<Tx> {
-    fn from(block_header: BlockHeader, block_hash: BlockHash) -> Self;
-    fn add_tx(&mut self, tx: Tx);
-}
-
-impl FromBlockComponent<FConnectedTransaction> for FConnectedBlock {
-    fn from(block_header: BlockHeader, block_hash: BlockHash) -> Self {
-        FConnectedBlock {
-            header: FBlockHeader::parse(block_header, block_hash),
-            txdata: Vec::new(),
-        }
-    }
-
-    fn add_tx(&mut self, tx: FConnectedTransaction) {
-        self.txdata.push(tx);
-    }
-}
-
-impl FromBlockComponent<SConnectedTransaction> for SConnectedBlock {
-    fn from(block_header: BlockHeader, block_hash: BlockHash) -> Self {
-        SConnectedBlock {
-            header: SBlockHeader::parse(block_header, block_hash),
-            txdata: Vec::new(),
-        }
-    }
-
-    fn add_tx(&mut self, tx: SConnectedTransaction) {
-        self.txdata.push(tx);
     }
 }
 

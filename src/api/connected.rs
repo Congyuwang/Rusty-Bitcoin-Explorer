@@ -1,18 +1,9 @@
 //!
 //! implementation of methods that retrieve block info with outpoints connected
 //!
-use crate::api::{
-    BitcoinDB, TxConnectable, ConnectedBlockIterator, FConnectedBlock, FConnectedTransaction, FTxOut,
-    SConnectedBlock, SConnectedTransaction, STxOut, Txid,
-};
+use crate::api::{BitcoinDB, ConnectedBlockIterator, TxConnectable, Txid};
 use crate::parser::errors::{OpError, OpResult};
-use crate::parser::proto::connected_proto::BlockConnectable;
-
-// Define iterator types
-pub type ConnectedBlockIteratorFull =
-    ConnectedBlockIterator<FConnectedBlock, FConnectedTransaction, FTxOut>;
-pub type ConnectedBlockIteratorSimple =
-    ConnectedBlockIterator<SConnectedBlock, SConnectedTransaction, STxOut>;
+use crate::parser::proto::connected_proto::{BlockConnectable, FromBlockComponent};
 
 impl BitcoinDB {
     ///
@@ -34,7 +25,6 @@ impl BitcoinDB {
         Ok(T::connect(tx, &self.tx_db, &self.blk_file))
     }
 
-
     ///
     /// Get `full version` transaction with outpoints replaced by outputs.
     ///
@@ -51,7 +41,7 @@ impl BitcoinDB {
     ///
     /// Iterate through all blocks for a given heights (excluded).
     ///
-    /// Format: `full block (with outpoints connected)`.
+    /// Format: `full connected` / `simple connected`.
     ///
     /// This iterator use `unspent output` to track down the connected
     /// outputs of each outpoints.
@@ -81,7 +71,7 @@ impl BitcoinDB {
     /// # Example
     ///
     /// ```rust
-    /// use bitcoin_explorer::BitcoinDB;
+    /// use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
     /// use std::path::Path;
     ///
     /// let path = Path::new("/Users/me/bitcoin").unwrap();
@@ -89,68 +79,25 @@ impl BitcoinDB {
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();
     ///
-    /// // iterate over block from 0 to 700000
-    /// for block in db.iter_block_full_connected(700000) {
+    /// // iterate over block from 0 to 700000, (full format)
+    /// for block in db.iter_connected_block::<FConnectedBlock>(700000) {
+    ///     for tx in block.txdata {
+    ///         println!("do something for this transaction");
+    ///     }
+    /// }
+    ///
+    /// // iterate over block from 0 to 700000, (simple format)
+    /// for block in db.iter_connected_block::<SConnectedBlock>(700000) {
     ///     for tx in block.txdata {
     ///         println!("do something for this transaction");
     ///     }
     /// }
     /// ```
     ///
-    pub fn iter_block_full_connected(&self, end: u32) -> ConnectedBlockIteratorFull {
-        ConnectedBlockIterator::new(self, end)
-    }
-
-    ///
-    /// Iterate through all blocks for a given heights (excluded).
-    ///
-    /// Format: `simple block (with outpoints connected)`.
-    ///
-    /// This iterator use `unspent output` to track down the connected
-    /// outputs of each outpoints.
-    ///
-    /// ## Note
-    /// This does NOT require `txindex=true`.
-    ///
-    /// # Performance
-    ///
-    /// Iterating through height from 0 to 700000 takes 5 hours.
-    /// The performance bottleneck is most likely diskIO.
-    ///
-    /// This iterator is implemented to read the blocks in concurrency,
-    /// but each block connects its outpoints to outputs only after
-    /// all previous blocks have finished inserting their outputs in
-    /// `unspent cache`.
-    /// The result is still produced in the sequential order.
-    ///
-    /// Because this iterator tracks unspent outputs,
-    /// it can use up to 20GB to 30GB memory.
-    ///
-    /// This iterator can only start from genesis block, because it has to
-    /// track unspent transactions.
-    ///
-    /// TODO: might use txindex to allow for iterating starting from larger heights.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use bitcoin_explorer::BitcoinDB;
-    /// use std::path::Path;
-    ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
-    ///
-    /// // launch without reading txindex
-    /// let db = BitcoinDB::new(path, false).unwrap();
-    ///
-    /// // iterate over block from 0 to 700000
-    /// for block in db.iter_block_simple_connected(700000) {
-    ///     for tx in block.txdata {
-    ///         println!("do something for this transaction");
-    ///     }
-    /// }
-    /// ```
-    ///
-    pub fn iter_block_simple_connected(&self, end: u32) -> ConnectedBlockIteratorSimple {
+    pub fn iter_connected_block<TBlock>(&self, end: u32) -> ConnectedBlockIterator<TBlock>
+    where
+        TBlock: 'static + FromBlockComponent + Send,
+    {
         ConnectedBlockIterator::new(self, end)
     }
 }

@@ -28,11 +28,10 @@ use crate::parser::script::{evaluate_script, ScriptInfo};
 use crate::parser::tx_index::TxDB;
 use std::path::Path;
 // re-exports
-pub use crate::api::connected::{ConnectedBlockIteratorFull, ConnectedBlockIteratorSimple};
 pub use crate::iter::{BlockIterator, ConnectedBlockIterator};
 pub use crate::parser::block_index::{BlockIndex, BlockIndexRecord};
 pub use crate::parser::proto::connected_proto::{
-    TxConnectable, FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction,
+    FConnectedBlock, FConnectedTransaction, SConnectedBlock, SConnectedTransaction, TxConnectable,
 };
 pub use crate::parser::proto::full_proto::{FBlock, FBlockHeader, FTransaction, FTxOut};
 pub use crate::parser::proto::simple_proto::{SBlock, SBlockHeader, STransaction, STxOut};

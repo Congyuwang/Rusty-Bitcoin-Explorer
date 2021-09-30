@@ -1,10 +1,9 @@
 use crate::api::{BitcoinDB, Txid};
 use crate::iter::fetch_connected_async::{fetch_block_connected, TaskConnected};
-use crate::iter::util::{DBCopy, FromBlockComponent, FromTxComponent, VecMap};
-use bitcoin::TxOut;
+use crate::iter::util::{DBCopy, VecMap};
+use crate::parser::proto::connected_proto::FromBlockComponent;
 use std::borrow::BorrowMut;
 use std::collections::{HashMap, VecDeque};
-use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, Receiver};
 use std::sync::{Arc, Condvar, Mutex};
@@ -12,21 +11,19 @@ use std::thread;
 use std::thread::JoinHandle;
 
 /// iterate through blocks, and connecting outpoints.
-pub struct ConnectedBlockIterator<TBlock, Tx, TOut> {
+pub struct ConnectedBlockIterator<TBlock> {
     receiver: Receiver<TBlock>,
     worker_thread: Option<JoinHandle<()>>,
     error_state: Arc<AtomicBool>,
-    tx_phantom: PhantomData<Tx>,
-    tout_phantom: PhantomData<TOut>,
 }
 
-impl<T, Tx, TOut> ConnectedBlockIterator<T, Tx, TOut> {
+impl<T> ConnectedBlockIterator<T> {
     fn join(&mut self) {
         self.worker_thread.take().unwrap().join().unwrap()
     }
 }
 
-impl<T, Tx, TOut> Drop for ConnectedBlockIterator<T, Tx, TOut> {
+impl<T> Drop for ConnectedBlockIterator<T> {
     /// attempt to stop the worker threads
     fn drop(&mut self) {
         {
@@ -37,11 +34,9 @@ impl<T, Tx, TOut> Drop for ConnectedBlockIterator<T, Tx, TOut> {
     }
 }
 
-impl<TBlock, Tx, TOut> ConnectedBlockIterator<TBlock, Tx, TOut>
+impl<TBlock> ConnectedBlockIterator<TBlock>
 where
-    TOut: 'static + From<TxOut> + Send,
-    Tx: FromTxComponent<TOut> + Send,
-    TBlock: 'static + FromBlockComponent<Tx> + Send,
+    TBlock: 'static + FromBlockComponent + Send,
 {
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, end: u32) -> Self {
@@ -51,7 +46,7 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         let error_state_copy = error_state.clone();
         let (sender, receiver) = sync_channel(cpus * 10);
-        let unspent: Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<TOut>>>>>> =
+        let unspent: Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<TBlock::TOut>>>>>> =
             Arc::new(Mutex::new(HashMap::new()));
         let db = DBCopy::from_bitcoin_db(db);
         // worker master
@@ -104,13 +99,11 @@ where
             receiver,
             worker_thread: Some(worker_thread),
             error_state,
-            tx_phantom: Default::default(),
-            tout_phantom: Default::default(),
         }
     }
 }
 
-impl<TBlock, Tx, TOut> Iterator for ConnectedBlockIterator<TBlock, Tx, TOut> {
+impl<TBlock> Iterator for ConnectedBlockIterator<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {

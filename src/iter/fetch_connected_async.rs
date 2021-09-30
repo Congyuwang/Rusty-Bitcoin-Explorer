@@ -1,5 +1,6 @@
-use crate::iter::util::{DBCopy, FromBlockComponent, FromTxComponent, VecMap};
-use bitcoin::{TxOut, Txid};
+use crate::iter::util::{DBCopy, VecMap};
+use crate::parser::proto::connected_proto::{FromBlockComponent, FromTxComponent};
+use bitcoin::Txid;
 use log::warn;
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
@@ -18,15 +19,13 @@ pub(crate) struct TaskConnected<T> {
 ///
 /// fetch_block_connected, thread safe
 ///
-pub(crate) fn fetch_block_connected<TBlock, TOut, Tx>(
-    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<TOut>>>>>>,
+pub(crate) fn fetch_block_connected<TBlock>(
+    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<TBlock::TOut>>>>>>,
     db: &DBCopy,
     mut task: TaskConnected<TBlock>,
 ) -> bool
 where
-    TOut: From<TxOut>,
-    Tx: FromTxComponent<TOut>,
-    TBlock: FromBlockComponent<Tx>,
+    TBlock: FromBlockComponent,
 {
     // stop new tasks from loading
     if task.error_state.load(Ordering::SeqCst) {
@@ -46,8 +45,8 @@ where
                 // insert new transactions
                 for tx in block.txdata {
                     let (txid, outs) = (tx.txid(), tx.output);
-                    let outs: VecMap<TOut> = outs.into_iter().map(TOut::from).collect();
-                    let new_unspent: Arc<Mutex<VecMap<TOut>>> = Arc::new(Mutex::new(outs));
+                    let outs: VecMap<TBlock::TOut> = outs.into_iter().map(|x| x.into()).collect();
+                    let new_unspent: Arc<Mutex<VecMap<TBlock::TOut>>> = Arc::new(Mutex::new(outs));
 
                     // the new transaction should not be in unspent
                     if unspent.lock().unwrap().contains_key(&txid) {
@@ -86,7 +85,7 @@ where
                 }
 
                 for tx in txdata_copy {
-                    let mut output_tx = Tx::from(&tx);
+                    let mut output_tx: TBlock::Tx = FromTxComponent::from(&tx);
 
                     // spend new inputs
                     for input in tx.input {

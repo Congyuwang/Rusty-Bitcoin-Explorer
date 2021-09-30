@@ -161,7 +161,10 @@ impl BitcoinDBPy {
     #[pyo3(text_signature = "($self, txid, /)")]
     fn get_transaction_full_connected(&self, txid: String, py: Python) -> PyResult<PyObject> {
         if let Ok(txid) = Txid::from_hex(&txid) {
-            match self.db.get_transaction_connected::<FConnectedTransaction>(&txid) {
+            match self
+                .db
+                .get_transaction_connected::<FConnectedTransaction>(&txid)
+            {
                 Ok(t) => Ok(pythonize(py, &t)?),
                 Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
             }
@@ -175,7 +178,10 @@ impl BitcoinDBPy {
     #[pyo3(text_signature = "($self, txid, /)")]
     fn get_transaction_simple_connected(&self, txid: String, py: Python) -> PyResult<PyObject> {
         if let Ok(txid) = Txid::from_hex(&txid) {
-            match self.db.get_transaction_connected::<SConnectedTransaction>(&txid) {
+            match self
+                .db
+                .get_transaction_connected::<SConnectedTransaction>(&txid)
+            {
                 Ok(t) => Ok(pythonize(py, &t)?),
                 Err(e) => Err(pyo3::exceptions::PyException::new_err(e.to_string())),
             }
@@ -376,13 +382,13 @@ impl PyIterProtocol for SBlockIteratorSequential {
 
 #[pyclass]
 struct FConnectedBlockIterator {
-    iter: api::ConnectedBlockIteratorFull,
+    iter: api::ConnectedBlockIterator<FConnectedBlock>,
 }
 
 impl FConnectedBlockIterator {
     fn new(db: &api::BitcoinDB, end: u32) -> FConnectedBlockIterator {
         FConnectedBlockIterator {
-            iter: db.iter_block_full_connected(end),
+            iter: db.iter_connected_block(end),
         }
     }
 }
@@ -411,13 +417,13 @@ impl PyIterProtocol for FConnectedBlockIterator {
 
 #[pyclass]
 struct SConnectedBlockIterator {
-    iter: api::ConnectedBlockIteratorSimple,
+    iter: api::ConnectedBlockIterator<SConnectedBlock>,
 }
 
 impl SConnectedBlockIterator {
     fn new(db: &api::BitcoinDB, end: u32) -> SConnectedBlockIterator {
         SConnectedBlockIterator {
-            iter: db.iter_block_simple_connected(end),
+            iter: db.iter_connected_block(end),
         }
     }
 }
