@@ -2,6 +2,9 @@ use crate::parser::script::{evaluate_script, Type};
 use bitcoin::{Address, Block, BlockHash, Transaction, TxIn, TxOut, Txid};
 use serde::{Deserialize, Serialize};
 
+///
+/// Block in a `simple` format.
+///
 /// A `SBlock` compared to a `Block` has the following more
 /// attributes precomputed:
 /// - `block hash`

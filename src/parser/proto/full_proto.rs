@@ -7,6 +7,8 @@ use bitcoin::{Address, BlockHash, Transaction, TxMerkleNode, TxOut, Txid};
 use serde::{Deserialize, Serialize};
 
 ///
+/// Block in a `full` format.
+///
 /// A `FBlock` compared to a `Block` has the following more
 /// attributes computed:
 /// - `block hash`
