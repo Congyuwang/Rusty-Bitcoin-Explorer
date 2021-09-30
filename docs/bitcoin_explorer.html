@@ -106,7 +106,7 @@ bitcoin_explorer    </h1>
 <li><code>cd</code> to the repository root.</li>
 <li>run <code>pip install maturin</code> to install <code>maturin</code>.</li>
 <li>run <code>maturin develop --release</code> to install the package directly to
-the currently available python environtment.
+the currently available python environment.
 Or you may run <code>maturin build --release</code> to build the wheel
 and install the <code>whl</code> file use <code>pip install</code> command.</li>
 </ul></li>
@@ -140,7 +140,7 @@ Bitcoin Core.</li>
 <span class="sd">    - `cd` to the repository root.</span>
 <span class="sd">    - run `pip install maturin` to install `maturin`.</span>
 <span class="sd">    - run `maturin develop --release` to install the package directly to</span>
-<span class="sd">      the currently available python environtment.</span>
+<span class="sd">      the currently available python environment.</span>
 <span class="sd">      Or you may run `maturin build --release` to build the wheel</span>
 <span class="sd">      and install the `whl` file use `pip install` command.</span>
 
@@ -200,7 +200,7 @@ Bitcoin Core.</li>
 <span class="sd">            ::</span>
 
 <span class="sd">                # import package</span>
-<span class="sd">                import bitcoinquery as bq</span>
+<span class="sd">                import bitcoin_explorer as bq</span>
 
 <span class="sd">                # launch bitcoinDB</span>
 <span class="sd">                db = bq.BitcoinDB(&quot;~/Bitcoin&quot;, tx_index=True)</span>
@@ -266,7 +266,7 @@ Bitcoin Core.</li>
 <span class="sd">            height: the height of the block.</span>
 <span class="sd">            simplify: whether to use simpler format, (i.e., discard</span>
 <span class="sd">                witness program, script public hash, etc.), which makes</span>
-<span class="sd">                parsing to ython objecta lot faster.</span>
+<span class="sd">                parsing to python objects lot faster.</span>
 <span class="sd">            connected: whether to replace inputs by related previous outputs.</span>
 
 <span class="sd">        Returns: block data, or error if the height is not yet synced.</span>
@@ -518,7 +518,7 @@ Bitcoin Core.</li>
 <span class="sd">            ::</span>
 
 <span class="sd">                # import package</span>
-<span class="sd">                import bitcoinquery as bq</span>
+<span class="sd">                import bitcoin_explorer as bq</span>
 
 <span class="sd">                # launch bitcoinDB</span>
 <span class="sd">                db = bq.BitcoinDB(&quot;~/Bitcoin&quot;, tx_index=True)</span>
@@ -584,7 +584,7 @@ Bitcoin Core.</li>
 <span class="sd">            height: the height of the block.</span>
 <span class="sd">            simplify: whether to use simpler format, (i.e., discard</span>
 <span class="sd">                witness program, script public hash, etc.), which makes</span>
-<span class="sd">                parsing to ython objecta lot faster.</span>
+<span class="sd">                parsing to python objects lot faster.</span>
 <span class="sd">            connected: whether to replace inputs by related previous outputs.</span>
 
 <span class="sd">        Returns: block data, or error if the height is not yet synced.</span>
@@ -834,7 +834,7 @@ Bitcoin Core.</li>
 <span class="sd">            ::</span>
 
 <span class="sd">                # import package</span>
-<span class="sd">                import bitcoinquery as bq</span>
+<span class="sd">                import bitcoin_explorer as bq</span>
 
 <span class="sd">                # launch bitcoinDB</span>
 <span class="sd">                db = bq.BitcoinDB(&quot;~/Bitcoin&quot;, tx_index=True)</span>
@@ -890,7 +890,7 @@ Bitcoin Core.</li>
   <p>::</p>
 
 <pre><code># import package
-import bitcoinquery as bq
+import bitcoin_explorer as bq
 
 # launch bitcoinDB
 db = bq.BitcoinDB("~/Bitcoin", tx_index=True)
@@ -1009,7 +1009,7 @@ and will print a warning if it fails to open.</li>
 <span class="sd">            height: the height of the block.</span>
 <span class="sd">            simplify: whether to use simpler format, (i.e., discard</span>
 <span class="sd">                witness program, script public hash, etc.), which makes</span>
-<span class="sd">                parsing to ython objecta lot faster.</span>
+<span class="sd">                parsing to python objects lot faster.</span>
 <span class="sd">            connected: whether to replace inputs by related previous outputs.</span>
 
 <span class="sd">        Returns: block data, or error if the height is not yet synced.</span>
@@ -1058,7 +1058,7 @@ and will print a warning if it fails to open.</li>
 <li><strong>height:</strong>  the height of the block.</li>
 <li><strong>simplify:</strong>  whether to use simpler format, (i.e., discard
 witness program, script public hash, etc.), which makes
-parsing to ython objecta lot faster.</li>
+parsing to python objects lot faster.</li>
 <li><strong>connected:</strong>  whether to replace inputs by related previous outputs.</li>
 </ul>
 

@@ -1,7 +1,7 @@
 use crate::api::{BitcoinDB, Txid};
 use crate::iter::fetch_connected_async::{fetch_block_connected, TaskConnected};
 use crate::iter::util::{DBCopy, VecMap};
-use crate::parser::proto::connected_proto::FromBlockComponent;
+use crate::parser::proto::connected_proto::{FromBlockComponent, FromTxComponent};
 use std::borrow::BorrowMut;
 use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -46,7 +46,7 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         let error_state_copy = error_state.clone();
         let (sender, receiver) = sync_channel(cpus * 10);
-        let unspent: Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<TBlock::TOut>>>>>> =
+        let unspent: Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as FromTxComponent>::TOut>>>>>> =
             Arc::new(Mutex::new(HashMap::new()));
         let db = DBCopy::from_bitcoin_db(db);
         // worker master

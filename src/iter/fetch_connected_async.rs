@@ -20,7 +20,7 @@ pub(crate) struct TaskConnected<T> {
 /// fetch_block_connected, thread safe
 ///
 pub(crate) fn fetch_block_connected<TBlock>(
-    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<TBlock::TOut>>>>>>,
+    mut unspent: &Arc<Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as FromTxComponent>::TOut>>>>>>,
     db: &DBCopy,
     mut task: TaskConnected<TBlock>,
 ) -> bool
@@ -45,8 +45,8 @@ where
                 // insert new transactions
                 for tx in block.txdata {
                     let (txid, outs) = (tx.txid(), tx.output);
-                    let outs: VecMap<TBlock::TOut> = outs.into_iter().map(|x| x.into()).collect();
-                    let new_unspent: Arc<Mutex<VecMap<TBlock::TOut>>> = Arc::new(Mutex::new(outs));
+                    let outs: VecMap<<TBlock::Tx as FromTxComponent>::TOut> = outs.into_iter().map(|x| x.into()).collect();
+                    let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as FromTxComponent>::TOut>>> = Arc::new(Mutex::new(outs));
 
                     // the new transaction should not be in unspent
                     if unspent.lock().unwrap().contains_key(&txid) {
