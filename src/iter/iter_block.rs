@@ -18,25 +18,6 @@ pub struct BlockIter<TBlock> {
     error_state: Arc<AtomicBool>,
 }
 
-impl<T> BlockIter<T> {
-    fn join(&mut self) {
-        for handle in self.worker_thread.take().unwrap() {
-            handle.join().unwrap()
-        }
-    }
-}
-
-impl<T> Drop for BlockIter<T> {
-    // attempt to stop the worker threads
-    fn drop(&mut self) {
-        {
-            let err = self.error_state.borrow_mut();
-            err.fetch_or(true, Ordering::SeqCst);
-        }
-        self.join();
-    }
-}
-
 impl<TBlock> BlockIter<TBlock>
 where
     TBlock: From<Block> + Send + 'static,
@@ -46,13 +27,12 @@ where
         let cpus = num_cpus::get();
         let error_state = Arc::new(AtomicBool::new(false));
         // worker master
-        let error_state_copy = error_state.clone();
         let (task_register, task_order) = channel();
         let mut tasks: VecDeque<Task> = VecDeque::with_capacity(heights.len());
         for height in heights {
             tasks.push_back(Task {
                 height,
-                error_state: error_state_copy.clone(),
+                error_state: error_state.clone(),
             })
         }
 
@@ -125,5 +105,24 @@ impl<TBlock> Iterator for BlockIter<TBlock> {
             },
             Err(_) => None,
         }
+    }
+}
+
+impl<T> BlockIter<T> {
+    fn join(&mut self) {
+        for handle in self.worker_thread.take().unwrap() {
+            handle.join().unwrap()
+        }
+    }
+}
+
+impl<T> Drop for BlockIter<T> {
+    // attempt to stop the worker threads
+    fn drop(&mut self) {
+        {
+            let err = self.error_state.borrow_mut();
+            err.fetch_or(true, Ordering::SeqCst);
+        }
+        self.join();
     }
 }
