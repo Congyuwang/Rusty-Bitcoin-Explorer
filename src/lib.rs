@@ -243,21 +243,21 @@ impl BitcoinDBPy {
 // construct python iterators
 derive_py_iter!(
     FBlockIteratorArray,
-    BlockIterator,
+    BlockIter,
     FBlock,
     iter_heights,
     heights: Vec<u32>
 );
 derive_py_iter!(
     SBlockIteratorArray,
-    BlockIterator,
+    BlockIter,
     SBlock,
     iter_heights,
     heights: Vec<u32>
 );
 derive_py_iter!(
     FBlockIterator,
-    BlockIterator,
+    BlockIter,
     FBlock,
     iter_block,
     start: u32,
@@ -265,7 +265,7 @@ derive_py_iter!(
 );
 derive_py_iter!(
     SBlockIterator,
-    BlockIterator,
+    BlockIter,
     SBlock,
     iter_block,
     start: u32,
@@ -273,14 +273,14 @@ derive_py_iter!(
 );
 derive_py_iter!(
     FConnectedBlockIterator,
-    ConnectedBlockIterator,
+    ConnectedBlockIter,
     FConnectedBlock,
     iter_connected_block,
     end: u32
 );
 derive_py_iter!(
     SConnectedBlockIterator,
-    ConnectedBlockIterator,
+    ConnectedBlockIter,
     SConnectedBlock,
     iter_connected_block,
     end: u32

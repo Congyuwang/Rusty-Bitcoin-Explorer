@@ -1,7 +1,7 @@
 //!
 //! implementation of methods that retrieve block info with outpoints connected
 //!
-use crate::api::{BitcoinDB, BlockConnectable, ConnectedBlockIterator, TxConnectable, Txid};
+use crate::api::{BitcoinDB, BlockConnectable, ConnectedBlockIter, TxConnectable, Txid};
 use crate::parser::errors::{OpError, OpResult};
 
 impl BitcoinDB {
@@ -95,10 +95,10 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn iter_connected_block<TBlock>(&self, end: u32) -> ConnectedBlockIterator<TBlock>
+    pub fn iter_connected_block<TBlock>(&self, end: u32) -> ConnectedBlockIter<TBlock>
     where
         TBlock: 'static + BlockConnectable + Send,
     {
-        ConnectedBlockIterator::new(self, end)
+        ConnectedBlockIter::new(self, end)
     }
 }

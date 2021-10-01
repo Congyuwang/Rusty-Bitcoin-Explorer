@@ -11,19 +11,19 @@ use std::thread;
 use std::thread::JoinHandle;
 
 /// iterate through blocks, and connecting outpoints.
-pub struct ConnectedBlockIterator<TBlock> {
+pub struct ConnectedBlockIter<TBlock> {
     receiver: Receiver<TBlock>,
     worker_thread: Option<JoinHandle<()>>,
     error_state: Arc<AtomicBool>,
 }
 
-impl<T> ConnectedBlockIterator<T> {
+impl<T> ConnectedBlockIter<T> {
     fn join(&mut self) {
         self.worker_thread.take().unwrap().join().unwrap()
     }
 }
 
-impl<T> Drop for ConnectedBlockIterator<T> {
+impl<T> Drop for ConnectedBlockIter<T> {
     /// attempt to stop the worker threads
     fn drop(&mut self) {
         {
@@ -34,7 +34,7 @@ impl<T> Drop for ConnectedBlockIterator<T> {
     }
 }
 
-impl<TBlock> ConnectedBlockIterator<TBlock>
+impl<TBlock> ConnectedBlockIter<TBlock>
 where
     TBlock: 'static + BlockConnectable + Send,
 {
@@ -96,7 +96,7 @@ where
                 handle.join().unwrap();
             }
         });
-        ConnectedBlockIterator {
+        ConnectedBlockIter {
             receiver,
             worker_thread: Some(worker_thread),
             error_state,
@@ -104,7 +104,7 @@ where
     }
 }
 
-impl<TBlock> Iterator for ConnectedBlockIterator<TBlock> {
+impl<TBlock> Iterator for ConnectedBlockIter<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
