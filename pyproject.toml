@@ -1,8 +1,8 @@
 [project]
 name = "bitcoin-explorer"
-version = "0.2.12"
+version = "0.2.13"
 classifiers = ["Programming Language :: Python"]
-description = "Read Bitcoin Core Blockchain Binary File Efficiently"
+description = "High Performance Blockchain Deserializer"
 long_description_content_type="text/markdown"
 readme = "README.md"
 homepage = 'https://github.com/Congyuwang/Rusty-Bitcoin-Explorer'

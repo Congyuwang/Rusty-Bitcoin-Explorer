@@ -1,6 +1,6 @@
 use crate::api::{BitcoinDB, Txid};
 use crate::iter::fetch_connected_async::{fetch_block_connected, TaskConnected};
-use crate::iter::util::{DBCopy, VecMap};
+use crate::iter::util::DBCopy;
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use std::borrow::BorrowMut;
 use std::collections::{BTreeMap, VecDeque};
@@ -47,7 +47,7 @@ where
         let error_state_copy = error_state.clone();
         let (sender, receiver) = sync_channel(cpus * 10);
         let unspent: Arc<
-            Mutex<BTreeMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+            Mutex<BTreeMap<Txid, Arc<Mutex<BTreeMap<u16, <TBlock::Tx as TxConnectable>::TOut>>>>>,
         > = Arc::new(Mutex::new(BTreeMap::new()));
         let db = DBCopy::from_bitcoin_db(db);
         // worker master

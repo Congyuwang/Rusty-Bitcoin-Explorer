@@ -1,11 +1,11 @@
 [package]
 name = "bitcoin-explorer"
-version = "0.2.12"
+version = "0.2.13"
 edition = "2018"
 readme = "README.md"
 license-file = "LICENSE.txt"
 keywords = ["blockchain", "bitcoin", "explorer", "parser", "concurrency"]
-description = "A Package for Querying Bitcoin Core Binary Files Efficiently"
+description = "High Performance Blockchain Deserializer"
 homepage = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
 repository = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
 

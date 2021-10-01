@@ -38,12 +38,9 @@ Copyright (C) 2009-2020 The Bitcoin Core developers`.
 
 ## Performance
 
-The current performance bottleneck is disk IO.
 SSD allows faster performance.
 
-On HDD, iterating from heights 600000 to 700000 takes less than 30 minutes.
-
-Iterating through ``connected blocks`` from 0 to 700000 takes 5 hours.
+Iterating through all 700000 blocks (in sequential order) takes less than 40 minutes.
 
 ## Rust Examples
 
