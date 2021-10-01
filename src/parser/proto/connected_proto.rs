@@ -112,7 +112,7 @@ fn outpoint_connect(tx_in: &TxIn, tx_db: &TxDB, blk_file: &BlkFile) -> Option<Tx
 }
 
 fn get_all_tx_in(transactions: &Vec<Transaction>) -> Vec<&TxIn> {
-    let mut all_tx_in = Vec::new();
+    let mut all_tx_in = Vec::with_capacity(transactions.len());
     for tx in transactions {
         for tx_in in &tx.input {
             all_tx_in.push(tx_in);

@@ -107,7 +107,6 @@ fn is_multisig(script: &Script) -> bool {
             return false;
         }
     }
-    let chunks = chunks;
     if chunks.len() < 4 {
         return false;
     }
