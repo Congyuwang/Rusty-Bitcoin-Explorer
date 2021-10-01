@@ -8,5 +8,5 @@ mod iter_block;
 mod iter_connected;
 mod util;
 
-pub use iter_block::BlockIterator;
-pub use iter_connected::ConnectedBlockIterator;
+pub use iter_block::BlockIter;
+pub use iter_connected::ConnectedBlockIter;

@@ -1,4 +1,4 @@
-use crate::iter::util::{DBCopy, VecMap};
+use crate::iter::util::DBCopy;
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use bitcoin::Txid;
 use log::warn;
@@ -21,7 +21,7 @@ pub(crate) struct TaskConnected<T> {
 ///
 pub(crate) fn fetch_block_connected<TBlock>(
     mut unspent: &Arc<
-        Mutex<BTreeMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        Mutex<BTreeMap<Txid, Arc<Mutex<BTreeMap<u16, <TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     db: &DBCopy,
     mut task: TaskConnected<TBlock>,
@@ -46,11 +46,14 @@ where
 
                 // insert new transactions
                 for tx in block.txdata {
-                    let (txid, outs) = (tx.txid(), tx.output);
-                    let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
-                        outs.into_iter().map(|x| x.into()).collect();
-                    let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
-                        Arc::new(Mutex::new(outs));
+                    let txid = tx.txid();
+                    let mut outs: BTreeMap<u16, <TBlock::Tx as TxConnectable>::TOut> = BTreeMap::new();
+                    let mut out_n: u16 = 0;
+                    for out in tx.output {
+                        outs.insert(out_n, out.into());
+                        out_n += 1;
+                    }
+                    let new_unspent = Arc::new(Mutex::new(outs));
 
                     // the new transaction should not be in unspent
                     if unspent.lock().unwrap().contains_key(&txid) {
@@ -113,7 +116,7 @@ where
                             // temporarily lock prev_tx
                             let tx_out = {
                                 let mut prev_tx_lock = prev_tx.lock().unwrap();
-                                let out = prev_tx_lock.remove(n);
+                                let out = prev_tx_lock.remove(&(n as u16));
                                 // remove a key immediately when the key contains no transaction
                                 if prev_tx_lock.is_empty() {
                                     unspent.lock().unwrap().remove(prev_txid);

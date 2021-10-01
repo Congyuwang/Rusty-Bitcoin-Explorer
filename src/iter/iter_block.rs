@@ -11,19 +11,19 @@ use std::thread;
 use std::thread::JoinHandle;
 
 /// iterate through blocks according to array index.
-pub struct BlockIterator<TBlock> {
+pub struct BlockIter<TBlock> {
     receiver: Receiver<TBlock>,
     worker_thread: Option<JoinHandle<()>>,
     error_state: Arc<AtomicBool>,
 }
 
-impl<T> BlockIterator<T> {
+impl<T> BlockIter<T> {
     fn join(&mut self) {
         self.worker_thread.take().unwrap().join().unwrap();
     }
 }
 
-impl<T> Drop for BlockIterator<T> {
+impl<T> Drop for BlockIter<T> {
     // attempt to stop the worker threads
     fn drop(&mut self) {
         {
@@ -34,7 +34,7 @@ impl<T> Drop for BlockIterator<T> {
     }
 }
 
-impl<TBlock> BlockIterator<TBlock>
+impl<TBlock> BlockIter<TBlock>
 where
     TBlock: From<Block> + Send + 'static,
 {
@@ -92,7 +92,7 @@ where
                 handle.join().unwrap();
             }
         });
-        BlockIterator {
+        BlockIter {
             receiver,
             worker_thread: Some(worker_thread),
             error_state,
@@ -102,15 +102,15 @@ where
     /// the worker threads are dispatched in this `new` constructor!
     pub fn from_range(db: &BitcoinDB, start: u32, end: u32) -> Self {
         if end <= start {
-            BlockIterator::new(db, Vec::new())
+            BlockIter::new(db, Vec::new())
         } else {
             let heights: Vec<u32> = (start..end).collect();
-            BlockIterator::new(db, heights)
+            BlockIter::new(db, heights)
         }
     }
 }
 
-impl<TBlock> Iterator for BlockIterator<TBlock> {
+impl<TBlock> Iterator for BlockIter<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {

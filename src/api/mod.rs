@@ -28,7 +28,7 @@ use crate::parser::script::{evaluate_script, ScriptInfo};
 use crate::parser::tx_index::TxDB;
 use std::path::Path;
 // re-exports
-pub use crate::iter::{BlockIterator, ConnectedBlockIterator};
+pub use crate::iter::{BlockIter, ConnectedBlockIter};
 pub use crate::parser::block_index::{BlockIndex, BlockIndexRecord};
 pub use crate::parser::proto::connected_proto::{
     BlockConnectable, FConnectedBlock, FConnectedTransaction, SConnectedBlock,
@@ -306,11 +306,11 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn iter_block<T>(&self, start: u32, end: u32) -> BlockIterator<T>
+    pub fn iter_block<T>(&self, start: u32, end: u32) -> BlockIter<T>
     where
         T: From<Block> + Send + 'static,
     {
-        BlockIterator::from_range(self, start, end)
+        BlockIter::from_range(self, start, end)
     }
 
     ///
@@ -370,10 +370,7 @@ impl BitcoinDB {
     ///
     /// ```
     ///
-    pub fn iter_heights<T: 'static + From<Block> + Send>(
-        &self,
-        heights: Vec<u32>,
-    ) -> BlockIterator<T> {
-        BlockIterator::new(self, heights)
+    pub fn iter_heights<T: 'static + From<Block> + Send>(&self, heights: Vec<u32>) -> BlockIter<T> {
+        BlockIter::new(self, heights)
     }
 }
