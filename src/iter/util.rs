@@ -9,7 +9,6 @@ pub(crate) struct VecMap<T> {
 }
 
 impl<T> VecMap<T> {
-
     pub(crate) fn from_vec(slice: Box<[Option<T>]>) -> Self {
         VecMap {
             size: slice.len() as u16,
@@ -58,11 +57,14 @@ mod test_vec_map {
 
     #[test]
     fn test_vec_map() {
-        let mut vec: VecMap<STxOut> = VecMap::from_vec(vec![
-            Some(TxOut::default().into()),
-            Some(TxOut::default().into()),
-            Some(TxOut::default().into()),
-        ].into_boxed_slice());
+        let mut vec: VecMap<STxOut> = VecMap::from_vec(
+            vec![
+                Some(TxOut::default().into()),
+                Some(TxOut::default().into()),
+                Some(TxOut::default().into()),
+            ]
+            .into_boxed_slice(),
+        );
         assert_eq!(vec.size, 3);
         assert!(vec.remove(1).is_some());
         assert_eq!(vec.size, 2);

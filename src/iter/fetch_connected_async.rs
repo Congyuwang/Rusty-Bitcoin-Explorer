@@ -46,11 +46,13 @@ where
                 // insert new transactions
                 for tx in block.txdata {
                     let txid = tx.txid();
-                    let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> = Vec::with_capacity(tx.output.len());
+                    let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> =
+                        Vec::with_capacity(tx.output.len());
                     for o in tx.output {
                         outs.push(Some(o.into()));
                     }
-                    let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> = VecMap::from_vec(outs.into_boxed_slice());
+                    let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
+                        VecMap::from_vec(outs.into_boxed_slice());
                     let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
                         Arc::new(Mutex::new(outs));
 

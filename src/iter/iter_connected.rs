@@ -5,7 +5,7 @@ use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use std::borrow::BorrowMut;
 use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{sync_channel, Receiver, channel};
+use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
@@ -92,11 +92,9 @@ impl<TBlock> Iterator for ConnectedBlockIter<TBlock> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.task_order.recv() {
-            Ok(thread_number) => {
-                match self.receivers.get(thread_number).unwrap().recv() {
-                    Ok(block) => Some(block),
-                    Err(_) => None
-                }
+            Ok(thread_number) => match self.receivers.get(thread_number).unwrap().recv() {
+                Ok(block) => Some(block),
+                Err(_) => None,
             },
             Err(_) => None,
         }
