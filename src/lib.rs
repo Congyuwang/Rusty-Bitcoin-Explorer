@@ -203,13 +203,13 @@ impl BitcoinDBPy {
     }
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
-    fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIteratorSequential> {
-        Ok(FBlockIteratorSequential::new(&self.db, start, stop))
+    fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIterator> {
+        Ok(FBlockIterator::new(&self.db, start, stop))
     }
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
-    fn iter_block_simple_seq(&self, start: u32, stop: u32) -> PyResult<SBlockIteratorSequential> {
-        Ok(SBlockIteratorSequential::new(&self.db, start, stop))
+    fn iter_block_simple_seq(&self, start: u32, stop: u32) -> PyResult<SBlockIterator> {
+        Ok(SBlockIterator::new(&self.db, start, stop))
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
@@ -240,214 +240,91 @@ impl BitcoinDBPy {
     }
 }
 
-#[pyclass]
-struct SBlockIteratorArray {
-    iter: BlockIterator<SBlock>,
-}
+// construct python iterators
+derive_py_iter!(
+    FBlockIteratorArray,
+    BlockIterator,
+    FBlock,
+    iter_heights,
+    heights: Vec<u32>
+);
+derive_py_iter!(
+    SBlockIteratorArray,
+    BlockIterator,
+    SBlock,
+    iter_heights,
+    heights: Vec<u32>
+);
+derive_py_iter!(
+    FBlockIterator,
+    BlockIterator,
+    FBlock,
+    iter_block,
+    start: u32,
+    end: u32
+);
+derive_py_iter!(
+    SBlockIterator,
+    BlockIterator,
+    SBlock,
+    iter_block,
+    start: u32,
+    end: u32
+);
+derive_py_iter!(
+    FConnectedBlockIterator,
+    ConnectedBlockIterator,
+    FConnectedBlock,
+    iter_connected_block,
+    end: u32
+);
+derive_py_iter!(
+    SConnectedBlockIterator,
+    ConnectedBlockIterator,
+    SConnectedBlock,
+    iter_connected_block,
+    end: u32
+);
 
-impl SBlockIteratorArray {
-    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> Self {
-        SBlockIteratorArray {
-            iter: db.iter_heights::<SBlock>(heights),
+#[macro_export]
+macro_rules! derive_py_iter {
+    ($new_iter_type:ident, $inner_iter_type:ident, $iter_type:ty,
+     $new:ident, $( $p:ident: $type:ty ),*) => {
+        #[pyclass]
+        struct $new_iter_type {
+            iter: $inner_iter_type<$iter_type>,
         }
-    }
-}
 
-#[pyproto]
-impl PyIterProtocol for SBlockIteratorArray {
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<SBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
+        impl $new_iter_type {
+            fn new(db: &api::BitcoinDB, $($p: $type),*) -> $new_iter_type {
+                $new_iter_type {
+                    iter: db.$new::<$iter_type>($($p),*),
+                }
             }
-        } else {
-            None
         }
-    }
-}
 
-#[pyclass]
-struct FBlockIteratorArray {
-    iter: BlockIterator<FBlock>,
-}
-
-impl FBlockIteratorArray {
-    fn new(db: &api::BitcoinDB, heights: Vec<u32>) -> Self {
-        FBlockIteratorArray {
-            iter: db.iter_heights::<FBlock>(heights),
-        }
-    }
-}
-
-#[pyproto]
-impl PyIterProtocol for FBlockIteratorArray {
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<FBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
+        #[pyproto]
+        impl PyIterProtocol for $new_iter_type {
+            fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+                slf
             }
-        } else {
-            None
-        }
-    }
-}
 
-#[pyclass]
-struct FBlockIteratorSequential {
-    iter: BlockIterator<FBlock>,
-}
-
-impl FBlockIteratorSequential {
-    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> Self {
-        FBlockIteratorSequential {
-            iter: db.iter_block::<FBlock>(start, end),
-        }
-    }
-}
-
-#[pyproto]
-impl PyIterProtocol for FBlockIteratorSequential {
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<FBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
+            fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
+                let option_block: Option<$iter_type> = slf.iter.next();
+                if let Some(output) = option_block {
+                    let gil_guard = Python::acquire_gil();
+                    let py = gil_guard.python();
+                    if let Ok(py_obj) = pythonize(py, &output) {
+                        Some(py_obj)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
             }
-        } else {
-            None
         }
-    }
-}
-
-#[pyclass]
-struct SBlockIteratorSequential {
-    iter: BlockIterator<SBlock>,
-}
-
-impl SBlockIteratorSequential {
-    fn new(db: &api::BitcoinDB, start: u32, end: u32) -> SBlockIteratorSequential {
-        SBlockIteratorSequential {
-            iter: db.iter_block::<SBlock>(start, end),
-        }
-    }
-}
-
-#[pyproto]
-impl PyIterProtocol for SBlockIteratorSequential {
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<SBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-}
-
-#[pyclass]
-struct FConnectedBlockIterator {
-    iter: api::ConnectedBlockIterator<FConnectedBlock>,
-}
-
-impl FConnectedBlockIterator {
-    fn new(db: &api::BitcoinDB, end: u32) -> FConnectedBlockIterator {
-        FConnectedBlockIterator {
-            iter: db.iter_connected_block(end),
-        }
-    }
-}
-
-#[pyproto]
-impl PyIterProtocol for FConnectedBlockIterator {
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<FConnectedBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-}
-
-#[pyclass]
-struct SConnectedBlockIterator {
-    iter: api::ConnectedBlockIterator<SConnectedBlock>,
-}
-
-impl SConnectedBlockIterator {
-    fn new(db: &api::BitcoinDB, end: u32) -> SConnectedBlockIterator {
-        SConnectedBlockIterator {
-            iter: db.iter_connected_block(end),
-        }
-    }
-}
-
-#[pyproto]
-impl PyIterProtocol for SConnectedBlockIterator {
-    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
-        slf
-    }
-
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
-        let option_block: Option<SConnectedBlock> = slf.iter.next();
-        if let Some(output) = option_block {
-            let gil_guard = Python::acquire_gil();
-            let py = gil_guard.python();
-            if let Ok(py_obj) = pythonize(py, &output) {
-                Some(py_obj)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
+    };
 }
 
 #[pymodule]
