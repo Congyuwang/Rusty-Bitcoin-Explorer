@@ -13,13 +13,10 @@ pub(crate) struct Task {
 ///
 /// fetch_block, thread safe
 ///
-pub(crate) fn fetch_block<T>(db: &DBCopy, task: Task, sender: SyncSender<T>) -> bool
+pub(crate) fn fetch_block<T>(db: &DBCopy, task: Task, sender: &SyncSender<T>) -> bool
 where
     T: From<Block>,
 {
-    if task.error_state.load(Ordering::SeqCst) {
-        return false;
-    }
     if let Some(index) = db.block_index.records.get(task.height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(blk) => {

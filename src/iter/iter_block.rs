@@ -45,7 +45,6 @@ where
     pub fn new(db: &BitcoinDB, heights: Vec<u32>) -> Self {
         let cpus = num_cpus::get();
         let error_state = Arc::new(AtomicBool::new(false));
-        let db = DBCopy::from_bitcoin_db(db);
         // worker master
         let error_state_copy = error_state.clone();
         let (task_register, task_order) = channel();
@@ -62,16 +61,17 @@ where
         let mut receivers = Vec::with_capacity(cpus);
         for thread_number in 0..cpus {
             let (sender, receiver) = sync_channel(10);
-            receivers.push(receiver);
             let task = tasks.clone();
-            let db_copy = db.clone();
             let register = task_register.clone();
-            // actual worker
+            let db = DBCopy::from_bitcoin_db(db);
+
+            // workers
             let handle = thread::spawn(move || {
                 loop {
                     let task = {
                         let mut task = task.lock().unwrap();
                         if task.front().is_some() {
+                            // when task queue is locked, register thread order
                             register.send(thread_number).unwrap();
                         }
                         task.pop_front()
@@ -81,7 +81,7 @@ where
                         // finish
                         None => break,
                         Some(task) => {
-                            if !fetch_block(&db_copy, task, sender.clone()) {
+                            if !fetch_block(&db, task, &sender) {
                                 // on error
                                 break;
                             }
@@ -89,6 +89,7 @@ where
                     }
                 }
             });
+            receivers.push(receiver);
             handles.push(handle);
         }
 
