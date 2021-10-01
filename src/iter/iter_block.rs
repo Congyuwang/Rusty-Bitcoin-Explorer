@@ -5,21 +5,24 @@ use bitcoin::Block;
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{sync_channel, Receiver};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::mpsc::{sync_channel, Receiver, channel};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 
 /// iterate through blocks according to array index.
 pub struct BlockIter<TBlock> {
-    receiver: Receiver<TBlock>,
-    worker_thread: Option<JoinHandle<()>>,
+    receivers: Vec<Receiver<TBlock>>,
+    task_order: Receiver<usize>,
+    worker_thread: Option<Vec<JoinHandle<()>>>,
     error_state: Arc<AtomicBool>,
 }
 
 impl<T> BlockIter<T> {
     fn join(&mut self) {
-        self.worker_thread.take().unwrap().join().unwrap();
+        for handle in self.worker_thread.take().unwrap() {
+            handle.join().unwrap()
+        }
     }
 }
 
@@ -40,61 +43,59 @@ where
 {
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, heights: Vec<u32>) -> Self {
-        let cursor: Vec<u32> = (0..heights.len() as u32).collect();
         let cpus = num_cpus::get();
-        let output_number = Arc::new((Mutex::new(*cursor.get(0).unwrap()), Condvar::new()));
         let error_state = Arc::new(AtomicBool::new(false));
-        let (sender, receiver) = sync_channel(cpus * 10);
         let db = DBCopy::from_bitcoin_db(db);
         // worker master
         let error_state_copy = error_state.clone();
-        let worker_thread = thread::spawn(move || {
-            let mut tasks: VecDeque<Task<TBlock>> = VecDeque::with_capacity(cursor.len());
-            for task_number in cursor {
-                tasks.push_back(Task {
-                    task_number,
-                    height: *heights.get(task_number as usize).unwrap(),
-                    output_number: output_number.clone(),
-                    sender: sender.clone(),
-                    error_state: error_state_copy.clone(),
-                })
-            }
+        let (task_register, task_order) = channel();
+        let mut tasks: VecDeque<Task> = VecDeque::with_capacity(heights.len());
+        for height in heights {
+            tasks.push_back(Task {
+                height,
+                error_state: error_state_copy.clone(),
+            })
+        }
 
-            let tasks = Arc::new(Mutex::new(tasks));
-            let mut handles = Vec::with_capacity(cpus);
-
-            for _ in 0..cpus {
-                let task = tasks.clone();
-                let db_copy = db.clone();
-                // actual worker
-                let handle = thread::spawn(move || {
-                    loop {
-                        let task = {
-                            // drop mutex immediately
-                            let mut task = task.lock().unwrap();
-                            task.pop_front()
-                        };
-                        match task {
-                            // finish
-                            None => break,
-                            Some(task) => {
-                                if !fetch_block(&db_copy, task) {
-                                    break;
-                                }
+        let tasks = Arc::new(Mutex::new(tasks));
+        let mut handles = Vec::with_capacity(cpus);
+        let mut receivers = Vec::with_capacity(cpus);
+        for thread_number in 0..cpus {
+            let (sender, receiver) = sync_channel(10);
+            receivers.push(receiver);
+            let task = tasks.clone();
+            let db_copy = db.clone();
+            let register = task_register.clone();
+            // actual worker
+            let handle = thread::spawn(move || {
+                loop {
+                    let task = {
+                        let mut task = task.lock().unwrap();
+                        if task.front().is_some() {
+                            register.send(thread_number).unwrap();
+                        }
+                        task.pop_front()
+                        // drop mutex immediately
+                    };
+                    match task {
+                        // finish
+                        None => break,
+                        Some(task) => {
+                            if !fetch_block(&db_copy, task, sender.clone()) {
+                                // on error
+                                break;
                             }
                         }
                     }
-                });
-                handles.push(handle);
-            }
+                }
+            });
+            handles.push(handle);
+        }
 
-            for handle in handles {
-                handle.join().unwrap();
-            }
-        });
         BlockIter {
-            receiver,
-            worker_thread: Some(worker_thread),
+            receivers,
+            task_order,
+            worker_thread: Some(handles),
             error_state,
         }
     }
@@ -114,8 +115,13 @@ impl<TBlock> Iterator for BlockIter<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.receiver.recv() {
-            Ok(block) => Some(block),
+        match self.task_order.recv() {
+            Ok(thread_number) => {
+                match self.receivers.get(thread_number).unwrap().recv() {
+                    Ok(block) => Some(block),
+                    Err(_) => None
+                }
+            },
             Err(_) => None,
         }
     }
