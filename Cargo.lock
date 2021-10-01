@@ -34,7 +34,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-explorer"
-version = "0.2.15"
+version = "0.2.17"
 dependencies = [
  "bitcoin",
  "bitcoin_hashes",

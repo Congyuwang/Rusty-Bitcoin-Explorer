@@ -3,7 +3,7 @@ use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use bitcoin::Txid;
 use log::warn;
 use std::borrow::BorrowMut;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Condvar, Mutex};
@@ -21,7 +21,7 @@ pub(crate) struct TaskConnected<T> {
 ///
 pub(crate) fn fetch_block_connected<TBlock>(
     mut unspent: &Arc<
-        Mutex<BTreeMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     db: &DBCopy,
     mut task: TaskConnected<TBlock>,
