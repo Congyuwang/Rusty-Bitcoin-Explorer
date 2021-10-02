@@ -56,11 +56,6 @@ where
                     let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
                         Arc::new(Mutex::new(outs));
 
-                    // the new transaction should not be in unspent
-                    if unspent.lock().unwrap().contains_key(&txid) {
-                        warn!("found duplicate key {}", &txid);
-                    }
-
                     // temporary borrow locking of unspent
                     unspent
                         .borrow_mut()
@@ -138,8 +133,6 @@ where
                     output_block.add_tx(output_tx);
                 }
 
-                // send when it is my turn
-                // end tasks waiting in the second part
                 if task.error_state.load(Ordering::SeqCst) {
                     return false;
                 }
@@ -159,7 +152,6 @@ where
     }
 }
 
-/// wait for prior tasks, change error state, move to later tasks
 fn mutate_result_error(task: &mut TaskConnected) {
     let err = task.error_state.borrow_mut();
     err.fetch_or(true, Ordering::SeqCst);
