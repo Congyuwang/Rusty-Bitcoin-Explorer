@@ -1,7 +1,7 @@
 # bitcoin-explorer
 
 ![rust test](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer/actions/workflows/rust.yml/badge.svg)
-![rust test](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer/actions/workflows/publish.yml/badge.svg)
+![publish](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer/actions/workflows/publish.yml/badge.svg)
 [![](https://tokei.rs/b1/github/Congyuwang/Rusty-Bitcoin-Explorer)](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer)
 
 `bitcoin_explorer` is an efficient library for reading
