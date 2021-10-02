@@ -8,11 +8,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Condvar, Mutex};
 
-pub(crate) struct TaskConnected<T> {
+pub(crate) struct TaskConnected {
     pub(crate) height: u32,
     pub(crate) outputs_insertion_height: Arc<(Mutex<u32>, Condvar)>,
-    pub(crate) result_height: Arc<(Mutex<u32>, Condvar)>,
-    pub(crate) sender: SyncSender<T>,
     pub(crate) error_state: Arc<AtomicBool>,
 }
 
@@ -24,7 +22,8 @@ pub(crate) fn fetch_block_connected<TBlock>(
         Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     db: &DBCopy,
-    mut task: TaskConnected<TBlock>,
+    mut task: TaskConnected,
+    sender: &SyncSender<TBlock>,
 ) -> bool
 where
     TBlock: BlockConnectable,
@@ -47,18 +46,15 @@ where
                 // insert new transactions
                 for tx in block.txdata {
                     let txid = tx.txid();
-                    let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> = Vec::with_capacity(tx.output.len());
+                    let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> =
+                        Vec::with_capacity(tx.output.len());
                     for o in tx.output {
                         outs.push(Some(o.into()));
                     }
-                    let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> = VecMap::from_vec(outs.into_boxed_slice());
+                    let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
+                        VecMap::from_vec(outs.into_boxed_slice());
                     let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
                         Arc::new(Mutex::new(outs));
-
-                    // the new transaction should not be in unspent
-                    if unspent.lock().unwrap().contains_key(&txid) {
-                        warn!("found duplicate key {}", &txid);
-                    }
 
                     // temporary borrow locking of unspent
                     unspent
@@ -81,10 +77,6 @@ where
                     if task.error_state.load(Ordering::SeqCst) {
                         *outputs_insertion_height += 1;
                         cond.notify_all();
-                        let (lock, cond2) = &*task.result_height;
-                        let mut result_height = lock.lock().unwrap();
-                        *result_height += 1;
-                        cond2.notify_all();
                         return false;
                     }
                     *outputs_insertion_height += 1;
@@ -128,66 +120,45 @@ where
                             } else {
                                 warn!("cannot find previous outpoint, bad data");
                                 // only increment result lock
-                                increment_result_lock(&mut task);
+                                mutate_result_error(&mut task);
                                 return false;
                             }
                         } else {
                             warn!("cannot find previous transactions, bad data");
                             // only increment result lock
-                            increment_result_lock(&mut task);
+                            mutate_result_error(&mut task);
                             return false;
                         }
                     }
                     output_block.add_tx(output_tx);
                 }
 
-                // send when it is my turn
-                {
-                    let (lock, cond) = &*task.result_height;
-                    let mut result_height = lock.lock().unwrap();
-                    if *result_height != my_height {
-                        result_height =
-                            cond.wait_while(result_height, |h| *h != my_height).unwrap();
-                    }
-                    // end tasks waiting in the second part
-                    if task.error_state.load(Ordering::SeqCst) {
-                        *result_height += 1;
-                        cond.notify_all();
-                        return false;
-                    }
-                    task.sender.send(output_block).unwrap();
-                    *result_height += 1;
-                    cond.notify_all();
+                if task.error_state.load(Ordering::SeqCst) {
+                    return false;
                 }
+                sender.send(output_block).unwrap();
                 true
             }
             Err(_) => {
                 // set error_state to true
-                mutate_error_both_lock(&mut task);
+                mutate_error_inc_lock(&mut task);
                 false
             }
         }
     } else {
         // set error_state to true
-        mutate_error_both_lock(&mut task);
+        mutate_error_inc_lock(&mut task);
         false
     }
 }
 
-/// wait for prior tasks, change error state, move to later tasks
-fn increment_result_lock<T>(task: &mut TaskConnected<T>) {
-    let (lock, cond) = &*task.result_height;
-    let mut result_height = lock.lock().unwrap();
-    {
-        let err = task.error_state.borrow_mut();
-        err.fetch_or(true, Ordering::SeqCst);
-    }
-    *result_height += 1;
-    cond.notify_all();
+fn mutate_result_error(task: &mut TaskConnected) {
+    let err = task.error_state.borrow_mut();
+    err.fetch_or(true, Ordering::SeqCst);
 }
 
 /// wait for prior tasks, change error state, move to later tasks
-fn mutate_error_both_lock<T>(task: &mut TaskConnected<T>) {
+fn mutate_error_inc_lock(task: &mut TaskConnected) {
     let (lock, cond) = &*task.outputs_insertion_height;
     let mut outputs_insertion_height = lock.lock().unwrap();
     if *outputs_insertion_height != task.height {
@@ -195,22 +166,13 @@ fn mutate_error_both_lock<T>(task: &mut TaskConnected<T>) {
             .wait_while(outputs_insertion_height, |h| *h != task.height)
             .unwrap();
     }
-    *outputs_insertion_height += 1;
-    cond.notify_all();
-    let (lock, cond) = &*task.result_height;
-    let mut result_height = lock.lock().unwrap();
-    if *result_height != task.height {
-        result_height = cond
-            .wait_while(result_height, |h| *h != task.height)
-            .unwrap();
-    }
-    // now you are holding two locks
-    // wait until prior ones to have finished both parts
-    // change the error state before letting the later tasks go
     {
+        // now you are holding the lock
+        // wait until prior ones to have finished outputs insertion parts
+        // change the error state before letting the later tasks go
         let err = task.error_state.borrow_mut();
         err.fetch_or(true, Ordering::SeqCst);
     }
-    *result_height += 1;
+    *outputs_insertion_height += 1;
     cond.notify_all();
 }
