@@ -20,8 +20,7 @@
 //! ```
 //!
 
-pub mod connected;
-
+mod connected;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::errors::{OpError, OpResult};
 use crate::parser::script::{evaluate_script, ScriptInfo};
