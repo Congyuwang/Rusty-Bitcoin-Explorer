@@ -1,6 +1,6 @@
 [project]
 name = "bitcoin-explorer"
-version = "0.2.20"
+version = "0.2.21"
 classifiers = ["Programming Language :: Python"]
 description = "High Performance Blockchain Deserializer"
 long_description_content_type="text/markdown"

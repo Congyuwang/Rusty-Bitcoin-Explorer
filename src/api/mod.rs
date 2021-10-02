@@ -10,7 +10,7 @@
 //! use bitcoin_explorer::BitcoinDB;
 //! use std::path::Path;
 //!
-//! let path = Path::new("/Users/me/bitcoin").unwrap();
+//! let path = Path::new("/Users/me/bitcoin");
 //!
 //! // launch without reading txindex
 //! let db = BitcoinDB::new(path, false).unwrap();
@@ -73,7 +73,7 @@ impl BitcoinDB {
     /// use bitcoin_explorer::BitcoinDB;
     /// use std::path::Path;
     ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
+    /// let path = Path::new("/Users/me/bitcoin");
     ///
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();
@@ -130,7 +130,7 @@ impl BitcoinDB {
     /// use bitcoin_explorer::BitcoinDB;
     /// use std::path::Path;
     ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
+    /// let path = Path::new("/Users/me/bitcoin");
     ///
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();
@@ -183,7 +183,7 @@ impl BitcoinDB {
     /// use bitcoin_explorer::{BitcoinDB, FBlock, SBlock, Block};
     /// use std::path::Path;
     ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
+    /// let path = Path::new("/Users/me/bitcoin");
     ///
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();
@@ -213,7 +213,7 @@ impl BitcoinDB {
     /// use bitcoin_explorer::{BitcoinDB, Transaction, FTransaction, STransaction, Txid, FromHex};
     /// use std::path::Path;
     ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
+    /// let path = Path::new("/Users/me/bitcoin");
     ///
     /// // !!must launch with txindex=true!!
     /// let db = BitcoinDB::new(path, true).unwrap();
@@ -279,7 +279,7 @@ impl BitcoinDB {
     /// use bitcoin_explorer::{BitcoinDB, Block, SBlock, FBlock};
     /// use std::path::Path;
     ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
+    /// let path = Path::new("/Users/me/bitcoin");
     ///
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();
@@ -339,7 +339,7 @@ impl BitcoinDB {
     /// use bitcoin_explorer::{BitcoinDB, Block, FBlock, SBlock};
     /// use std::path::Path;
     ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
+    /// let path = Path::new("/Users/me/bitcoin");
     ///
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();

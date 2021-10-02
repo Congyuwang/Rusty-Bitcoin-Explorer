@@ -75,7 +75,7 @@ impl BitcoinDB {
     /// use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
     /// use std::path::Path;
     ///
-    /// let path = Path::new("/Users/me/bitcoin").unwrap();
+    /// let path = Path::new("/Users/me/bitcoin");
     ///
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();

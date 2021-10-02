@@ -22,7 +22,7 @@
 //! use bitcoin_explorer::BitcoinDB;
 //! use std::path::Path;
 //!
-//! let path = Path::new("/Users/me/bitcoin").unwrap();
+//! let path = Path::new("/Users/me/bitcoin");
 //!
 //! // launch without reading txindex
 //! let db = BitcoinDB::new(path, false).unwrap();
@@ -193,33 +193,33 @@ impl BitcoinDBPy {
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
-    fn iter_block_full_arr(&self, heights: Vec<u32>) -> PyResult<FBlockIteratorArray> {
-        Ok(FBlockIteratorArray::new(&self.db, heights))
+    fn iter_block_full_arr(&self, heights: Vec<u32>) -> PyResult<FBlockIterArr> {
+        Ok(FBlockIterArr::new(&self.db, heights))
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
-    fn iter_block_simple_arr(&self, heights: Vec<u32>) -> PyResult<SBlockIteratorArray> {
-        Ok(SBlockIteratorArray::new(&self.db, heights))
+    fn iter_block_simple_arr(&self, heights: Vec<u32>) -> PyResult<SBlockIterArr> {
+        Ok(SBlockIterArr::new(&self.db, heights))
     }
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
-    fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIterator> {
-        Ok(FBlockIterator::new(&self.db, start, stop))
+    fn iter_block_full_seq(&self, start: u32, stop: u32) -> PyResult<FBlockIter> {
+        Ok(FBlockIter::new(&self.db, start, stop))
     }
 
     #[pyo3(text_signature = "($self, start, stop, /)")]
-    fn iter_block_simple_seq(&self, start: u32, stop: u32) -> PyResult<SBlockIterator> {
-        Ok(SBlockIterator::new(&self.db, start, stop))
+    fn iter_block_simple_seq(&self, start: u32, stop: u32) -> PyResult<SBlockIter> {
+        Ok(SBlockIter::new(&self.db, start, stop))
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
-    fn iter_block_full_connected(&self, stop: u32) -> PyResult<FConnectedBlockIterator> {
-        Ok(FConnectedBlockIterator::new(&self.db, stop))
+    fn iter_block_full_connected(&self, stop: u32) -> PyResult<FConnBlockIter> {
+        Ok(FConnBlockIter::new(&self.db, stop))
     }
 
     #[pyo3(text_signature = "($self, stop, /)")]
-    fn iter_block_simple_connected(&self, stop: u32) -> PyResult<SConnectedBlockIterator> {
-        Ok(SConnectedBlockIterator::new(&self.db, stop))
+    fn iter_block_simple_connected(&self, stop: u32) -> PyResult<SConnBlockIter> {
+        Ok(SConnBlockIter::new(&self.db, stop))
     }
 
     #[pyo3(text_signature = "($self, /)")]
@@ -241,50 +241,12 @@ impl BitcoinDBPy {
 }
 
 // construct python iterators
-derive_py_iter!(
-    FBlockIteratorArray,
-    BlockIter,
-    FBlock,
-    iter_heights,
-    heights: Vec<u32>
-);
-derive_py_iter!(
-    SBlockIteratorArray,
-    BlockIter,
-    SBlock,
-    iter_heights,
-    heights: Vec<u32>
-);
-derive_py_iter!(
-    FBlockIterator,
-    BlockIter,
-    FBlock,
-    iter_block,
-    start: u32,
-    end: u32
-);
-derive_py_iter!(
-    SBlockIterator,
-    BlockIter,
-    SBlock,
-    iter_block,
-    start: u32,
-    end: u32
-);
-derive_py_iter!(
-    FConnectedBlockIterator,
-    ConnectedBlockIter,
-    FConnectedBlock,
-    iter_connected_block,
-    end: u32
-);
-derive_py_iter!(
-    SConnectedBlockIterator,
-    ConnectedBlockIter,
-    SConnectedBlock,
-    iter_connected_block,
-    end: u32
-);
+derive_py_iter!(FBlockIterArr, BlockIter, FBlock, iter_heights, heights: Vec<u32>);
+derive_py_iter!(SBlockIterArr, BlockIter, SBlock, iter_heights, heights: Vec<u32>);
+derive_py_iter!(FBlockIter, BlockIter, FBlock, iter_block, start: u32, end: u32);
+derive_py_iter!(SBlockIter, BlockIter, SBlock, iter_block, start: u32, end: u32);
+derive_py_iter!(FConnBlockIter, ConnectedBlockIter, FConnectedBlock, iter_connected_block, end: u32);
+derive_py_iter!(SConnBlockIter, ConnectedBlockIter, SConnectedBlock, iter_connected_block, end: u32);
 
 #[macro_export]
 macro_rules! derive_py_iter {
