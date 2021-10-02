@@ -52,8 +52,8 @@ impl BitcoinDB {
     ///
     /// # Performance
     ///
-    /// Iterating through height from 0 to 700000 takes 5 hours.
-    /// The performance bottleneck is most likely diskIO.
+    /// Using SSD and intel core i7 (4 core, 8 threads)
+    /// Iterating through height from 0 to 700000 takes about 30 minutes.
     ///
     /// This iterator is implemented to read the blocks in concurrency,
     /// but each block connects its outpoints to outputs only after

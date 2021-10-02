@@ -268,9 +268,8 @@ impl BitcoinDB {
     /// read (i.e., when the max height in the database met).
     ///
     /// This is a very efficient implementation.
-    /// Iterating from height 600000 to 700000 should take less than
-    /// 30 minutes.
-    /// The performance bottleneck is likely to be disk IO.
+    /// Using SSD and intel core i7 (4 core, 8 threads)
+    /// Iterating from height 0 to 700000 takes about 10 minutes.
     ///
     /// # Example
     ///
@@ -318,15 +317,15 @@ impl BitcoinDB {
     /// Formats: `Block` / `FBlock` / `SBlock`.
     ///
     /// # Performance
+    ///
     /// This iterator is implemented to read the blocks in concurrency,
     /// but the result is still produced in the given order in `heights`.
     /// Results read are stored in a synced queue for `next()`
     /// to get.
     ///
     /// This is a very efficient implementation.
-    /// Iterating from height 600000 to 700000 should take less than
-    /// 30 minutes.
-    /// The performance bottleneck is likely to be disk IO.
+    /// Using SSD and intel core i7 (4 core, 8 threads)
+    /// Iterating from height 0 to 700000 takes about 10 minutes.
     ///
     /// ## Fails Fast
     ///
