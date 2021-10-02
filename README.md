@@ -40,7 +40,8 @@ Copyright (C) 2009-2020 The Bitcoin Core developers`.
 
 SSD allows faster performance.
 
-Iterating through all 700000 blocks (in sequential order) takes less than 40 minutes.
+Iterating through all 700000 blocks (non-connected, in sequential order) takes about 10 minutes
+(Windows 10, CPU Core i7-9700, Block chain data on external SSD drive connected through USB 3.1).
 
 ## Rust Examples
 
@@ -49,7 +50,7 @@ Iterating through all 700000 blocks (in sequential order) takes less than 40 min
 use bitcoin_explorer::{BitcoinDB, FBlock, SBlock, Block};
 use std::path::Path;
 
-let path = Path::new("/Users/me/bitcoin").unwrap();
+let path = Path::new("/Users/me/bitcoin");
 
 // launch without reading txindex
 let db = BitcoinDB::new(path, false).unwrap();
@@ -66,7 +67,7 @@ let block: SBlock = db.get_block(600000).unwrap();
 use bitcoin_explorer::{BitcoinDB, Transaction, FTransaction, STransaction, Txid, FromHex};
 use std::path::Path;
 
-let path = Path::new("/Users/me/bitcoin").unwrap();
+let path = Path::new("/Users/me/bitcoin");
 
 // !!must launch with txindex=true!!
 let db = BitcoinDB::new(path, true).unwrap();
@@ -87,7 +88,7 @@ let tx: STransaction = db.get_transaction(&txid).unwrap();
 use bitcoin_explorer::{BitcoinDB, Block, SBlock, FBlock};
 use std::path::Path;
 
-let path = Path::new("/Users/me/bitcoin").unwrap();
+let path = Path::new("/Users/me/bitcoin");
 
 // launch without reading txindex
 let db = BitcoinDB::new(path, false).unwrap();
@@ -119,7 +120,7 @@ for block in db.iter_block::<SBlock>(600000, 700000) {
 use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
 use std::path::Path;
 
-let path = Path::new("/Users/me/bitcoin").unwrap();
+let path = Path::new("/Users/me/bitcoin");
 
 // launch without reading txindex
 let db = BitcoinDB::new(path, false).unwrap();
