@@ -159,7 +159,7 @@ impl BitcoinDB {
     pub fn get_hash_from_height(&self, height: usize) -> OpResult<BlockHash> {
         match self.block_index.records.get(height) {
             None => Err(OpError::from("height not found")),
-            Some(s) => Ok(s.block_hash),
+            Some(s) => Ok(s.block_header.block_hash()),
         }
     }
 

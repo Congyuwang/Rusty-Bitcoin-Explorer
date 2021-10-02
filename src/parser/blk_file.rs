@@ -70,6 +70,7 @@ impl BlkFile {
                 }
             }
         }
+        collected.shrink_to_fit();
         if collected.is_empty() {
             Err(OpError::new(OpErrorKind::RuntimeError).join_msg("No blk files found!"))
         } else {

@@ -1,15 +1,14 @@
 use crate::parser::errors::OpResult;
 use crate::parser::reader::BlockchainRead;
 use bitcoin::hashes::hex::ToHex;
-use bitcoin::hashes::Hash;
-use bitcoin::{BlockHash, BlockHeader};
+use bitcoin::BlockHeader;
 use leveldb::database::iterator::LevelDBIterator;
 use leveldb::database::Database;
 use leveldb::iterator::Iterable;
 use leveldb::options::{Options, ReadOptions};
 use log::info;
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
@@ -31,7 +30,6 @@ const BLOCK_HAVE_UNDO: u32 = 16;
 
 #[derive(Serialize, Clone)]
 pub struct BlockIndexRecord {
-    pub block_hash: BlockHash,
     pub n_version: i32,
     pub n_height: i32,
     pub n_status: u32,
@@ -43,10 +41,9 @@ pub struct BlockIndexRecord {
 }
 
 impl BlockIndexRecord {
-    fn from(key: &[u8], values: &[u8]) -> OpResult<Self> {
+    fn from(values: &[u8]) -> OpResult<Self> {
         let mut reader = Cursor::new(values);
 
-        let block_hash: BlockHash = BlockHash::from_slice(key)?;
         let n_version = reader.read_varint()? as i32;
         let n_height = reader.read_varint()? as i32;
         let n_status = reader.read_varint()? as u32;
@@ -69,7 +66,6 @@ impl BlockIndexRecord {
         let block_header = reader.read_block_header()?;
 
         Ok(BlockIndexRecord {
-            block_hash,
             n_version,
             n_height,
             n_status,
@@ -85,7 +81,6 @@ impl BlockIndexRecord {
 impl fmt::Debug for BlockIndexRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BlockIndexRecord")
-            .field("block_hash", &self.block_hash.to_hex())
             .field("version", &self.n_version)
             .field("height", &self.n_height)
             .field("status", &self.n_status)
@@ -105,17 +100,18 @@ fn is_block_index_record(data: &[u8]) -> bool {
 #[derive(Clone)]
 pub struct BlockIndex {
     pub records: Vec<BlockIndexRecord>,
-    pub hash_to_height: BTreeMap<String, i32>,
+    pub hash_to_height: HashMap<String, i32>,
 }
 
 impl BlockIndex {
     pub(crate) fn new(p: &Path) -> OpResult<BlockIndex> {
         let records = load_block_index(p)?;
-        let mut hash_to_height = BTreeMap::new();
+        let mut hash_to_height = HashMap::with_capacity(records.len());
         for b in &records {
-            let this_block_hash = BlockHash::from_slice(&b.block_hash)?;
+            let this_block_hash = b.block_header.block_hash();
             hash_to_height.insert(this_block_hash.to_hex(), b.n_height);
         }
+        hash_to_height.shrink_to_fit();
         Ok(BlockIndex {
             records,
             hash_to_height,
@@ -154,7 +150,7 @@ pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
         let k = iter.key();
         let v = iter.value();
         if is_block_index_record(&k.key) {
-            let record = BlockIndexRecord::from(&k.key[1..], &v)?;
+            let record = BlockIndexRecord::from(&v)?;
             if record.n_status & (BLOCK_VALID_MASK | BLOCK_HAVE_DATA) > 0 {
                 block_index.push(record);
             }
