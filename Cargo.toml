@@ -1,6 +1,6 @@
 [package]
 name = "bitcoin-explorer"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2018"
 readme = "README.md"
 license-file = "LICENSE.txt"
@@ -24,6 +24,7 @@ db-key = "0.0.5"
 [lib]
 name = "bitcoin_explorer"
 crate-type = ["lib"]
+doctest = false
 
 [dependencies.bitcoin]
 version = "^0.27"

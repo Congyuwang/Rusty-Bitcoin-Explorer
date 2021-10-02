@@ -345,7 +345,7 @@ impl BitcoinDB {
     /// let some_heights = vec![3, 5, 7, 9];
     ///
     /// // iterate over blocks from 600000 to 700000
-    /// for block in db.iter_heights::<Block>(some_heights) {
+    /// for block in db.iter_heights::<Block>(some_heights.clone()) {
     ///     for tx in block.txdata {
     ///         println!("do something for this transaction");
     ///     }
