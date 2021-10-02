@@ -1,5 +1,7 @@
 # bitcoin-explorer
 
+[![](https://tokei.rs/b1/github/Congyuwang/Rusty-Bitcoin-Explorer)](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer)
+
 `bitcoin_explorer` is an efficient library for reading
 bitcoin-core binary blockchain file as a database (utilising multi-threading).
 
