@@ -5,7 +5,7 @@ name: Cargo Publish
 # Controls when the workflow will run
 on:
   release:
-      [ master ]
+    types: [published]
 
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
