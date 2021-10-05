@@ -55,12 +55,19 @@ where
                     let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
                         Arc::new(Mutex::new(outs));
 
+                    let txid_compressed = txid.compress();
+
+                    // the new transaction should not be in unspent
+                    if unspent.lock().unwrap().contains_key(&txid_compressed) {
+                        warn!("found duplicate key {}", &txid);
+                    }
+
                     // temporary borrow locking of unspent
                     unspent
                         .borrow_mut()
                         .lock()
                         .unwrap()
-                        .insert(txid.compress(), new_unspent);
+                        .insert(txid_compressed, new_unspent);
                 }
 
                 // proceed to output step when precedents finished outputs insertion
