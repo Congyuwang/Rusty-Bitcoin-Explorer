@@ -1,12 +1,11 @@
-use crate::iter::util::{DBCopy, VecMap};
+use crate::iter::util::{Compress, DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
-use bitcoin::Txid;
 use log::warn;
 use std::borrow::BorrowMut;
-use hash_hasher::HashedMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Condvar, Mutex};
+use hash_hasher::HashedMap;
 
 pub(crate) struct TaskConnected {
     pub(crate) height: u32,
@@ -19,7 +18,7 @@ pub(crate) struct TaskConnected {
 ///
 pub(crate) fn fetch_block_connected<TBlock>(
     mut unspent: &Arc<
-        Mutex<HashedMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        Mutex<HashedMap<[u8; 16], Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     db: &DBCopy,
     mut task: TaskConnected,
@@ -61,7 +60,7 @@ where
                         .borrow_mut()
                         .lock()
                         .unwrap()
-                        .insert(txid, new_unspent);
+                        .insert(txid.compress(), new_unspent);
                 }
 
                 // proceed to output step when precedents finished outputs insertion
@@ -93,7 +92,7 @@ where
                             continue;
                         }
 
-                        let prev_txid = &input.previous_output.txid;
+                        let prev_txid = &input.previous_output.txid.compress();
                         let n = *&input.previous_output.vout as usize;
 
                         // temporarily lock unspent

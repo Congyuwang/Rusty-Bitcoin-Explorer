@@ -1,15 +1,15 @@
-use crate::api::{BitcoinDB, Txid};
+use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{fetch_block_connected, TaskConnected};
 use crate::iter::util::{DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
-use hash_hasher::HashedMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
+use hash_hasher::HashedMap;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
@@ -30,7 +30,7 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         let (task_register, task_order) = channel();
         let unspent: Arc<
-            Mutex<HashedMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+            Mutex<HashedMap<[u8; 16], Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
         > = Arc::new(Mutex::new(HashedMap::default()));
         // worker master
         let mut tasks: VecDeque<TaskConnected> = VecDeque::with_capacity(end as usize);

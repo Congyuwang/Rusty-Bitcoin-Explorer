@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-explorer"
-version = "1.0.6"
+version = "1.0.7"
 dependencies = [
  "bitcoin",
  "bitcoin_hashes",
@@ -40,6 +40,7 @@ dependencies = [
  "num_cpus",
  "rayon",
  "serde",
+ "siphasher",
 ]
 
 [[package]]
@@ -305,6 +306,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "siphasher"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "533494a8f9b724d33625ab53c6c4800f7cc445895924a8ef649222dcb76e938b"
 
 [[package]]
 name = "syn"

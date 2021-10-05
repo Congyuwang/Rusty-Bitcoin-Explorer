@@ -1,6 +1,22 @@
 use crate::api::BitcoinDB;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::block_index::BlockIndex;
+use siphasher::sip128::{Hasher128, SipHasher13};
+use std::hash::Hash;
+use bitcoin::Txid;
+
+pub(crate) trait Compress {
+    fn compress(&self) -> [u8; 16];
+}
+
+impl Compress for Txid {
+    #[inline]
+    fn compress(&self) -> [u8; 16] {
+        let mut hasher = SipHasher13::new();
+        self.hash(&mut hasher);
+        hasher.finish128().as_bytes()
+    }
+}
 
 /// a light weighted data structure for storing unspent output
 pub(crate) struct VecMap<T> {
