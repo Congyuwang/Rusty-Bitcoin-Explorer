@@ -93,7 +93,7 @@ pub struct FTxOut {
     pub value: u64,
     pub script_pubkey: bitcoin::Script,
     pub script_type: Type,
-    pub addresses: Vec<Address>,
+    pub addresses: Box<[Address]>,
 }
 
 impl From<TxOut> for FTxOut {
@@ -103,7 +103,7 @@ impl From<TxOut> for FTxOut {
             value: out.value,
             script_pubkey: out.script_pubkey,
             script_type: eval.pattern,
-            addresses: eval.addresses,
+            addresses: eval.addresses.into_boxed_slice(),
         }
     }
 }

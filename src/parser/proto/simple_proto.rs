@@ -1,4 +1,4 @@
-use crate::parser::script::{evaluate_script, Type};
+use crate::parser::script::evaluate_script;
 use bitcoin::{Address, Block, BlockHash, Transaction, TxIn, TxOut, Txid};
 use serde::{Deserialize, Serialize};
 
@@ -104,8 +104,7 @@ impl From<TxIn> for STxIn {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct STxOut {
     pub value: u64,
-    pub script_type: Type,
-    pub addresses: Vec<Address>,
+    pub addresses: Box<[Address]>,
 }
 
 impl From<TxOut> for STxOut {
@@ -113,8 +112,7 @@ impl From<TxOut> for STxOut {
         let eval = evaluate_script(&out.script_pubkey, bitcoin::Network::Bitcoin);
         STxOut {
             value: out.value,
-            script_type: eval.pattern,
-            addresses: eval.addresses,
+            addresses: eval.addresses.into_boxed_slice(),
         }
     }
 }
