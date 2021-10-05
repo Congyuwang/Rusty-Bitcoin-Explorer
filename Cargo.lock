@@ -28,12 +28,13 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-explorer"
-version = "1.0.4"
+version = "1.0.5"
 dependencies = [
  "bitcoin",
  "bitcoin_hashes",
  "byteorder",
  "db-key",
+ "hash_hasher",
  "leveldb",
  "log",
  "num_cpus",
@@ -138,6 +139,12 @@ name = "ffi-opaque"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec54ac60a7f2ee9a97cad9946f9bf629a3bc6a7ae59e68983dc9318f5a54b81a"
+
+[[package]]
+name = "hash_hasher"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74721d007512d0cb3338cd20f0654ac913920061a4c4d0d8708edb3f2a698c0c"
 
 [[package]]
 name = "hermit-abi"

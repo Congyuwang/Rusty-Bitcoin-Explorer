@@ -3,7 +3,8 @@ use crate::iter::fetch_connected_async::{fetch_block_connected, TaskConnected};
 use crate::iter::util::{DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use std::borrow::BorrowMut;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
+use hash_hasher::HashedMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Condvar, Mutex};
@@ -29,8 +30,8 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         let (task_register, task_order) = channel();
         let unspent: Arc<
-            Mutex<HashMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
-        > = Arc::new(Mutex::new(HashMap::new()));
+            Mutex<HashedMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        > = Arc::new(Mutex::new(HashedMap::default()));
         // worker master
         let mut tasks: VecDeque<TaskConnected> = VecDeque::with_capacity(end as usize);
         for height in 0..end {
