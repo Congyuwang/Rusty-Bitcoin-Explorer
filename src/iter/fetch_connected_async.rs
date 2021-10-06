@@ -58,6 +58,7 @@ where
                     let txid_compressed = txid.compress();
 
                     // the new transaction should not be in unspent
+                    #[cfg(debug_assertions)]
                     if unspent.lock().unwrap().contains_key(&txid_compressed) {
                         warn!("found duplicate key {}", &txid);
                     }
