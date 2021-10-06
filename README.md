@@ -100,6 +100,9 @@ for block in db.iter_block::<SBlock>(600000, 700000) {
 ```
 
 ### Iterate through blocks (in different format) with outpoints connected to outputs
+
+Iterating to 700000 blocks requires a minimal amount of 32GB memory.
+
 ```rust
 use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
 use std::path::Path;

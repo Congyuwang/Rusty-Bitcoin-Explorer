@@ -55,19 +55,10 @@ impl BitcoinDB {
     /// Using SSD and intel core i7 (4 core, 8 threads)
     /// Iterating through height from 0 to 700000 takes about 30 minutes.
     ///
-    /// This iterator is implemented to read the blocks in concurrency,
-    /// but each block connects its outpoints to outputs only after
-    /// all previous blocks have finished inserting their outputs in
-    /// `unspent cache`.
-    /// The result is still produced in the sequential order.
-    ///
-    /// Because this iterator tracks unspent outputs,
-    /// it can use up to 20GB to 30GB memory.
+    /// Requires a minimal amount of 32GB memory.
     ///
     /// This iterator can only start from genesis block, because it has to
     /// track unspent transactions.
-    ///
-    /// TODO: might use txindex to allow for iterating starting from larger heights.
     ///
     /// # Example
     ///
