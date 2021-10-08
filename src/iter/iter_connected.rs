@@ -30,7 +30,7 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         let (task_register, task_order) = channel();
         let unspent: Arc<
-            Mutex<HashedMap<[u8; 16], Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
         > = Arc::new(Mutex::new(HashedMap::default()));
         // worker master
         let mut tasks: VecDeque<TaskConnected> = VecDeque::with_capacity(end as usize);

@@ -18,7 +18,7 @@ pub(crate) struct TaskConnected {
 ///
 pub(crate) fn fetch_block_connected<TBlock>(
     mut unspent: &Arc<
-        Mutex<HashedMap<[u8; 16], Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     db: &DBCopy,
     mut task: TaskConnected,

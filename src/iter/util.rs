@@ -1,20 +1,24 @@
 use crate::api::BitcoinDB;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::block_index::BlockIndex;
-use siphasher::sip128::{Hasher128, SipHasher13};
-use std::hash::Hash;
+use ahash::AHasher;
+use std::hash::{Hash, Hasher};
 use bitcoin::Txid;
 
 pub(crate) trait Compress {
-    fn compress(&self) -> [u8; 16];
+    fn compress(&self) -> u128;
 }
 
 impl Compress for Txid {
     #[inline]
-    fn compress(&self) -> [u8; 16] {
-        let mut hasher = SipHasher13::new();
-        self.hash(&mut hasher);
-        hasher.finish128().as_bytes()
+    fn compress(&self) -> u128 {
+        let mut hasher_0 = AHasher::new_with_keys(54321, 12345);
+        let mut hasher_1 = AHasher::new_with_keys(12345, 54321);
+        self.hash(&mut hasher_0);
+        self.hash(&mut hasher_1);
+        let hash_0 = (hasher_0.finish() as u128) << 64;
+        let hash_1 = hasher_1.finish() as u128;
+        hash_0 ^ hash_1
     }
 }
 

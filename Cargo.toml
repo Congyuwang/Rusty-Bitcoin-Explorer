@@ -1,6 +1,6 @@
 [package]
 name = "bitcoin-explorer"
-version = "1.0.9"
+version = "1.0.10"
 edition = "2018"
 readme = "README.md"
 license-file = "LICENSE.txt"
@@ -20,7 +20,7 @@ log = "^0.4"
 leveldb = "0.8.6"
 num_cpus = "1.13.0"
 db-key = "0.0.5"
-siphasher = "0.3"
+ahash = "0.7.4"
 hash_hasher = "2.0.3"
 
 [lib]
