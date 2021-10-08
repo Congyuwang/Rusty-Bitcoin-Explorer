@@ -2,6 +2,8 @@
 
 ![rust test](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer/actions/workflows/rust.yml/badge.svg)
 ![publish](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer/actions/workflows/publish.yml/badge.svg)
+[![Crates.io](https://img.shields.io/crates/v/bitcoin-explorer.svg)](https://crates.io/crates/bitcoin-explorer/)
+![Downloads](https://img.shields.io/crates/d/bitcoin-explorer)
 [![](https://tokei.rs/b1/github/Congyuwang/Rusty-Bitcoin-Explorer)](https://github.com/Congyuwang/Rusty-Bitcoin-Explorer)
 
 `bitcoin_explorer` is an efficient library for reading
