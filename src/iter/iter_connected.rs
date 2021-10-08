@@ -1,20 +1,20 @@
 use crate::api::BitcoinDB;
-use crate::iter::fetch_connected_async::{fetch_block_connected, TaskConnected};
+use crate::iter::fetch_connected_async::{insert_outputs, consume_outputs};
 use crate::iter::util::{DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, sync_channel, Receiver};
-use std::sync::{Arc, Condvar, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 use hash_hasher::HashedMap;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
-    receivers: Vec<Receiver<TBlock>>,
-    task_order: Receiver<usize>,
+    result_receivers: Vec<Receiver<TBlock>>,
+    result_order: Receiver<usize>,
     worker_thread: Option<Vec<JoinHandle<()>>>,
     error_state: Arc<AtomicBool>,
 }
@@ -26,62 +26,123 @@ where
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, end: u32) -> Self {
         let cpus = num_cpus::get();
-        let outputs_insertion_height = Arc::new((Mutex::new(0), Condvar::new()));
+        let db = DBCopy::from_bitcoin_db(db);
+        let mut handles = Vec::with_capacity(cpus * 2);
+
+        // shared error state for stopping threads early
         let error_state = Arc::new(AtomicBool::new(false));
-        let (task_register, task_order) = channel();
+
+        // in-memory UTXO cache
         let unspent: Arc<
-            RwLock<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
-        > = Arc::new(RwLock::new(HashedMap::default()));
-        // worker master
-        let mut tasks: VecDeque<TaskConnected> = VecDeque::with_capacity(end as usize);
-        for height in 0..end {
-            tasks.push_back(TaskConnected {
-                height,
-                outputs_insertion_height: outputs_insertion_height.clone(),
-                error_state: error_state.clone(),
-            })
-        }
+            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        > = Arc::new(Mutex::new(HashedMap::default()));
 
-        let tasks = Arc::new(Mutex::new(tasks));
-        let mut handles = Vec::with_capacity(cpus);
-        let mut receivers = Vec::with_capacity(cpus);
+        // all tasks
+        let heights = {
+            let mut heights = VecDeque::with_capacity(end as usize);
+            for height in 0..end {
+                heights.push_back(height)
+            }
+            Arc::new(Mutex::new(heights))
+        };
 
-        // workers
+        // the channel for synchronizing cache update
+        let (cache_task_register, cache_update_order) = channel();
+        let cache_update_order = Arc::new(Mutex::new(cache_update_order));
+
+        // block_streams
+        let mut block_receivers = Vec::with_capacity(cpus);
+
+        // output insertion
         for thread_number in 0..cpus {
-            let (sender, receiver) = sync_channel(10);
-            let task = tasks.clone();
-            let register = task_register.clone();
-            let db_copy = DBCopy::from_bitcoin_db(db);
-            let unspent_copy = unspent.clone();
-            // actual worker
+
+            // block streams
+            let (block_sender, block_receiver) = sync_channel(10);
+
+            let register = cache_task_register.clone();
+            let unspent = unspent.clone();
+            let error_state = error_state.clone();
+            let heights = heights.clone();
+            let db = db.clone();
+
+            // output cache insertion workers
             let handle = thread::spawn(move || {
                 loop {
-                    let task = {
-                        let mut task = task.lock().unwrap();
-                        let next_task = task.pop_front();
-                        if next_task.is_some() {
+                    let height = {
+                        let mut height = heights.lock().unwrap();
+                        let next_height = height.pop_front();
+                        if next_height.is_some() {
                             register.send(thread_number).unwrap();
                         }
-                        next_task
+                        next_height
                         // drop mutex immediately
                     };
-                    match task {
+                    match height {
                         // finish
                         None => break,
-                        Some(task) => {
-                            if !fetch_block_connected(&unspent_copy, &db_copy, task, &sender) {
+                        Some(height) => {
+                            if !insert_outputs::<TBlock>(&unspent, &db, height, &error_state, &block_sender) {
                                 break;
                             }
                         }
                     }
                 }
             });
-            receivers.push(receiver);
+
+            block_receivers.push(block_receiver);
             handles.push(handle);
         }
+
+        // the channel for synchronizing output order
+        let (result_register, result_order) = channel();
+
+        // block_streams
+        let mut result_receivers = Vec::with_capacity(cpus);
+        let block_receivers = Arc::new(Mutex::new(block_receivers));
+
+        // consume UTXO cache and produce output
+        for thread_number in 0..cpus {
+
+            // result streams
+            let (result_sender, result_receiver) = sync_channel(10);
+
+            let register = result_register.clone();
+            let unspent = unspent.clone();
+            let error_state = error_state.clone();
+            let block_receivers = block_receivers.clone();
+            let cache_update_order = cache_update_order.clone();
+
+            let handle = thread::spawn(move || {
+                loop {
+                    // obtain the next channel number
+                    match cache_update_order.lock().unwrap().recv() {
+                        Ok(n) => {
+                            // obtain block from the next channel number
+                            match block_receivers.lock().unwrap().get(n).unwrap().recv() {
+                                Ok(blk) => {
+                                    register.send(thread_number).unwrap();
+                                    if !consume_outputs(&unspent, &error_state, &result_sender, blk) {
+                                        break;
+                                    }
+                                }
+                                Err(_) => {
+                                    break;
+                                }
+                            }
+                        }
+                        Err(_) => {
+                            break;
+                        }
+                    }
+                }
+            });
+            result_receivers.push(result_receiver);
+            handles.push(handle);
+        }
+
         ConnectedBlockIter {
-            receivers,
-            task_order,
+            result_receivers,
+            result_order,
             worker_thread: Some(handles),
             error_state,
         }
@@ -92,8 +153,8 @@ impl<TBlock> Iterator for ConnectedBlockIter<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.task_order.recv() {
-            Ok(thread_number) => match self.receivers.get(thread_number).unwrap().recv() {
+        match self.result_order.recv() {
+            Ok(thread_number) => match self.result_receivers.get(thread_number).unwrap().recv() {
                 Ok(block) => Some(block),
                 Err(_) => None,
             },

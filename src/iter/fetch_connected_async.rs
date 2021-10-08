@@ -1,184 +1,167 @@
 use crate::iter::util::{Compress, DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use log::warn;
-use std::borrow::BorrowMut;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
-use std::sync::{Arc, Condvar, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
+use bitcoin::Block;
 use hash_hasher::HashedMap;
 
-pub(crate) struct TaskConnected {
-    pub(crate) height: u32,
-    pub(crate) outputs_insertion_height: Arc<(Mutex<u32>, Condvar)>,
-    pub(crate) error_state: Arc<AtomicBool>,
-}
-
 ///
-/// fetch_block_connected, thread safe
+/// read block, update cache
 ///
-pub(crate) fn fetch_block_connected<TBlock>(
+pub(crate) fn insert_outputs<TBlock>(
     unspent: &Arc<
-        RwLock<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     db: &DBCopy,
-    mut task: TaskConnected,
-    sender: &SyncSender<TBlock>,
+    height: u32,
+    error_state: &Arc<AtomicBool>,
+    channel: &SyncSender<Block>,
 ) -> bool
 where
     TBlock: BlockConnectable,
 {
-    // stop new tasks from loading
-    if task.error_state.load(Ordering::SeqCst) {
-        // should never increment lock condition here!! Otherwise later tasks might skip
-        // over unfinished tasks
+    // stop new tasks from loading when error
+    if error_state.load(Ordering::SeqCst) {
         return false;
     }
-    let my_height = task.height;
 
-    if let Some(index) = db.block_index.records.get(my_height as usize) {
+    if let Some(index) = db.block_index.records.get(height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(block) => {
-                let txdata_copy = block.txdata.clone();
-                let block_hash = block.header.block_hash();
-                let mut output_block = TBlock::from(block.header, block_hash);
+
+                let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
 
                 // insert new transactions
-                for tx in block.txdata {
+                for tx in block.txdata.iter() {
+
+                    // clone outputs
                     let txid = tx.txid();
                     let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> =
                         Vec::with_capacity(tx.output.len());
-                    for o in tx.output {
-                        outs.push(Some(o.into()));
+                    for o in tx.output.iter() {
+                        outs.push(Some(o.clone().into()));
                     }
+
+                    // update unspent cache
                     let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
                         VecMap::from_vec(outs.into_boxed_slice());
                     let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
                         Arc::new(Mutex::new(outs));
-
                     let txid_compressed = txid.compress();
-
                     // the new transaction should not be in unspent
                     #[cfg(debug_assertions)]
-                    if unspent.read().unwrap().contains_key(&txid_compressed) {
+                    if unspent.lock().unwrap().contains_key(&txid_compressed) {
                         warn!("found duplicate key {}", &txid);
                     }
-
-                    // temporary borrow locking of unspent
-                    unspent
-                        .write()
-                        .unwrap()
-                        .insert(txid_compressed, new_unspent);
-                }
-
-                // proceed to output step when precedents finished outputs insertion
-                {
-                    let (lock, cond) = &*task.outputs_insertion_height;
-                    let mut outputs_insertion_height = lock.lock().unwrap();
-                    if *outputs_insertion_height != my_height {
-                        outputs_insertion_height = cond
-                            .wait_while(outputs_insertion_height, |h| *h != my_height)
-                            .unwrap();
-                    }
-                    // this block ends task in waiting in the first period
-                    if task.error_state.load(Ordering::SeqCst) {
-                        *outputs_insertion_height += 1;
-                        cond.notify_all();
+                    //
+                    if error_state.load(Ordering::SeqCst) {
                         return false;
                     }
-                    *outputs_insertion_height += 1;
-                    cond.notify_all();
+                    new_unspent_cache.push((txid_compressed, new_unspent));
                 }
-
-                for tx in txdata_copy {
-                    let mut output_tx: TBlock::Tx = TxConnectable::from(&tx);
-
-                    // spend new inputs
-                    for input in tx.input {
-                        // skip coinbase transaction
-                        if input.previous_output.is_null() {
-                            continue;
-                        }
-
-                        let prev_txid = &input.previous_output.txid.compress();
-                        let n = *&input.previous_output.vout as usize;
-
-                        // temporarily lock unspent
-                        let prev_tx = {
-                            let prev_tx = unspent.read().unwrap();
-                            match prev_tx.get(prev_txid) {
-                                None => None,
-                                Some(tx) => Some(tx.clone()),
-                            }
-                        };
-                        if let Some(prev_tx) = prev_tx {
-                            // temporarily lock prev_tx
-                            let tx_out = {
-                                let mut prev_tx_lock = prev_tx.lock().unwrap();
-                                let out = prev_tx_lock.remove(n);
-                                // remove a key immediately when the key contains no transaction
-                                if prev_tx_lock.is_empty() {
-                                    unspent.write().unwrap().remove(prev_txid);
-                                }
-                                out
-                            };
-                            if let Some(out) = tx_out {
-                                output_tx.add_input(out);
-                            } else {
-                                warn!("cannot find previous outpoint, bad data");
-                                // only increment result lock
-                                mutate_result_error(&mut task);
-                                return false;
-                            }
-                        } else {
-                            warn!("cannot find previous transactions, bad data");
-                            // only increment result lock
-                            mutate_result_error(&mut task);
-                            return false;
-                        }
-                    }
-                    output_block.add_tx(output_tx);
+                {
+                    let mut lock = unspent.lock().unwrap();
+                    lock.extend(new_unspent_cache);
+                    channel.send(block).unwrap();
+                    // release unspent cache
                 }
-
-                if task.error_state.load(Ordering::SeqCst) {
-                    return false;
-                }
-                sender.send(output_block).unwrap();
                 true
             }
             Err(_) => {
                 // set error_state to true
-                mutate_error_inc_lock(&mut task);
+                mutate_result_error(error_state);
                 false
             }
         }
     } else {
         // set error_state to true
-        mutate_error_inc_lock(&mut task);
+        mutate_result_error(error_state);
         false
     }
 }
 
-fn mutate_result_error(task: &mut TaskConnected) {
-    let err = task.error_state.borrow_mut();
-    err.fetch_or(true, Ordering::SeqCst);
+///
+/// fetch_block_connected, thread safe
+///
+pub(crate) fn consume_outputs<TBlock>(
+    unspent: &Arc<
+        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+    >,
+    error_state: &Arc<AtomicBool>,
+    sender: &SyncSender<TBlock>,
+    block: Block,
+) -> bool
+    where
+        TBlock: BlockConnectable,
+{
+    // stop new tasks from loading when error
+    if error_state.load(Ordering::SeqCst) {
+        return false;
+    }
+
+    let block_hash = block.header.block_hash();
+    let mut output_block = TBlock::from(block.header, block_hash);
+
+    for tx in block.txdata {
+        let mut output_tx: TBlock::Tx = TxConnectable::from(&tx);
+
+        // spend new inputs
+        for input in tx.input {
+            // skip coinbase transaction
+            if input.previous_output.is_null() {
+                continue;
+            }
+
+            let prev_txid = &input.previous_output.txid.compress();
+            let n = *&input.previous_output.vout as usize;
+
+            // temporarily lock unspent
+            let prev_tx = {
+                let prev_tx = unspent.lock().unwrap();
+                match prev_tx.get(prev_txid) {
+                    None => None,
+                    Some(tx) => Some(tx.clone()),
+                }
+            };
+            if let Some(prev_tx) = prev_tx {
+                // temporarily lock prev_tx
+                let tx_out = {
+                    let mut prev_tx_lock = prev_tx.lock().unwrap();
+                    let out = prev_tx_lock.remove(n);
+                    // remove a key immediately when the key contains no transaction
+                    if prev_tx_lock.is_empty() {
+                        unspent.lock().unwrap().remove(prev_txid);
+                    }
+                    out
+                };
+                if let Some(out) = tx_out {
+                    output_tx.add_input(out);
+                } else {
+                    warn!("cannot find previous outpoint, bad data");
+                    // only increment result lock
+                    mutate_result_error(error_state);
+                    return false;
+                }
+            } else {
+                warn!("cannot find previous transactions, bad data");
+                // only increment result lock
+                mutate_result_error(error_state);
+                return false;
+            }
+        }
+        output_block.add_tx(output_tx);
+    }
+
+    if error_state.load(Ordering::SeqCst) {
+        return false;
+    }
+    sender.send(output_block).unwrap();
+    true
 }
 
-/// wait for prior tasks, change error state, move to later tasks
-fn mutate_error_inc_lock(task: &mut TaskConnected) {
-    let (lock, cond) = &*task.outputs_insertion_height;
-    let mut outputs_insertion_height = lock.lock().unwrap();
-    if *outputs_insertion_height != task.height {
-        outputs_insertion_height = cond
-            .wait_while(outputs_insertion_height, |h| *h != task.height)
-            .unwrap();
-    }
-    {
-        // now you are holding the lock
-        // wait until prior ones to have finished outputs insertion parts
-        // change the error state before letting the later tasks go
-        let err = task.error_state.borrow_mut();
-        err.fetch_or(true, Ordering::SeqCst);
-    }
-    *outputs_insertion_height += 1;
-    cond.notify_all();
+#[inline]
+fn mutate_result_error(error_state: &Arc<AtomicBool>) {
+    error_state.fetch_or(true, Ordering::SeqCst);
 }
