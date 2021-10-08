@@ -4,7 +4,7 @@ use log::warn;
 use std::borrow::BorrowMut;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, RwLock};
 use hash_hasher::HashedMap;
 
 pub(crate) struct TaskConnected {
@@ -17,8 +17,8 @@ pub(crate) struct TaskConnected {
 /// fetch_block_connected, thread safe
 ///
 pub(crate) fn fetch_block_connected<TBlock>(
-    mut unspent: &Arc<
-        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+    unspent: &Arc<
+        RwLock<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     db: &DBCopy,
     mut task: TaskConnected,
@@ -59,14 +59,13 @@ where
 
                     // the new transaction should not be in unspent
                     #[cfg(debug_assertions)]
-                    if unspent.lock().unwrap().contains_key(&txid_compressed) {
+                    if unspent.read().unwrap().contains_key(&txid_compressed) {
                         warn!("found duplicate key {}", &txid);
                     }
 
                     // temporary borrow locking of unspent
                     unspent
-                        .borrow_mut()
-                        .lock()
+                        .write()
                         .unwrap()
                         .insert(txid_compressed, new_unspent);
                 }
@@ -105,7 +104,7 @@ where
 
                         // temporarily lock unspent
                         let prev_tx = {
-                            let prev_tx = unspent.lock().unwrap();
+                            let prev_tx = unspent.read().unwrap();
                             match prev_tx.get(prev_txid) {
                                 None => None,
                                 Some(tx) => Some(tx.clone()),
@@ -118,7 +117,7 @@ where
                                 let out = prev_tx_lock.remove(n);
                                 // remove a key immediately when the key contains no transaction
                                 if prev_tx_lock.is_empty() {
-                                    unspent.lock().unwrap().remove(prev_txid);
+                                    unspent.write().unwrap().remove(prev_txid);
                                 }
                                 out
                             };

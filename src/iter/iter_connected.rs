@@ -6,7 +6,7 @@ use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, sync_channel, Receiver};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, RwLock};
 use std::thread;
 use std::thread::JoinHandle;
 use hash_hasher::HashedMap;
@@ -30,8 +30,8 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         let (task_register, task_order) = channel();
         let unspent: Arc<
-            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
-        > = Arc::new(Mutex::new(HashedMap::default()));
+            RwLock<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        > = Arc::new(RwLock::new(HashedMap::default()));
         // worker master
         let mut tasks: VecDeque<TaskConnected> = VecDeque::with_capacity(end as usize);
         for height in 0..end {
@@ -58,11 +58,11 @@ where
                 loop {
                     let task = {
                         let mut task = task.lock().unwrap();
-                        if task.front().is_some() {
-                            // when task queue is locked, register thread order
+                        let next_task = task.pop_front();
+                        if next_task.is_some() {
                             register.send(thread_number).unwrap();
                         }
-                        task.pop_front()
+                        next_task
                         // drop mutex immediately
                     };
                     match task {

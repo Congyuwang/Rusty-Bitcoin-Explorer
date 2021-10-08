@@ -50,11 +50,11 @@ where
                 loop {
                     let task = {
                         let mut task = task.lock().unwrap();
-                        if task.front().is_some() {
-                            // when task queue is locked, register thread order
+                        let next_task = task.pop_front();
+                        if next_task.is_some() {
                             register.send(thread_number).unwrap();
                         }
-                        task.pop_front()
+                        next_task
                         // drop mutex immediately
                     };
                     match task {
