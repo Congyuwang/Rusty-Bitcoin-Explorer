@@ -87,8 +87,8 @@ pub(crate) fn get_task<T>(
     thread_number: usize,
 ) -> Option<T> {
     // lock task list
-    let mut height = tasks.lock().unwrap();
-    let next_height = height.pop_front();
+    let mut task = tasks.lock().unwrap();
+    let next_height = task.pop_front();
     // register task stealing
     if next_height.is_some() {
         register.send(thread_number).unwrap();

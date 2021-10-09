@@ -28,8 +28,6 @@ where
     if let Some(index) = db.block_index.records.get(height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(block) => {
-                let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
-
                 // insert new transactions
                 for tx in block.txdata.iter() {
                     // clone outputs
@@ -55,14 +53,9 @@ where
                     if error_state.load(Ordering::SeqCst) {
                         return false;
                     }
-                    new_unspent_cache.push((txid_compressed, new_unspent));
+                    unspent.lock().unwrap().insert(txid_compressed, new_unspent);
                 }
-                {
-                    let mut lock = unspent.lock().unwrap();
-                    lock.extend(new_unspent_cache);
-                    channel.send(block).unwrap();
-                    // release unspent cache
-                }
+                channel.send(block).unwrap();
                 true
             }
             Err(_) => {
