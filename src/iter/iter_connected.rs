@@ -38,32 +38,24 @@ where
         > = Arc::new(Mutex::new(HashedMap::default()));
 
         // all tasks
-        let heights = {
-            let mut heights = VecDeque::with_capacity(end as usize);
-            for height in 0..end {
-                heights.push_back(height)
-            }
-            Arc::new(Mutex::new(heights))
-        };
+        let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
 
         // the channel for synchronizing cache update
-        let (cache_task_register, cache_update_order) = channel();
-        let cache_update_order = Arc::new(Mutex::new(cache_update_order));
-
-        // block_streams
-        let mut block_receivers = Vec::with_capacity(cpus);
+        let (block_receivers_sender, block_receivers) = sync_channel(cpus * 10);
+        let block_receivers = Arc::new(Mutex::new(block_receivers));
 
         // output insertion
-        for thread_number in 0..cpus {
+        for _ in 0..cpus {
 
             // block streams
-            let (block_sender, block_receiver) = sync_channel(10);
+            let (block_sender, block_receiver) = channel();
+            let block_receiver = Arc::new(Mutex::new(block_receiver));
 
-            let register = cache_task_register.clone();
             let unspent = unspent.clone();
             let error_state = error_state.clone();
             let heights = heights.clone();
             let db = db.clone();
+            let block_receivers_sender = block_receivers_sender.clone();
 
             // output cache insertion workers
             let handle = thread::spawn(move || {
@@ -72,7 +64,7 @@ where
                         let mut height = heights.lock().unwrap();
                         let next_height = height.pop_front();
                         if next_height.is_some() {
-                            register.send(thread_number).unwrap();
+                            block_receivers_sender.send(block_receiver.clone()).unwrap();
                         }
                         next_height
                         // drop mutex immediately
@@ -88,54 +80,49 @@ where
                     }
                 }
             });
-
-            block_receivers.push(block_receiver);
             handles.push(handle);
         }
 
         // the channel for synchronizing output order
-        let (result_register, result_order) = channel();
+        let (result_register, result_order) = sync_channel(10 * cpus);
 
         // block_streams
         let mut result_receivers = Vec::with_capacity(cpus);
-        let block_receivers = Arc::new(Mutex::new(block_receivers));
 
         // consume UTXO cache and produce output
         for thread_number in 0..cpus {
 
             // result streams
-            let (result_sender, result_receiver) = sync_channel(10);
+            let (result_sender, result_receiver) = channel();
 
             let register = result_register.clone();
             let unspent = unspent.clone();
             let error_state = error_state.clone();
             let block_receivers = block_receivers.clone();
-            let cache_update_order = cache_update_order.clone();
 
             let handle = thread::spawn(move || {
                 loop {
-                    // obtain the next channel number
-                    match cache_update_order.lock().unwrap().recv() {
-                        Ok(n) => {
-                            // obtain block from the next channel number
-                            match block_receivers.lock().unwrap().get(n).unwrap().recv() {
-                                Ok(blk) => {
-                                    register.send(thread_number).unwrap();
-                                    if !consume_outputs(&unspent, &error_state, &result_sender, blk) {
-                                        break;
-                                    }
-                                }
-                                Err(_) => {
-                                    break;
-                                }
+                    let blk = {
+                        let receivers_locked = block_receivers.lock().unwrap();
+                        if let Ok(receiver) = receivers_locked.recv() {
+                            let lock = receiver.lock();
+                            register.send(thread_number).unwrap();
+                            match lock.unwrap().recv() {
+                                Ok(blk) => blk,
+                                Err(_) => break
                             }
+                        } else {
+                            break
                         }
-                        Err(_) => {
-                            break;
-                        }
+                        // release receivers lock
+                    };
+
+                    if !consume_outputs(&unspent, &error_state, &result_sender, blk) {
+                        break;
                     }
                 }
             });
+
             result_receivers.push(result_receiver);
             handles.push(handle);
         }

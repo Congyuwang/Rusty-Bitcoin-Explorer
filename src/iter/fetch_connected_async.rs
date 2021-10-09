@@ -2,7 +2,7 @@ use crate::iter::util::{Compress, DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use log::warn;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::SyncSender;
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use bitcoin::Block;
 use hash_hasher::HashedMap;
@@ -17,7 +17,7 @@ pub(crate) fn insert_outputs<TBlock>(
     db: &DBCopy,
     height: u32,
     error_state: &Arc<AtomicBool>,
-    channel: &SyncSender<Block>,
+    channel: &Sender<Block>,
 ) -> bool
 where
     TBlock: BlockConnectable,
@@ -90,7 +90,7 @@ pub(crate) fn consume_outputs<TBlock>(
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     error_state: &Arc<AtomicBool>,
-    sender: &SyncSender<TBlock>,
+    sender: &Sender<TBlock>,
     block: Block,
 ) -> bool
     where
