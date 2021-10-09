@@ -1,7 +1,8 @@
 use crate::api::BitcoinDB;
-use crate::iter::fetch_connected_async::{insert_outputs, consume_outputs};
-use crate::iter::util::{DBCopy, VecMap};
+use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
+use crate::iter::util::{get_task, DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
+use hash_hasher::HashedMap;
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -9,7 +10,6 @@ use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
-use hash_hasher::HashedMap;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
@@ -41,45 +41,44 @@ where
         let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
 
         // the channel for synchronizing cache update
-        let (block_receivers_sender, block_receivers) = sync_channel(cpus * 10);
-        let block_receivers = Arc::new(Mutex::new(block_receivers));
+        let (block_worker_register, block_order) = sync_channel(cpus * 10);
+        let block_order = Arc::new(Mutex::new(block_order));
+        let mut block_receivers = Vec::with_capacity(cpus);
 
-        // output insertion
-        for _ in 0..cpus {
-
+        // output insertion threads
+        for thread_number in 0..cpus {
             // block streams
             let (block_sender, block_receiver) = channel();
             let block_receiver = Arc::new(Mutex::new(block_receiver));
 
+            // clone resources
             let unspent = unspent.clone();
             let error_state = error_state.clone();
             let heights = heights.clone();
             let db = db.clone();
-            let block_receivers_sender = block_receivers_sender.clone();
+            let block_worker_register = block_worker_register.clone();
 
             // output cache insertion workers
             let handle = thread::spawn(move || {
                 loop {
-                    let height = {
-                        let mut height = heights.lock().unwrap();
-                        let next_height = height.pop_front();
-                        if next_height.is_some() {
-                            block_receivers_sender.send(block_receiver.clone()).unwrap();
-                        }
-                        next_height
-                        // drop mutex immediately
-                    };
-                    match height {
+                    match get_task(&heights, &block_worker_register, thread_number) {
                         // finish
                         None => break,
                         Some(height) => {
-                            if !insert_outputs::<TBlock>(&unspent, &db, height, &error_state, &block_sender) {
+                            if !update_unspent_cache::<TBlock>(
+                                &unspent,
+                                &db,
+                                height,
+                                &error_state,
+                                &block_sender,
+                            ) {
                                 break;
                             }
                         }
                     }
                 }
             });
+            block_receivers.push(block_receiver);
             handles.push(handle);
         }
 
@@ -91,33 +90,35 @@ where
 
         // consume UTXO cache and produce output
         for thread_number in 0..cpus {
-
             // result streams
             let (result_sender, result_receiver) = channel();
 
             let register = result_register.clone();
             let unspent = unspent.clone();
             let error_state = error_state.clone();
+            let block_order = block_order.clone();
             let block_receivers = block_receivers.clone();
 
             let handle = thread::spawn(move || {
                 loop {
+                    // exclusive access to block receiver
                     let blk = {
-                        let receivers_locked = block_receivers.lock().unwrap();
-                        if let Ok(receiver) = receivers_locked.recv() {
-                            let lock = receiver.lock();
+                        let block_order_lock = block_order.lock().unwrap();
+                        // receive thread_number for block receiver
+                        if let Ok(worker_number) = block_order_lock.recv() {
+                            let lock = block_receivers.get(worker_number).unwrap().lock();
                             register.send(thread_number).unwrap();
                             match lock.unwrap().recv() {
                                 Ok(blk) => blk,
-                                Err(_) => break
+                                Err(_) => break,
                             }
                         } else {
-                            break
+                            break;
                         }
-                        // release receivers lock
                     };
+                    // release receivers lock
 
-                    if !consume_outputs(&unspent, &error_state, &result_sender, blk) {
+                    if !connect_outpoints(&unspent, &error_state, &result_sender, blk) {
                         break;
                     }
                 }

@@ -72,7 +72,7 @@ impl TxDB {
     fn try_open_db(path: &Path) -> Option<Database<TxKey>> {
         if !path.exists() {
             warn!("Failed to open tx_index DB: tx_index not built");
-            return None
+            return None;
         }
         let options = Options::new();
         match Database::open(path, options) {

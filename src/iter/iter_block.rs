@@ -1,6 +1,6 @@
 use crate::api::BitcoinDB;
 use crate::iter::fetch_async::{fetch_block, Task};
-use crate::iter::util::DBCopy;
+use crate::iter::util::{get_task, DBCopy};
 use bitcoin::Block;
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
@@ -27,7 +27,7 @@ where
         let cpus = num_cpus::get();
         let error_state = Arc::new(AtomicBool::new(false));
         // worker master
-        let (task_register, task_order) = channel();
+        let (task_register, task_order) = sync_channel(cpus * 10);
         let mut tasks: VecDeque<Task> = VecDeque::with_capacity(heights.len());
         for height in heights {
             tasks.push_back(Task {
@@ -40,7 +40,7 @@ where
         let mut handles = Vec::with_capacity(cpus);
         let mut receivers = Vec::with_capacity(cpus);
         for thread_number in 0..cpus {
-            let (sender, receiver) = sync_channel(10);
+            let (sender, receiver) = channel();
             let task = tasks.clone();
             let register = task_register.clone();
             let db = DBCopy::from_bitcoin_db(db);
@@ -48,16 +48,7 @@ where
             // workers
             let handle = thread::spawn(move || {
                 loop {
-                    let task = {
-                        let mut task = task.lock().unwrap();
-                        let next_task = task.pop_front();
-                        if next_task.is_some() {
-                            register.send(thread_number).unwrap();
-                        }
-                        next_task
-                        // drop mutex immediately
-                    };
-                    match task {
+                    match get_task(&task, &register, thread_number) {
                         // finish
                         None => break,
                         Some(task) => {

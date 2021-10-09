@@ -2,7 +2,7 @@ use crate::iter::util::DBCopy;
 use bitcoin::Block;
 use std::borrow::BorrowMut;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::SyncSender;
+use std::sync::mpsc::Sender;
 use std::sync::Arc;
 
 pub(crate) struct Task {
@@ -13,7 +13,7 @@ pub(crate) struct Task {
 ///
 /// fetch_block, thread safe
 ///
-pub(crate) fn fetch_block<T>(db: &DBCopy, task: Task, sender: &SyncSender<T>) -> bool
+pub(crate) fn fetch_block<T>(db: &DBCopy, task: Task, sender: &Sender<T>) -> bool
 where
     T: From<Block>,
 {

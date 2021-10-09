@@ -1,19 +1,17 @@
 use crate::iter::util::{Compress, DBCopy, VecMap};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
+use bitcoin::Block;
+use hash_hasher::HashedMap;
 use log::warn;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-use bitcoin::Block;
-use hash_hasher::HashedMap;
 
 ///
 /// read block, update cache
 ///
-pub(crate) fn insert_outputs<TBlock>(
-    unspent: &Arc<
-        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
-    >,
+pub(crate) fn update_unspent_cache<TBlock>(
+    unspent: &Arc<Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>>,
     db: &DBCopy,
     height: u32,
     error_state: &Arc<AtomicBool>,
@@ -30,12 +28,10 @@ where
     if let Some(index) = db.block_index.records.get(height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(block) => {
-
                 let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
 
                 // insert new transactions
                 for tx in block.txdata.iter() {
-
                     // clone outputs
                     let txid = tx.txid();
                     let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> =
@@ -85,16 +81,14 @@ where
 ///
 /// fetch_block_connected, thread safe
 ///
-pub(crate) fn consume_outputs<TBlock>(
-    unspent: &Arc<
-        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
-    >,
+pub(crate) fn connect_outpoints<TBlock>(
+    unspent: &Arc<Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>>,
     error_state: &Arc<AtomicBool>,
     sender: &Sender<TBlock>,
     block: Block,
 ) -> bool
-    where
-        TBlock: BlockConnectable,
+where
+    TBlock: BlockConnectable,
 {
     // stop new tasks from loading when error
     if error_state.load(Ordering::SeqCst) {

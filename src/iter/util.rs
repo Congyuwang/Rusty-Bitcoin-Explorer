@@ -2,9 +2,15 @@ use crate::api::BitcoinDB;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::block_index::BlockIndex;
 use ahash::AHasher;
-use std::hash::{Hash, Hasher};
 use bitcoin::Txid;
+use std::collections::VecDeque;
+use std::hash::{Hash, Hasher};
+use std::sync::mpsc::SyncSender;
+use std::sync::{Arc, Mutex};
 
+///
+/// Key compression
+///
 pub(crate) trait Compress {
     fn compress(&self) -> u128;
 }
@@ -22,7 +28,9 @@ impl Compress for Txid {
     }
 }
 
+///
 /// a light weighted data structure for storing unspent output
+///
 pub(crate) struct VecMap<T> {
     size: u16,
     inner: Box<[Option<T>]>,
@@ -51,9 +59,9 @@ impl<T> VecMap<T> {
     }
 }
 
-/// python iterator implementation does not allow lifetime.
-/// Thus, we must own the necessary resource for the iterator
-/// to work for python.
+///
+/// Each thread owns the necessary resource for better performance.
+///
 #[derive(Clone)]
 pub(crate) struct DBCopy {
     pub block_index: BlockIndex,
@@ -67,6 +75,25 @@ impl DBCopy {
             blk_file: db.blk_file.clone(),
         }
     }
+}
+
+///
+/// Utility function for work stealing.
+/// Exclusive access to task list.
+///
+pub(crate) fn get_task<T>(
+    tasks: &Arc<Mutex<VecDeque<T>>>,
+    register: &SyncSender<usize>,
+    thread_number: usize,
+) -> Option<T> {
+    // lock task list
+    let mut height = tasks.lock().unwrap();
+    let next_height = height.pop_front();
+    // register task stealing
+    if next_height.is_some() {
+        register.send(thread_number).unwrap();
+    }
+    next_height
 }
 
 #[cfg(test)]
