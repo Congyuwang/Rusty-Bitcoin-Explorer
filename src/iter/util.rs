@@ -37,6 +37,7 @@ pub(crate) struct VecMap<T> {
 }
 
 impl<T> VecMap<T> {
+    #[inline(always)]
     pub(crate) fn from_vec(slice: Box<[Option<T>]>) -> Self {
         VecMap {
             size: slice.len() as u16,
@@ -44,12 +45,12 @@ impl<T> VecMap<T> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub(crate) fn is_empty(&self) -> bool {
         self.size == 0
     }
 
-    #[inline]
+    #[inline(always)]
     pub(crate) fn remove(&mut self, n: usize) -> Option<T> {
         let element = &mut self.inner[n];
         if let Some(_) = element {
@@ -81,6 +82,7 @@ impl DBCopy {
 /// Utility function for work stealing.
 /// Exclusive access to task list.
 ///
+#[inline(always)]
 pub(crate) fn get_task<T>(
     tasks: &Arc<Mutex<VecDeque<T>>>,
     register: &SyncSender<usize>,
