@@ -28,6 +28,8 @@ where
     if let Some(index) = db.block_index.records.get(height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
             Ok(block) => {
+                let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
+
                 // insert new transactions
                 for tx in block.txdata.iter() {
                     // clone outputs
@@ -53,8 +55,9 @@ where
                     if error_state.load(Ordering::SeqCst) {
                         return false;
                     }
-                    unspent.lock().unwrap().insert(txid_compressed, new_unspent);
+                    new_unspent_cache.push((txid_compressed, new_unspent));
                 }
+                unspent.lock().unwrap().extend(new_unspent_cache);
                 channel.send(block).unwrap();
                 true
             }
@@ -114,15 +117,16 @@ where
             };
             if let Some(prev_tx) = prev_tx {
                 // temporarily lock prev_tx
-                let tx_out = {
+                let (tx_out, is_empty) = {
                     let mut prev_tx_lock = prev_tx.lock().unwrap();
-                    let out = prev_tx_lock.remove(n);
-                    // remove a key immediately when the key contains no transaction
-                    if prev_tx_lock.is_empty() {
-                        unspent.lock().unwrap().remove(prev_txid);
-                    }
-                    out
+                    let tx_out = prev_tx_lock.remove(n);
+                    let is_empty = prev_tx_lock.is_empty();
+                    (tx_out, is_empty)
                 };
+                // remove a key immediately when the key contains no transaction
+                if is_empty {
+                    unspent.lock().unwrap().remove(prev_txid);
+                }
                 if let Some(out) = tx_out {
                     output_tx.add_input(out);
                 } else {
