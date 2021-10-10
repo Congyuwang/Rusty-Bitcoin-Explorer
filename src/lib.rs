@@ -34,9 +34,11 @@
 //! default-features = false
 //! ```
 //!
-//! ## Caveat
+//! ### Guide to Feature
+//! When you have a large memory (>= 32 GB), use `default-features = false`,
+//! which provides blazing fast speed.
 //!
-//! Currently it only decode addresses from standard script types.
+//! When you have a fast drive (i.e., SSD) but a limited memory, use the default feature.
 //!
 //! # Example
 //!

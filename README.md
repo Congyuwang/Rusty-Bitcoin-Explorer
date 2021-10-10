@@ -61,6 +61,10 @@ version = "1.2"
 default-features = false
 ```
 
+### Guide to Feature
+- When you have a large memory (>= 32 GB), use default-features = false, which provides blazing fast speed.
+- When you have a fast drive (i.e., SSD) but a limited memory, use the default feature.
+
 ## Examples
 
 ### get a block (i.e., see doc for what is full/simple format)
