@@ -171,7 +171,7 @@ impl<T> Drop for ConnectedBlockIter<T> {
             let err = self.error_state.borrow_mut();
             err.fetch_or(true, Ordering::SeqCst);
         }
-        DB::destroy(&Options::default(), &self.rocks_db_path).unwrap();
         self.join();
+        DB::destroy(&Options::default(), &self.rocks_db_path).unwrap();
     }
 }
