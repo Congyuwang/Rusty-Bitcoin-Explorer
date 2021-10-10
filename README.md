@@ -29,6 +29,39 @@ SSD allows faster performance.
 Iterating through all 700000 blocks (non-connected, in sequential order) takes about 10 minutes
 (Windows 10, CPU Core i7-9700, Block chain data on external SSD drive connected through USB 3.1).
 
+[comment]: TODO: provide a benchmark here.
+
+With SSD, iterating through all 700000 blocks with input addresses connected takes about ? minutes.
+
+Iterating through all 700000 blocks with input addresses connected takes about 30 minutes
+using in-memory UTXO cache, which requires 32GB memory
+(with `on-disk-utxo` or `default` feature disabled).
+
+## Features
+`db.iter_connected_block()` uses in-memory UTXO cache by default,
+which requires 32GB ore more memory, but is very fast.
+It can be configured to use on-disk UTXO cache for tracking unspent transactions during iterations,
+which usually requires less than 1GB memory.
+
+*By default, UTXO is stored on RAM, which requires 32GM memory
+(it needs this much memory only for `db.iter_connected_block()`)*
+```toml
+[dependencies.bitcoin-explorer]
+version = "1.2"
+```
+
+Enable on-disk UTXO cache if your memory is limited:
+```toml
+[dependencies.bitcoin-explorer]
+version = "1.2"
+features = ["on-disk-utxo"]
+```
+
+### Guide to Feature
+When you have a large memory (>= 32 GB), do not use on-disk-utxo.
+In-memory UTXO cache provides blazing fast speed.
+Use on-disk-utxo only when your disk is limited.
+
 ## Examples
 
 ### get a block (i.e., see doc for what is full/simple format)

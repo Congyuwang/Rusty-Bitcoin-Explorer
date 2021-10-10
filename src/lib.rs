@@ -12,9 +12,32 @@
 //! bitcoin transaction records. This is good for analysis and research on
 //! bitcoin trading behaviour.
 //!
-//! ## Caveat
+//! ## Features
+//! `db.iter_connected_block()` uses in-memory UTXO cache by default,
+//! which requires 32GB ore more memory, but is very fast.
+//! It can be configured to use on-disk UTXO cache for tracking
+//! unspent transactions during iterations,
+//! which usually requires less than 1GB memory.
 //!
-//! Currently it only supports all standard script types.
+//! **By default, UTXO is stored on RAM, which requires 32GM memory
+//! (it needs this much memory only for `db.iter_connected_block()`)**
+//! ```toml
+//! [dependencies.bitcoin-explorer]
+//! version = "1.2"
+//! ```
+//!
+//! Enable on-disk UTXO cache if your memory is limited:
+//! ```toml
+//! [dependencies.bitcoin-explorer]
+//! version = "1.2"
+//! features = ["on-disk-utxo"]
+//! ```
+//!
+//! ### Guide to Feature
+//! When you have a large memory (>= 32 GB), do not use `on-disk-utxo`.
+//! In-memory UTXO cache provides blazing fast speed.
+//!
+//! Use `on-disk-utxo` only when your disk is limited.
 //!
 //! # Example
 //!

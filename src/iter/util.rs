@@ -31,11 +31,13 @@ impl Compress for Txid {
 ///
 /// a light weighted data structure for storing unspent output
 ///
+#[cfg(not(feature = "on-disk-utxo"))]
 pub(crate) struct VecMap<T> {
     size: u16,
     inner: Box<[Option<T>]>,
 }
 
+#[cfg(not(feature = "on-disk-utxo"))]
 impl<T> VecMap<T> {
     #[inline(always)]
     pub(crate) fn from_vec(slice: Box<[Option<T>]>) -> Self {
