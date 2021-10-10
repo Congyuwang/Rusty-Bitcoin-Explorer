@@ -1,8 +1,8 @@
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
-use crate::iter::util::{get_task, DBCopy, VecMap};
-use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
-use hash_hasher::HashedMap;
+use crate::iter::util::{get_task, DBCopy};
+use crate::parser::proto::connected_proto::{BlockConnectable};
+use rocksdb::{Options, DB};
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -10,6 +10,7 @@ use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
+use tempdir::TempDir;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
@@ -17,6 +18,7 @@ pub struct ConnectedBlockIter<TBlock> {
     result_order: Receiver<usize>,
     worker_thread: Option<Vec<JoinHandle<()>>>,
     error_state: Arc<AtomicBool>,
+    rocks_db_path: TempDir,
 }
 
 impl<TBlock> ConnectedBlockIter<TBlock>
@@ -32,10 +34,11 @@ where
         // shared error state for stopping threads early
         let error_state = Arc::new(AtomicBool::new(false));
 
-        // in-memory UTXO cache
-        let unspent: Arc<
-            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
-        > = Arc::new(Mutex::new(HashedMap::default()));
+        // UTXO cache
+        let cache_dir = TempDir::new("rocks_db").expect("failed to create rocksdb temp dir");
+        let mut options = Options::default();
+        options.create_if_missing(true);
+        let unspent = Arc::new(Mutex::new(DB::open(&options, &cache_dir).expect("failed to open rocksdb")));
 
         // all tasks
         let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
@@ -47,16 +50,17 @@ where
 
         // output insertion threads
         for thread_number in 0..cpus {
+
             // block streams
             let (block_sender, block_receiver) = channel();
             let block_receiver = Arc::new(Mutex::new(block_receiver));
 
             // clone resources
-            let unspent = unspent.clone();
             let error_state = error_state.clone();
             let heights = heights.clone();
             let db = db.clone();
             let block_worker_register = block_worker_register.clone();
+            let unspent = unspent.clone();
 
             // output cache insertion workers
             let handle = thread::spawn(move || {
@@ -94,10 +98,10 @@ where
             let (result_sender, result_receiver) = channel();
 
             let register = result_register.clone();
-            let unspent = unspent.clone();
             let error_state = error_state.clone();
             let block_order = block_order.clone();
             let block_receivers = block_receivers.clone();
+            let unspent = unspent.clone();
 
             let handle = thread::spawn(move || {
                 loop {
@@ -133,6 +137,7 @@ where
             result_order,
             worker_thread: Some(handles),
             error_state,
+            rocks_db_path: cache_dir,
         }
     }
 }
@@ -166,6 +171,7 @@ impl<T> Drop for ConnectedBlockIter<T> {
             let err = self.error_state.borrow_mut();
             err.fetch_or(true, Ordering::SeqCst);
         }
+        DB::destroy(&Options::default(), &self.rocks_db_path).unwrap();
         self.join();
     }
 }

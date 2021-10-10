@@ -29,38 +29,6 @@ impl Compress for Txid {
 }
 
 ///
-/// a light weighted data structure for storing unspent output
-///
-pub(crate) struct VecMap<T> {
-    size: u16,
-    inner: Box<[Option<T>]>,
-}
-
-impl<T> VecMap<T> {
-    #[inline(always)]
-    pub(crate) fn from_vec(slice: Box<[Option<T>]>) -> Self {
-        VecMap {
-            size: slice.len() as u16,
-            inner: slice,
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn is_empty(&self) -> bool {
-        self.size == 0
-    }
-
-    #[inline(always)]
-    pub(crate) fn remove(&mut self, n: usize) -> Option<T> {
-        let element = &mut self.inner[n];
-        if let Some(_) = element {
-            self.size -= 1;
-        };
-        element.take()
-    }
-}
-
-///
 /// Each thread owns the necessary resource for better performance.
 ///
 #[derive(Clone)]
