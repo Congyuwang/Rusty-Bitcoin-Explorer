@@ -2,7 +2,6 @@ use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
 use crate::iter::util::{get_task, DBCopy};
 use crate::parser::proto::connected_proto::{BlockConnectable};
-use rocksdb::{Options, DB};
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -10,7 +9,11 @@ use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
-use tempdir::TempDir;
+#[cfg(feature = "in-memory-utxo")] use crate::iter::util::VecMap;
+#[cfg(feature = "in-memory-utxo")] use crate::parser::proto::connected_proto::TxConnectable;
+#[cfg(feature = "in-memory-utxo")] use hash_hasher::HashedMap;
+#[cfg(not(feature = "in-memory-utxo"))] use tempdir::TempDir;
+#[cfg(not(feature = "in-memory-utxo"))] use rocksdb::{Options, DB};
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
@@ -18,6 +21,7 @@ pub struct ConnectedBlockIter<TBlock> {
     result_order: Receiver<usize>,
     worker_thread: Option<Vec<JoinHandle<()>>>,
     error_state: Arc<AtomicBool>,
+    #[cfg(not(feature = "in-memory-utxo"))]
     rocks_db_path: TempDir,
 }
 
@@ -35,9 +39,19 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
 
         // UTXO cache
+        #[cfg(feature = "in-memory-utxo")]
+        let unspent: Arc<
+            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        > = Arc::new(Mutex::new(HashedMap::default()));
+        #[cfg(not(feature = "in-memory-utxo"))]
         let cache_dir = TempDir::new("rocks_db").expect("failed to create rocksdb temp dir");
-        let mut options = Options::default();
-        options.create_if_missing(true);
+        #[cfg(not(feature = "in-memory-utxo"))]
+        let options = {
+            let mut options = Options::default();
+            options.create_if_missing(true);
+            options
+        };
+        #[cfg(not(feature = "in-memory-utxo"))]
         let unspent = Arc::new(Mutex::new(DB::open(&options, &cache_dir).expect("failed to open rocksdb")));
 
         // all tasks
@@ -50,17 +64,16 @@ where
 
         // output insertion threads
         for thread_number in 0..cpus {
-
             // block streams
             let (block_sender, block_receiver) = channel();
             let block_receiver = Arc::new(Mutex::new(block_receiver));
 
             // clone resources
+            let unspent = unspent.clone();
             let error_state = error_state.clone();
             let heights = heights.clone();
             let db = db.clone();
             let block_worker_register = block_worker_register.clone();
-            let unspent = unspent.clone();
 
             // output cache insertion workers
             let handle = thread::spawn(move || {
@@ -98,10 +111,10 @@ where
             let (result_sender, result_receiver) = channel();
 
             let register = result_register.clone();
+            let unspent = unspent.clone();
             let error_state = error_state.clone();
             let block_order = block_order.clone();
             let block_receivers = block_receivers.clone();
-            let unspent = unspent.clone();
 
             let handle = thread::spawn(move || {
                 loop {
@@ -137,6 +150,7 @@ where
             result_order,
             worker_thread: Some(handles),
             error_state,
+            #[cfg(not(feature = "in-memory-utxo"))]
             rocks_db_path: cache_dir,
         }
     }
@@ -172,6 +186,7 @@ impl<T> Drop for ConnectedBlockIter<T> {
             err.fetch_or(true, Ordering::SeqCst);
         }
         self.join();
+        #[cfg(not(feature = "in-memory-utxo"))]
         DB::destroy(&Options::default(), &self.rocks_db_path).unwrap();
     }
 }

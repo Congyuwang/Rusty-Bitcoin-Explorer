@@ -58,13 +58,14 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-explorer"
-version = "1.2.0-alpha-3"
+version = "1.2.0-beta-1"
 dependencies = [
  "ahash",
  "bitcoin",
  "bitcoin_hashes",
  "byteorder",
  "db-key",
+ "hash_hasher",
  "leveldb",
  "log",
  "num_cpus",
@@ -241,6 +242,12 @@ name = "glob"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
+
+[[package]]
+name = "hash_hasher"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74721d007512d0cb3338cd20f0654ac913920061a4c4d0d8708edb3f2a698c0c"
 
 [[package]]
 name = "hermit-abi"
