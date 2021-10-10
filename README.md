@@ -29,14 +29,27 @@ SSD allows faster performance.
 Iterating through all 700000 blocks (non-connected, in sequential order) takes about 10 minutes
 (Windows 10, CPU Core i7-9700, Block chain data on external SSD drive connected through USB 3.1).
 
+[comment]: TODO: provide a benchmark here.
+
+With SSD, iterating through all 700000 blocks with input addresses connected takes about ? minutes.
+
 Iterating through all 700000 blocks with input addresses connected takes about 30 minutes
-(with `in-memory-utxo` feature enabled, which requires 32GB memory).
+using in-memory UTXO cache, which requires 32GB memory
+(with `on-disk-utxo` or `default` feature disabled).
 
 ## Features
 
-Support optional in-memory unspent transaction cache (UTXO). By default, UTXO is stored on disk (using `rocksdb`).
-If you have a large memory (32GB or more), enabling in-memory UTXO could accelerate 
-`db.iter_connected_block()`.
+By default, when iterating through blocks with inputs addresses attached (`db.iter_connected_block()`),
+the unspent transaction outputs (UTXO) are stored on disk using `rocksdb`.
+Feature `on-disk-utxo` is enabled by default.
+Disabling `on-disk-utxo` feature automatically enables in-memory UTXO cache,
+which is very fast but requires 32GB memory or more.
+
+*By default, UTXO is stored on disk, which usually requires less than 1GB memory*.
+```toml
+[dependencies.explorer]
+version = "1.2"
+```
 
 To enable in-memory UTXO. Set the default features to `false`:
 
@@ -46,12 +59,6 @@ To enable in-memory UTXO. Set the default features to `false`:
 [dependencies.explorer]
 version = "1.2"
 default-features = false
-```
-
-*By default, UTXO is stored on disk, which usually requires less than 1GB memory*.
-```toml
-[dependencies.explorer]
-version = "1.2"
 ```
 
 ## Examples
