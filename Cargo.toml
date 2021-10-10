@@ -12,8 +12,8 @@ repository = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
-in-memory-utxo = []
+default = ["rocksdb", "tempdir"]
+in-memory-utxo = ["hash_hasher"]
 
 [dependencies]
 byteorder = "^1.4"
