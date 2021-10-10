@@ -43,19 +43,20 @@ where
                     // update unspent cache
                     let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
                         VecMap::from_vec(outs.into_boxed_slice());
-                    let new_unspent: Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>> =
-                        Arc::new(Mutex::new(outs));
+                    let new_unspent = Arc::new(Mutex::new(outs));
                     let txid_compressed = txid.compress();
+
                     // the new transaction should not be in unspent
                     #[cfg(debug_assertions)]
                     if unspent.lock().unwrap().contains_key(&txid_compressed) {
                         warn!("found duplicate key {}", &txid);
                     }
-                    //
-                    if error_state.load(Ordering::SeqCst) {
-                        return false;
-                    }
+
                     new_unspent_cache.push((txid_compressed, new_unspent));
+                }
+                // quick stopping in error state
+                if error_state.load(Ordering::SeqCst) {
+                    return false;
                 }
                 unspent.lock().unwrap().extend(new_unspent_cache);
                 channel.send(block).unwrap();
