@@ -38,32 +38,29 @@ using in-memory UTXO cache, which requires 32GB memory
 (with `on-disk-utxo` or `default` feature disabled).
 
 ## Features
+`db.iter_connected_block()` uses in-memory UTXO cache by default,
+which requires 32GB ore more memory, but is very fast.
+It can be configured to use on-disk UTXO cache for tracking unspent transactions during iterations,
+which usually requires less than 1GB memory.
 
-By default, when iterating through blocks with inputs addresses attached (`db.iter_connected_block()`),
-the unspent transaction outputs (UTXO) are stored on disk using `rocksdb`.
-Feature `on-disk-utxo` is enabled by default.
-Disabling `on-disk-utxo` feature automatically enables in-memory UTXO cache,
-which is very fast but requires 32GB memory or more.
-
-*By default, UTXO is stored on disk, which usually requires less than 1GB memory*.
+*By default, UTXO is stored on RAM, which requires 32GM memory
+(it needs this much memory only for `db.iter_connected_block()`)*
 ```toml
 [dependencies.bitcoin-explorer]
 version = "1.2"
 ```
 
-To enable in-memory UTXO. Set the default features to `false`:
-
-*Notice that with in-memory-utxo, db.iter_connected_block() currently uses 32GB RAM*.
-
+Enable on-disk UTXO cache if your memory is limited:
 ```toml
 [dependencies.bitcoin-explorer]
 version = "1.2"
-default-features = false
+features = ["on-disk-utxo"]
 ```
 
 ### Guide to Feature
-- When you have a large memory (>= 32 GB), use default-features = false, which provides blazing fast speed.
-- When you have a fast drive (i.e., SSD) but a limited memory, use the default feature.
+When you have a large memory (>= 32 GB), do not use on-disk-utxo.
+In-memory UTXO cache provides blazing fast speed.
+Use on-disk-utxo only when your disk is limited.
 
 ## Examples
 
