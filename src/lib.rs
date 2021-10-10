@@ -12,9 +12,29 @@
 //! bitcoin transaction records. This is good for analysis and research on
 //! bitcoin trading behaviour.
 //!
+//! ## Features
+//! Support optional in-memory unspent transaction cache (UTXO).
+//! By default, UTXO is stored on disk (using rocksdb).
+//! If you have a large memory (32GB or more),
+//! enabling in-memory UTXO could accelerate `db.iter_connected_block()`.
+//! To enable in-memory UTXO. Add the following in your Cargo.toml:
+//!
+//! *Notice that with `in-memory-utxo`, `db.iter_connected_block()` currently uses 32GB RAM.*
+//! ```toml
+//! [dependencies.explorer]
+//! version = "1.2"
+//! feature = "in-memory-utxo"
+//! ```
+//!
+//! *By default, UTXO is stored on disk, which usually requires less than 1GB memory.*
+//! ```toml
+//! [dependencies.explorer]
+//! version = "1.2"
+//! ```
+//!
 //! ## Caveat
 //!
-//! Currently it only supports all standard script types.
+//! Currently it only decode addresses from standard script types.
 //!
 //! # Example
 //!

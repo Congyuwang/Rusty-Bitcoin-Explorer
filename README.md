@@ -29,6 +29,30 @@ SSD allows faster performance.
 Iterating through all 700000 blocks (non-connected, in sequential order) takes about 10 minutes
 (Windows 10, CPU Core i7-9700, Block chain data on external SSD drive connected through USB 3.1).
 
+Iterating through all 700000 blocks with input addresses connected takes about 30 minutes
+(with `in-memory-utxo` feature enabled, which requires 32GB memory).
+
+## Features
+
+Support optional in-memory unspent transaction cache (UTXO). By default, UTXO is stored on disk (using `rocksdb`).
+If you have a large memory (32GB or more), enabling in-memory UTXO could accelerate 
+`db.iter_connected_block()`.
+To enable in-memory UTXO. Add the following in your Cargo.toml:
+
+*Notice that with in-memory-utxo, db.iter_connected_block() currently uses 32GB RAM*.
+
+```toml
+[dependencies.explorer]
+version = "1.2"
+feature = "in-memory-utxo"
+```
+
+*By default, UTXO is stored on disk, which usually requires less than 1GB memory*.
+```toml
+[dependencies.explorer]
+version = "1.2"
+```
+
 ## Examples
 
 ### get a block (i.e., see doc for what is full/simple format)
