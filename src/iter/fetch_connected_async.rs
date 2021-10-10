@@ -51,7 +51,7 @@ where
                 if error_state.load(Ordering::SeqCst) {
                     return false;
                 }
-                unspent.lock().unwrap().write_opt(batch, &sync_write).expect("failed at writing");
+                unspent.lock().unwrap().write(batch).expect("failed at writing");
                 channel.send(block).unwrap();
                 true
             }
