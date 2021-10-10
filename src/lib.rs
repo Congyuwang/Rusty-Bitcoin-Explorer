@@ -21,7 +21,7 @@
 //!
 //! *By default, UTXO is stored on disk, which usually requires less than 1GB memory.*
 //! ```toml
-//! [dependencies.explorer]
+//! [dependencies.bitcoin-explorer]
 //! version = "1.2"
 //! ```
 //!
@@ -29,7 +29,7 @@
 //!
 //! *Notice that with in-memory-utxo, db.iter_connected_block() currently uses 32GB RAM.*
 //! ```toml
-//! [dependencies.explorer]
+//! [dependencies.bitcoin-explorer]
 //! version = "1.2"
 //! default-features = false
 //! ```

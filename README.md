@@ -47,7 +47,7 @@ which is very fast but requires 32GB memory or more.
 
 *By default, UTXO is stored on disk, which usually requires less than 1GB memory*.
 ```toml
-[dependencies.explorer]
+[dependencies.bitcoin-explorer]
 version = "1.2"
 ```
 
@@ -56,7 +56,7 @@ To enable in-memory UTXO. Set the default features to `false`:
 *Notice that with in-memory-utxo, db.iter_connected_block() currently uses 32GB RAM*.
 
 ```toml
-[dependencies.explorer]
+[dependencies.bitcoin-explorer]
 version = "1.2"
 default-features = false
 ```
