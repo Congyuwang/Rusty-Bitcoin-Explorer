@@ -70,6 +70,7 @@ let tx: STransaction = db.get_transaction(&txid).unwrap();
 ```
 
 ### Iterate through blocks (in different formats)
+Iterating to 700000 blocks requires about 2GB memory.
 ```rust
 use bitcoin_explorer::{BitcoinDB, Block, SBlock, FBlock};
 use std::path::Path;
@@ -103,7 +104,8 @@ for block in db.iter_block::<SBlock>(600000, 700000) {
 
 ### Iterate through blocks (in different format) with outpoints connected to outputs
 
-Iterating to 700000 blocks requires a minimal amount of 32GB memory.
+Iterating to 700000 blocks with outpoints connected to outputs (with input addresses attached)
+requires a minimal amount of 32GB memory.
 
 ```rust
 use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
@@ -113,16 +115,10 @@ let path = Path::new("/Users/me/bitcoin");
 
 // launch without reading txindex
 let db = BitcoinDB::new(path, false).unwrap();
+let end = db.get_max_height() as u32;
 
-// iterate over block from 0 to 700000, (full format)
-for block in db.iter_connected_block::<FConnectedBlock>(700000) {
-    for tx in block.txdata {
-        println!("do something for this transaction");
-    }
-}
-
-// iterate over block from 0 to 700000, (simple format)
-for block in db.iter_connected_block::<SConnectedBlock>(700000) {
+// iterate over all blocks found (simple connected format)
+for block in db.iter_connected_block::<SConnectedBlock>(end) {
     for tx in block.txdata {
         println!("do something for this transaction");
     }

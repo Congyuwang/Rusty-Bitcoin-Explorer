@@ -71,13 +71,6 @@ impl BitcoinDB {
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();
     ///
-    /// // iterate over block from 0 to 700000, (full format)
-    /// for block in db.iter_connected_block::<FConnectedBlock>(700000) {
-    ///     for tx in block.txdata {
-    ///         println!("do something for this transaction");
-    ///     }
-    /// }
-    ///
     /// // iterate over block from 0 to 700000, (simple format)
     /// for block in db.iter_connected_block::<SConnectedBlock>(700000) {
     ///     for tx in block.txdata {

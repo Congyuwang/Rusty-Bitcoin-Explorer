@@ -103,15 +103,6 @@ impl BitcoinDB {
     ///
     /// Get the maximum height found in block index.
     ///
-    /// It is not necessarily true that any height smaller than
-    /// `get_max_height()` can be used to query `get_block()`.
-    ///
-    /// This max_height is only the max height of block header
-    /// information. The actual block data might not have been
-    /// synced for querying. `get_block_header()`, `get_height_from_hash()`
-    /// `get_hash_from_height()`, will necessarily return valid
-    /// data, as long as height is smaller than `get_max_height()`.
-    ///
     pub fn get_max_height(&self) -> usize {
         self.block_index.records.len()
     }
