@@ -22,21 +22,6 @@ Tested on
 `Bitcoin Core version v0.21.1.0-g194b9b8792d9b0798fdb570b79fa51f1d1f5ebaf
 Copyright (C) 2009-2020 The Bitcoin Core developers`.
 
-## Performance
-
-SSD allows faster performance.
-
-Iterating through all 700000 blocks (non-connected, in sequential order) takes about 10 minutes
-(Windows 10, CPU Core i7-9700, Block chain data on external SSD drive connected through USB 3.1).
-
-[comment]: TODO: provide a benchmark here.
-
-With SSD, iterating through all 700000 blocks with input addresses connected takes about ? minutes.
-
-Iterating through all 700000 blocks with input addresses connected takes about 30 minutes
-using in-memory UTXO cache, which requires 32GB memory
-(with `on-disk-utxo` or `default` feature disabled).
-
 ## Features
 `db.iter_connected_block()` uses in-memory UTXO cache by default,
 which requires 32GB ore more memory, but is very fast.
@@ -61,6 +46,21 @@ features = ["on-disk-utxo"]
 When you have a large memory (>= 32 GB), do not use on-disk-utxo.
 In-memory UTXO cache provides blazing fast speed.
 Use on-disk-utxo only when your disk is limited.
+
+## Performance
+
+SSD allows faster performance.
+
+Iterating through all 700000 blocks (non-connected, in sequential order) takes about 10 minutes
+(Windows 10, CPU Core i7-9700, Block chain data on external SSD drive connected through USB 3.1).
+
+With SSD, iterating through all 700000 blocks with input addresses connected takes about ? minutes.
+
+Iterating through all 700000 blocks with input addresses connected takes about 30 minutes
+using in-memory UTXO cache (by default), which requires 32GB memory
+
+If memory is limited, iterating through all blocks with input addresses connected takes about 10 hours
+using on-disk UTXO cache (with `features = ["on-disk-utxo"]`).
 
 ## Examples
 
@@ -139,6 +139,9 @@ for block in db.iter_block::<SBlock>(600000, 700000) {
 
 Iterating to 700000 blocks with outpoints connected to outputs (with input addresses attached)
 requires a minimal amount of 32GB memory.
+
+If memory is limited, use `features = ["on-disk-utxo"]` in Cargo.toml to reduce memory use to
+usually 1GB.
 
 ```rust
 use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
