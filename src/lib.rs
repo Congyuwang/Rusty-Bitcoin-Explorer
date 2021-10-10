@@ -17,14 +17,14 @@
 //! By default, UTXO is stored on disk (using rocksdb).
 //! If you have a large memory (32GB or more),
 //! enabling in-memory UTXO could accelerate `db.iter_connected_block()`.
-//! To enable in-memory UTXO. Add the following in your Cargo.toml:
+//!
+//! To enable in-memory UTXO. Set the default features to `false`:
 //!
 //! *Notice that with `in-memory-utxo`, `db.iter_connected_block()` currently uses 32GB RAM.*
 //! ```toml
 //! [dependencies.explorer]
 //! version = "1.2"
 //! default-features = false
-//! feature = "in-memory-utxo"
 //! ```
 //!
 //! *By default, UTXO is stored on disk, which usually requires less than 1GB memory.*

@@ -5,19 +5,19 @@ use log::warn;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-#[cfg(feature = "in-memory-utxo")] use hash_hasher::HashedMap;
-#[cfg(feature = "in-memory-utxo")] use crate::iter::util::VecMap;
-#[cfg(not(feature = "in-memory-utxo"))] use bitcoin::consensus::{Decodable, Encodable};
-#[cfg(not(feature = "in-memory-utxo"))] use bitcoin::TxOut;
-#[cfg(not(feature = "in-memory-utxo"))] use rocksdb::{WriteBatch, WriteOptions, DB};
+#[cfg(not(feature = "on-disk-utxo"))] use hash_hasher::HashedMap;
+#[cfg(not(feature = "on-disk-utxo"))] use crate::iter::util::VecMap;
+#[cfg(feature = "on-disk-utxo")] use bitcoin::consensus::{Decodable, Encodable};
+#[cfg(feature = "on-disk-utxo")] use bitcoin::TxOut;
+#[cfg(feature = "on-disk-utxo")] use rocksdb::{WriteBatch, DB};
 
 ///
 /// read block, update cache
 ///
 pub(crate) fn update_unspent_cache<TBlock>(
-    #[cfg(feature = "in-memory-utxo")]
+    #[cfg(not(feature = "on-disk-utxo"))]
     unspent: &Arc<Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>>,
-    #[cfg(not(feature = "in-memory-utxo"))]
+    #[cfg(feature = "on-disk-utxo")]
     unspent: &Arc<Mutex<DB>>,
     db: &DBCopy,
     height: u32,
@@ -33,8 +33,9 @@ where
     }
 
     if let Some(index) = db.block_index.records.get(height as usize) {
-        #[cfg(feature = "in-memory-utxo")]
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
+
+            #[cfg(not(feature = "on-disk-utxo"))]
             Ok(block) => {
                 let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
 
@@ -70,7 +71,8 @@ where
                 channel.send(block).unwrap();
                 true
             }
-            #[cfg(not(feature = "in-memory-utxo"))]
+
+            #[cfg(feature = "on-disk-utxo")]
             Ok(block) => {
                 let mut batch = WriteBatch::default();
 
@@ -95,6 +97,7 @@ where
                 channel.send(block).unwrap();
                 true
             }
+
             Err(_) => {
                 // set error_state to true
                 mutate_result_error(error_state);
@@ -112,9 +115,9 @@ where
 /// fetch_block_connected, thread safe
 ///
 pub(crate) fn connect_outpoints<TBlock>(
-    #[cfg(feature = "in-memory-utxo")]
+    #[cfg(not(feature = "on-disk-utxo"))]
     unspent: &Arc<Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>>,
-    #[cfg(not(feature = "in-memory-utxo"))]
+    #[cfg(feature = "on-disk-utxo")]
     unspent: &Arc<Mutex<DB>>,
     error_state: &Arc<AtomicBool>,
     sender: &Sender<TBlock>,
@@ -132,10 +135,10 @@ where
     let mut output_block = TBlock::from(block.header, block_hash);
 
     // collect rocks db keys
-    #[cfg(not(feature = "in-memory-utxo"))]
+    #[cfg(feature = "on-disk-utxo")]
     let mut keys = Vec::new();
 
-    #[cfg(not(feature = "in-memory-utxo"))]
+    #[cfg(feature = "on-disk-utxo")]
     for tx in block.txdata.iter() {
         for input in tx.input.iter() {
             // skip coinbase transaction
@@ -151,11 +154,11 @@ where
     }
 
     // get utxo
-    #[cfg(not(feature = "in-memory-utxo"))]
+    #[cfg(feature = "on-disk-utxo")]
     let tx_outs = unspent.lock().unwrap().multi_get(keys.clone());
 
     // remove keys
-    #[cfg(not(feature = "in-memory-utxo"))]
+    #[cfg(feature = "on-disk-utxo")]
     {
         let lock = unspent.lock().unwrap();
         for key in keys {
@@ -169,7 +172,7 @@ where
     }
 
     // pointer to record read position in tx_outs
-    #[cfg(not(feature = "in-memory-utxo"))]
+    #[cfg(feature = "on-disk-utxo")]
     let mut pos = 0;
 
     for tx in block.txdata {
@@ -182,13 +185,13 @@ where
                 continue;
             }
 
-            #[cfg(feature = "in-memory-utxo")]
+            #[cfg(not(feature = "on-disk-utxo"))]
             let prev_txid = &input.previous_output.txid.compress();
-            #[cfg(feature = "in-memory-utxo")]
+            #[cfg(not(feature = "on-disk-utxo"))]
             let n = *&input.previous_output.vout as usize;
 
             // temporarily lock unspent
-            #[cfg(feature = "in-memory-utxo")]
+            #[cfg(not(feature = "on-disk-utxo"))]
             let prev_tx = {
                 let prev_tx = unspent.lock().unwrap();
                 match prev_tx.get(prev_txid) {
@@ -197,7 +200,7 @@ where
                 }
             };
 
-            #[cfg(not(feature = "in-memory-utxo"))]
+            #[cfg(feature = "on-disk-utxo")]
             let prev_txo = match tx_outs.get(pos).unwrap() {
                 Ok(bytes) => match bytes {
                     None => None,
@@ -206,7 +209,7 @@ where
                 Err(_) => None,
             };
 
-            #[cfg(feature = "in-memory-utxo")]
+            #[cfg(not(feature = "on-disk-utxo"))]
             if let Some(prev_tx) = prev_tx {
                 // temporarily lock prev_tx
                 let (tx_out, is_empty) = {
@@ -234,7 +237,7 @@ where
                 return false;
             }
 
-            #[cfg(not(feature = "in-memory-utxo"))]
+            #[cfg(feature = "on-disk-utxo")]
             if let Some(out) = prev_txo {
                 output_tx.add_input(out.into());
                 pos += 1;
@@ -260,21 +263,21 @@ fn mutate_result_error(error_state: &Arc<AtomicBool>) {
     error_state.fetch_or(true, Ordering::SeqCst);
 }
 
-#[inline(always)] #[cfg(not(feature = "in-memory-utxo"))]
+#[inline(always)] #[cfg(feature = "on-disk-utxo")]
 fn txo_key(txid_compressed: u128, n: u32) -> Vec<u8> {
     let mut bytes = Vec::from(txid_compressed.to_ne_bytes());
     bytes.extend(n.to_ne_bytes());
     bytes
 }
 
-#[inline(always)] #[cfg(not(feature = "in-memory-utxo"))]
+#[inline(always)] #[cfg(feature = "on-disk-utxo")]
 fn txo_to_u8(txo: &TxOut) -> Vec<u8> {
     let mut bytes = Vec::new();
     txo.consensus_encode(&mut bytes).unwrap();
     bytes
 }
 
-#[inline(always)] #[cfg(not(feature = "in-memory-utxo"))]
+#[inline(always)] #[cfg(feature = "on-disk-utxo")]
 fn txo_from_u8(bytes: &[u8]) -> Option<TxOut> {
     match TxOut::consensus_decode(bytes) {
         Ok(txo) => Some(txo),
