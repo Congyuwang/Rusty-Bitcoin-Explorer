@@ -14,7 +14,7 @@
 //!
 //! ## Features
 //! `db.iter_connected_block()` uses in-memory UTXO cache by default,
-//! which requires 32GB ore more memory, but is very fast.
+//! which requires 32GB or more memory, but is very fast.
 //! It can be configured to use on-disk UTXO cache for tracking
 //! unspent transactions during iterations,
 //! which usually requires less than 1GB memory.
@@ -35,7 +35,7 @@
 //!
 //! ### Guide to Feature
 //! When you have a large memory (>= 32 GB), do not use `on-disk-utxo`.
-//! In-memory UTXO cache provides blazing fast speed.
+//! In-memory UTXO cache provides blazing fast speed (for `iter_connected_block()`).
 //!
 //! Use `on-disk-utxo` only when your disk is limited.
 //!
