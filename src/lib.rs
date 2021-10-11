@@ -29,7 +29,7 @@
 //!
 //! # Features
 //!
-//! Feature `on-disk-utxo` is enabled by default,
+//! Feature '`on-disk-utxo`' is enabled by default,
 //! which uses an on-disk cache to keep track of unspent transaction
 //! for iterator `db.iter_connected_block`.
 //!

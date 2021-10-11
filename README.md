@@ -43,7 +43,7 @@ db.iter_connected_block::<SConnectedBlock>(700000)
 ```
 #### Using default configuration
 
-Compile with non-default feature (Cargo.toml):
+Compile with default features (Cargo.toml):
 ```toml
 bitcoin-explorer = "^2.1"
 ```
@@ -53,7 +53,7 @@ bitcoin-explorer = "^2.1"
 
 #### Using non-default configuration (large RAM for good performance)
 
-Compile with non-default feature (Cargo.toml):
+Compile with non-default features (Cargo.toml):
 ```toml
 bitcoin-explorer = { version = "^2.1", default-features = false }
 ```
