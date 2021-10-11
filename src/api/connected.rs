@@ -53,10 +53,10 @@ impl BitcoinDB {
     /// # Performance
     ///
     /// ## Using default feature:
-    /// Requires 5GB memory, finishes in 2.5 hours from 0-70000 block.
+    /// Requires 4 GB memory, finishes in 2.5 hours from 0-70000 block.
     ///
     /// ## Using non-default feature
-    /// Requires 32GB memory, finished in 30 minutes from 0-70000 block.
+    /// Requires 32 GB memory, finished in 30 minutes from 0-70000 block.
     ///
     /// # Example
     ///

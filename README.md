@@ -49,7 +49,7 @@ bitcoin-explorer = "^2.1"
 ```
 
 - Time: about 2.5 hours
-- Peak Memory: 5 GB
+- Peak Memory: 4 GB
 
 #### Using non-default configuration (large RAM for good performance)
 
