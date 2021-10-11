@@ -52,19 +52,11 @@ impl BitcoinDB {
     ///
     /// # Performance
     ///
-    /// Using SSD and intel core i7 (4 core, 8 threads)
-    /// Iterating through height from 0 to 700000 takes about 30 minutes.
+    /// ## Using default feature:
+    /// Requires 5GB memory, finishes in 2.5 hours from 0-70000 block.
     ///
-    /// Requires a minimal amount of 32GB memory.
-    ///
-    /// ## Performance using On-disk cache
-    ///
-    /// If `features = ["on-disk-utxo"]` is enabled,
-    /// this iterator would require 1-3GB memory only,
-    /// but the iteration would take up to 10 hours to finish.
-    ///
-    /// This iterator can only start from genesis block, because it has to
-    /// track unspent transactions.
+    /// ## Using non-default feature
+    /// Requires 32GB memory, finished in 30 minutes from 0-70000 block.
     ///
     /// # Example
     ///

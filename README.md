@@ -18,7 +18,7 @@ See [Rust Documentation](https://docs.rs/bitcoin-explorer/)
 ## Hardware Requirements
 
 ### Memory Requirement
-Memory requirement: 16 GB physical RAM.
+Memory requirement: 8 GB physical RAM.
 
 ### Disk Requirement
 SSD for better performance.
@@ -49,7 +49,7 @@ bitcoin-explorer = "^2.1"
 ```
 
 - Time: about 2.5 hours
-- Peak Memory: 4 GB
+- Peak Memory: 5 GB
 
 #### Using non-default configuration (large RAM for good performance)
 

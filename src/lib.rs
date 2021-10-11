@@ -12,33 +12,6 @@
 //! bitcoin transaction records. This is good for analysis and research on
 //! bitcoin trading behaviour.
 //!
-//! ## Features
-//! `db.iter_connected_block()` uses in-memory UTXO cache by default,
-//! which requires 32GB or more memory, but is very fast.
-//! It can be configured to use on-disk UTXO cache for tracking
-//! unspent transactions during iterations,
-//! which usually requires less than 1GB memory.
-//!
-//! **By default, UTXO is stored on RAM, which requires 32GM memory
-//! (it needs this much memory only for `db.iter_connected_block()`)**
-//! ```toml
-//! [dependencies.bitcoin-explorer]
-//! version = "1.2"
-//! ```
-//!
-//! Enable on-disk UTXO cache if your memory is limited:
-//! ```toml
-//! [dependencies.bitcoin-explorer]
-//! version = "1.2"
-//! features = ["on-disk-utxo"]
-//! ```
-//!
-//! ### Guide to Feature
-//! When you have a large memory (>= 32 GB), do not use `on-disk-utxo`.
-//! In-memory UTXO cache provides blazing fast speed (for `iter_connected_block()`).
-//!
-//! Use `on-disk-utxo` only when your disk is limited.
-//!
 //! # Example
 //!
 //! ```rust
@@ -53,6 +26,16 @@
 //! // launch attempting to read txindex
 //! let db = BitcoinDB::new(path, true).unwrap();
 //! ```
+//!
+//! # Features
+//!
+//! Feature `on-disk-utxo` is enabled by default,
+//! which uses an on-disk cache to keep track of unspent transaction
+//! for iterator `db.iter_connected_block`.
+//!
+//! To use in-memory UTXO cache for better performance,
+//! use `default-features = false` to Cargo.toml,
+//! which requires 32GB+ RAM.
 //!
 
 pub(crate) mod api;
