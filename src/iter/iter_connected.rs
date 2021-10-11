@@ -9,7 +9,7 @@ use crate::parser::proto::connected_proto::TxConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
 #[cfg(feature = "on-disk-utxo")]
-use rocksdb::{MemtableFactory, PlainTableFactoryOptions, SliceTransform, WriteOptions, Options, DB};
+use rocksdb::{PlainTableFactoryOptions, SliceTransform, WriteOptions, Options, DB};
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};

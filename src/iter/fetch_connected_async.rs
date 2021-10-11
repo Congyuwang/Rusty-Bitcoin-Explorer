@@ -16,7 +16,7 @@ use rocksdb::WriteOptions;
 use rocksdb::{WriteBatch, DB};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 ///
 /// read block, update cache
