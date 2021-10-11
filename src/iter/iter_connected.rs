@@ -60,24 +60,25 @@ where
             // config to more jobs
             options.set_max_background_jobs(cpus as i32);
 
-            // configure mem-table to a large value
-            options.set_write_buffer_size(1024 * 1024 * 1024 * 2);
+            // configure mem-table to a large value (1GB)
+            options.set_write_buffer_size(0x40000000);
 
-            // configure l0 and l1 size, let them have the same size
+            // configure l0 and l1 size, let them have the same size (4GB)
             options.set_level_zero_file_num_compaction_trigger(4);
-            options.set_max_bytes_for_level_base(1024 * 1024 * 1024 * 2 * 4);
+            options.set_max_bytes_for_level_base(0x100000000);
 
-            // set larger target file size (for potentially faster compaction)
-            options.set_target_file_size_base(256 * 1024 * 1024);
+            // 256MB file size
+            options.set_target_file_size_base(0x10000000);
 
             // use a smaller compaction multiplier
-            options.set_max_bytes_for_level_multiplier(2.0);
+            options.set_max_bytes_for_level_multiplier(4.0);
 
-            // use 8-byte prefix
+            // use 8-byte prefix (2 ^ 64 is far enough for transaction counts)
             options.set_prefix_extractor(SliceTransform::create_fixed_prefix(8));
 
             // set to plain-table for better performance
             options.set_plain_table_factory(&PlainTableFactoryOptions {
+                // 16 (compressed txid) + 4 (i32 out n)
                 user_key_length: 20,
                 bloom_bits_per_key: 16,
                 hash_table_ratio: 0.75,
