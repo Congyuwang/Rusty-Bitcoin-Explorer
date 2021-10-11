@@ -25,7 +25,7 @@ pub(crate) fn update_unspent_cache<TBlock>(
     #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
-    #[cfg(feature = "on-disk-utxo")] unspent: &Arc<Mutex<DB>>,
+    #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     #[cfg(feature = "on-disk-utxo")] write_options: &WriteOptions,
     db: &DBCopy,
     height: u32,
@@ -101,8 +101,6 @@ where
                     return false;
                 }
                 unspent
-                    .lock()
-                    .unwrap()
                     .write_opt(batch, write_options)
                     .expect("failed at writing");
                 channel.send(block).unwrap();
@@ -129,7 +127,7 @@ pub(crate) fn connect_outpoints<TBlock>(
     #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
-    #[cfg(feature = "on-disk-utxo")] unspent: &Arc<Mutex<DB>>,
+    #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     error_state: &Arc<AtomicBool>,
     sender: &Sender<TBlock>,
     block: Block,
@@ -166,18 +164,15 @@ where
 
     // get utxo
     #[cfg(feature = "on-disk-utxo")]
-    let tx_outs = unspent.lock().unwrap().multi_get(keys.clone());
+    let tx_outs = unspent.multi_get(keys.clone());
 
     // remove keys
     #[cfg(feature = "on-disk-utxo")]
-    {
-        let lock = unspent.lock().unwrap();
-        for key in keys {
-            match lock.delete(&key) {
-                Ok(_) => {}
-                Err(_) => {
-                    warn!("failed to remove key {:?}", &key);
-                }
+    for key in keys {
+        match unspent.delete(&key) {
+            Ok(_) => {}
+            Err(_) => {
+                warn!("failed to remove key {:?}", &key);
             }
         }
     }

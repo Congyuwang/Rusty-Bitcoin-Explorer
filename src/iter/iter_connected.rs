@@ -87,9 +87,9 @@ where
             options
         };
         #[cfg(feature = "on-disk-utxo")]
-        let unspent = Arc::new(Mutex::new(
+        let unspent = Arc::new(
             DB::open(&options, &cache_dir).expect("failed to open rocksdb"),
-        ));
+        );
 
         // all tasks
         let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
