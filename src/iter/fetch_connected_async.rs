@@ -9,7 +9,9 @@ use bitcoin::Block;
 use bitcoin::TxOut;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
+#[cfg(not(feature = "on-disk-utxo"))]
 use log::warn;
+use log::error;
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::WriteOptions;
 #[cfg(feature = "on-disk-utxo")]
@@ -102,11 +104,17 @@ where
                 if error_state.load(Ordering::SeqCst) {
                     return false;
                 }
-                unspent
-                    .write_opt(batch, write_options)
-                    .expect("failed at writing");
-                channel.send(block).unwrap();
-                true
+                match unspent.write_opt(batch, write_options) {
+                    Ok(_) => {
+                        channel.send(block).unwrap();
+                        true
+                    }
+                    Err(e) => {
+                        error!("failed to write UTXO to cache, error: {}", e);
+                        mutate_result_error(error_state);
+                        false
+                    }
+                }
             }
 
             Err(_) => {
@@ -173,8 +181,10 @@ where
     for key in keys {
         match unspent.delete(&key) {
             Ok(_) => {}
-            Err(_) => {
-                warn!("failed to remove key {:?}", &key);
+            Err(e) => {
+                error!("failed to remove key {:?}, error: {}", &key, e);
+                mutate_result_error(error_state);
+                return false;
             }
         }
     }
@@ -233,14 +243,12 @@ where
                 if let Some(out) = tx_out {
                     output_tx.add_input(out);
                 } else {
-                    warn!("cannot find previous outpoint, bad data");
-                    // only increment result lock
+                    error!("cannot find previous outpoint, bad data");
                     mutate_result_error(error_state);
                     return false;
                 }
             } else {
-                warn!("cannot find previous transactions, bad data");
-                // only increment result lock
+                error!("cannot find previous transactions, bad data");
                 mutate_result_error(error_state);
                 return false;
             }
@@ -250,8 +258,7 @@ where
                 output_tx.add_input(out.into());
                 pos += 1;
             } else {
-                warn!("cannot find previous outpoint, bad data");
-                // only increment result lock
+                error!("cannot find previous outpoint, bad data");
                 mutate_result_error(error_state);
                 return false;
             }
