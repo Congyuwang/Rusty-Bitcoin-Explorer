@@ -1,7 +1,15 @@
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
+#[cfg(not(feature = "on-disk-utxo"))]
+use crate::iter::util::VecMap;
 use crate::iter::util::{get_task, DBCopy};
-use crate::parser::proto::connected_proto::{BlockConnectable};
+use crate::parser::proto::connected_proto::BlockConnectable;
+#[cfg(not(feature = "on-disk-utxo"))]
+use crate::parser::proto::connected_proto::TxConnectable;
+#[cfg(not(feature = "on-disk-utxo"))]
+use hash_hasher::HashedMap;
+#[cfg(feature = "on-disk-utxo")]
+use rocksdb::{MemtableFactory, PlainTableFactoryOptions, SliceTransform, WriteOptions, Options, DB};
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -9,11 +17,8 @@ use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
-#[cfg(not(feature = "on-disk-utxo"))] use crate::iter::util::VecMap;
-#[cfg(not(feature = "on-disk-utxo"))] use crate::parser::proto::connected_proto::TxConnectable;
-#[cfg(not(feature = "on-disk-utxo"))] use hash_hasher::HashedMap;
-#[cfg(feature = "on-disk-utxo")] use tempdir::TempDir;
-#[cfg(feature = "on-disk-utxo")] use rocksdb::{Options, DB};
+#[cfg(feature = "on-disk-utxo")]
+use tempdir::TempDir;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
@@ -48,11 +53,42 @@ where
         #[cfg(feature = "on-disk-utxo")]
         let options = {
             let mut options = Options::default();
+
+            // create table
             options.create_if_missing(true);
+
+            // configure mem-table to a large value
+            options.set_write_buffer_size(1024 * 1024 * 1024 * 2);
+            options.set_max_write_buffer_number(4);
+
+            // configure l0 and l1 size, let them have the same size
+            options.set_level_zero_file_num_compaction_trigger(4);
+            options.set_max_bytes_for_level_base(1024 * 1024 * 1024 * 2 * 4);
+
+            // set larger target file size (for potentially faster compaction)
+            options.set_target_file_size_base(256 * 1024 * 1024);
+
+            // use a smaller compaction multiplier
+            options.set_max_bytes_for_level_multiplier(2.0);
+
+            // use 8-byte prefix
+            options.set_prefix_extractor(SliceTransform::create_fixed_prefix(8));
+
+            // set to plain-table for better performance
+            options.set_plain_table_factory(&PlainTableFactoryOptions {
+                user_key_length: 20,
+                // we don't need bloom filter as our `get` and `delete` guarantees to hit.
+                bloom_bits_per_key: 0,
+                hash_table_ratio: 0.75,
+                index_sparseness: 16,
+            });
+
             options
         };
         #[cfg(feature = "on-disk-utxo")]
-        let unspent = Arc::new(Mutex::new(DB::open(&options, &cache_dir).expect("failed to open rocksdb")));
+        let unspent = Arc::new(Mutex::new(
+            DB::open(&options, &cache_dir).expect("failed to open rocksdb"),
+        ));
 
         // all tasks
         let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
@@ -75,6 +111,14 @@ where
             let db = db.clone();
             let block_worker_register = block_worker_register.clone();
 
+            // write without WAL
+            #[cfg(feature = "on-disk-utxo")]
+            let write_options = {
+                let mut opt = WriteOptions::default();
+                opt.disable_wal(true);
+                opt
+            };
+
             // output cache insertion workers
             let handle = thread::spawn(move || {
                 loop {
@@ -84,6 +128,8 @@ where
                         Some(height) => {
                             if !update_unspent_cache::<TBlock>(
                                 &unspent,
+                                #[cfg(feature = "on-disk-utxo")]
+                                &write_options,
                                 &db,
                                 height,
                                 &error_state,

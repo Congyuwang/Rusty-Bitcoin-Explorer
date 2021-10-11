@@ -1,24 +1,32 @@
+#[cfg(not(feature = "on-disk-utxo"))]
+use crate::iter::util::VecMap;
 use crate::iter::util::{Compress, DBCopy};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
+#[cfg(feature = "on-disk-utxo")]
+use bitcoin::consensus::{Decodable, Encodable};
 use bitcoin::Block;
+#[cfg(feature = "on-disk-utxo")]
+use bitcoin::TxOut;
+#[cfg(not(feature = "on-disk-utxo"))]
+use hash_hasher::HashedMap;
 use log::warn;
+#[cfg(feature = "on-disk-utxo")]
+use rocksdb::WriteOptions;
+#[cfg(feature = "on-disk-utxo")]
+use rocksdb::{WriteBatch, DB};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-#[cfg(not(feature = "on-disk-utxo"))] use hash_hasher::HashedMap;
-#[cfg(not(feature = "on-disk-utxo"))] use crate::iter::util::VecMap;
-#[cfg(feature = "on-disk-utxo")] use bitcoin::consensus::{Decodable, Encodable};
-#[cfg(feature = "on-disk-utxo")] use bitcoin::TxOut;
-#[cfg(feature = "on-disk-utxo")] use rocksdb::{WriteBatch, DB};
 
 ///
 /// read block, update cache
 ///
 pub(crate) fn update_unspent_cache<TBlock>(
-    #[cfg(not(feature = "on-disk-utxo"))]
-    unspent: &Arc<Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>>,
-    #[cfg(feature = "on-disk-utxo")]
-    unspent: &Arc<Mutex<DB>>,
+    #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
+        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+    >,
+    #[cfg(feature = "on-disk-utxo")] unspent: &Arc<Mutex<DB>>,
+    #[cfg(feature = "on-disk-utxo")] write_options: &WriteOptions,
     db: &DBCopy,
     height: u32,
     error_state: &Arc<AtomicBool>,
@@ -34,7 +42,6 @@ where
 
     if let Some(index) = db.block_index.records.get(height as usize) {
         match db.blk_file.read_block(index.n_file, index.n_data_pos) {
-
             #[cfg(not(feature = "on-disk-utxo"))]
             Ok(block) => {
                 let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
@@ -93,7 +100,11 @@ where
                 if error_state.load(Ordering::SeqCst) {
                     return false;
                 }
-                unspent.lock().unwrap().write(batch).expect("failed at writing");
+                unspent
+                    .lock()
+                    .unwrap()
+                    .write_opt(batch, write_options)
+                    .expect("failed at writing");
                 channel.send(block).unwrap();
                 true
             }
@@ -115,10 +126,10 @@ where
 /// fetch_block_connected, thread safe
 ///
 pub(crate) fn connect_outpoints<TBlock>(
-    #[cfg(not(feature = "on-disk-utxo"))]
-    unspent: &Arc<Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>>,
-    #[cfg(feature = "on-disk-utxo")]
-    unspent: &Arc<Mutex<DB>>,
+    #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
+        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+    >,
+    #[cfg(feature = "on-disk-utxo")] unspent: &Arc<Mutex<DB>>,
     error_state: &Arc<AtomicBool>,
     sender: &Sender<TBlock>,
     block: Block,
@@ -263,21 +274,24 @@ fn mutate_result_error(error_state: &Arc<AtomicBool>) {
     error_state.fetch_or(true, Ordering::SeqCst);
 }
 
-#[inline(always)] #[cfg(feature = "on-disk-utxo")]
+#[inline(always)]
+#[cfg(feature = "on-disk-utxo")]
 fn txo_key(txid_compressed: u128, n: u32) -> Vec<u8> {
     let mut bytes = Vec::from(txid_compressed.to_ne_bytes());
     bytes.extend(n.to_ne_bytes());
     bytes
 }
 
-#[inline(always)] #[cfg(feature = "on-disk-utxo")]
+#[inline(always)]
+#[cfg(feature = "on-disk-utxo")]
 fn txo_to_u8(txo: &TxOut) -> Vec<u8> {
     let mut bytes = Vec::new();
     txo.consensus_encode(&mut bytes).unwrap();
     bytes
 }
 
-#[inline(always)] #[cfg(feature = "on-disk-utxo")]
+#[inline(always)]
+#[cfg(feature = "on-disk-utxo")]
 fn txo_from_u8(bytes: &[u8]) -> Option<TxOut> {
     match TxOut::consensus_decode(bytes) {
         Ok(txo) => Some(txo),
