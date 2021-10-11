@@ -101,6 +101,7 @@ pub(crate) fn get_task<T>(
 }
 
 #[cfg(test)]
+#[cfg(not(feature = "on-disk-utxo"))]
 mod test_vec_map {
     use crate::api::STxOut;
     use crate::iter::util::VecMap;
