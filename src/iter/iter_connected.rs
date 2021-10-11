@@ -9,7 +9,7 @@ use crate::parser::proto::connected_proto::TxConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
 #[cfg(feature = "on-disk-utxo")]
-use rocksdb::{PlainTableFactoryOptions, SliceTransform, WriteOptions, Options, DB};
+use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, WriteOptions, DB};
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -87,9 +87,7 @@ where
             options
         };
         #[cfg(feature = "on-disk-utxo")]
-        let unspent = Arc::new(
-            DB::open(&options, &cache_dir).expect("failed to open rocksdb"),
-        );
+        let unspent = Arc::new(DB::open(&options, &cache_dir).expect("failed to open rocksdb"));
 
         // all tasks
         let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));

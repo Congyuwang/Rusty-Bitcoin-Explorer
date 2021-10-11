@@ -17,6 +17,8 @@ use rocksdb::{WriteBatch, DB};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
+#[cfg(not(feature = "on-disk-utxo"))]
+use std::sync::Mutex;
 
 ///
 /// read block, update cache
