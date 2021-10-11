@@ -60,10 +60,10 @@ where
             // config to more jobs
             options.set_max_background_jobs(cpus as i32);
 
-            // configure mem-table to a large value (1GB)
+            // configure mem-table to a large value (1 GB)
             options.set_write_buffer_size(0x40000000);
 
-            // configure l0 and l1 size, let them have the same size (4GB)
+            // configure l0 and l1 size, let them have the same size (4 GB)
             options.set_level_zero_file_num_compaction_trigger(4);
             options.set_max_bytes_for_level_base(0x100000000);
 
@@ -80,7 +80,7 @@ where
             options.set_plain_table_factory(&PlainTableFactoryOptions {
                 // 16 (compressed txid) + 4 (i32 out n)
                 user_key_length: 20,
-                bloom_bits_per_key: 16,
+                bloom_bits_per_key: 10,
                 hash_table_ratio: 0.75,
                 index_sparseness: 16,
             });
