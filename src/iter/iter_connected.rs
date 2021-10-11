@@ -79,7 +79,7 @@ where
             // set to plain-table for better performance
             options.set_plain_table_factory(&PlainTableFactoryOptions {
                 user_key_length: 20,
-                bloom_bits_per_key: 10,
+                bloom_bits_per_key: 16,
                 hash_table_ratio: 0.75,
                 index_sparseness: 16,
             });
