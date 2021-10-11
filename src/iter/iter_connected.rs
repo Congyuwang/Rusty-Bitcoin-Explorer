@@ -57,9 +57,11 @@ where
             // create table
             options.create_if_missing(true);
 
+            // config to more jobs
+            options.set_max_background_jobs(cpus as i32);
+
             // configure mem-table to a large value
             options.set_write_buffer_size(1024 * 1024 * 1024 * 2);
-            options.set_max_write_buffer_number(4);
 
             // configure l0 and l1 size, let them have the same size
             options.set_level_zero_file_num_compaction_trigger(4);
@@ -77,8 +79,7 @@ where
             // set to plain-table for better performance
             options.set_plain_table_factory(&PlainTableFactoryOptions {
                 user_key_length: 20,
-                // we don't need bloom filter as our `get` and `delete` guarantees to hit.
-                bloom_bits_per_key: 0,
+                bloom_bits_per_key: 10,
                 hash_table_ratio: 0.75,
                 index_sparseness: 16,
             });
