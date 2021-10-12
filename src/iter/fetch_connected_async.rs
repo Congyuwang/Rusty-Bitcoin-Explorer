@@ -1,6 +1,6 @@
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-use crate::iter::util::{Compress, DBCopy};
+use crate::iter::util::{Compress, mutate_error_state};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 #[cfg(feature = "on-disk-utxo")]
 use bitcoin::consensus::{Decodable, Encodable};
@@ -21,6 +21,7 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
+use crate::BitcoinDB;
 
 ///
 /// read block, update cache
@@ -31,7 +32,7 @@ pub(crate) fn update_unspent_cache<TBlock>(
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     #[cfg(feature = "on-disk-utxo")] write_options: &WriteOptions,
-    db: &DBCopy,
+    db: &BitcoinDB,
     height: u32,
     error_state: &Arc<AtomicBool>,
     channel: &Sender<Block>,
@@ -44,90 +45,85 @@ where
         return false;
     }
 
-    if let Some(index) = db.block_index.records.get(height as usize) {
-        match db.blk_file.read_block(index.n_file, index.n_data_pos) {
-            #[cfg(not(feature = "on-disk-utxo"))]
-            Ok(block) => {
-                let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
+    match db.get_block::<Block>(height as i32) {
+        #[cfg(not(feature = "on-disk-utxo"))]
+        Ok(block) => {
+            let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
 
-                // insert new transactions
-                for tx in block.txdata.iter() {
-                    // clone outputs
-                    let txid = tx.txid();
-                    let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> =
-                        Vec::with_capacity(tx.output.len());
-                    for o in tx.output.iter() {
-                        outs.push(Some(o.clone().into()));
-                    }
-
-                    // update unspent cache
-                    let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
-                        VecMap::from_vec(outs.into_boxed_slice());
-                    let new_unspent = Arc::new(Mutex::new(outs));
-                    let txid_compressed = txid.compress();
-
-                    // the new transaction should not be in unspent
-                    #[cfg(debug_assertions)]
-                    if unspent.lock().unwrap().contains_key(&txid_compressed) {
-                        warn!("found duplicate key {}", &txid);
-                    }
-
-                    new_unspent_cache.push((txid_compressed, new_unspent));
+            // insert new transactions
+            for tx in block.txdata.iter() {
+                // clone outputs
+                let txid = tx.txid();
+                let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> =
+                    Vec::with_capacity(tx.output.len());
+                for o in tx.output.iter() {
+                    outs.push(Some(o.clone().into()));
                 }
-                // quick stopping in error state
-                if error_state.load(Ordering::SeqCst) {
-                    return false;
+
+                // update unspent cache
+                let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
+                    VecMap::from_vec(outs.into_boxed_slice());
+                let new_unspent = Arc::new(Mutex::new(outs));
+                let txid_compressed = txid.compress();
+
+                // the new transaction should not be in unspent
+                #[cfg(debug_assertions)]
+                if unspent.lock().unwrap().contains_key(&txid_compressed) {
+                    warn!("found duplicate key {}", &txid);
                 }
-                unspent.lock().unwrap().extend(new_unspent_cache);
-                channel.send(block).unwrap();
-                true
+
+                new_unspent_cache.push((txid_compressed, new_unspent));
             }
+            // quick stopping in error state
+            if error_state.load(Ordering::SeqCst) {
+                return false;
+            }
+            unspent.lock().unwrap().extend(new_unspent_cache);
+            channel.send(block).unwrap();
+            true
+        }
 
-            #[cfg(feature = "on-disk-utxo")]
-            Ok(block) => {
-                let mut batch = WriteBatch::default();
+        #[cfg(feature = "on-disk-utxo")]
+        Ok(block) => {
+            let mut batch = WriteBatch::default();
 
-                // insert new transactions
-                for tx in block.txdata.iter() {
-                    // clone outputs
-                    let txid_compressed = tx.txid().compress();
+            // insert new transactions
+            for tx in block.txdata.iter() {
+                // clone outputs
+                let txid_compressed = tx.txid().compress();
 
-                    let mut n: u32 = 0;
-                    for o in tx.output.iter() {
-                        let key = txo_key(txid_compressed, n);
-                        let value = txo_to_u8(o);
-                        batch.put(key, value);
-                        n += 1;
-                    }
-                }
-                // quick stopping in error state
-                if error_state.load(Ordering::SeqCst) {
-                    return false;
-                }
-                match unspent.write_opt(batch, write_options) {
-                    Ok(_) => {
-                        channel.send(block).unwrap();
-                        true
-                    }
-                    Err(e) => {
-                        error!("failed to write UTXO to cache, error: {}", e);
-                        mutate_result_error(error_state);
-                        false
-                    }
+                let mut n: u32 = 0;
+                for o in tx.output.iter() {
+                    let key = txo_key(txid_compressed, n);
+                    let value = txo_to_u8(o);
+                    batch.put(key, value);
+                    n += 1;
                 }
             }
-
-            Err(_) => {
-                // set error_state to true
-                mutate_result_error(error_state);
-                false
+            // quick stopping in error state
+            if error_state.load(Ordering::SeqCst) {
+                return false;
+            }
+            match unspent.write_opt(batch, write_options) {
+                Ok(_) => {
+                    channel.send(block).unwrap();
+                    true
+                }
+                Err(e) => {
+                    error!("failed to write UTXO to cache, error: {}", e);
+                    mutate_error_state(error_state);
+                    false
+                }
             }
         }
-    } else {
-        // set error_state to true
-        mutate_result_error(error_state);
-        false
+
+        Err(_) => {
+            // set error_state to true
+            mutate_error_state(error_state);
+            false
+        }
     }
+
 }
 
 ///
@@ -183,7 +179,7 @@ where
             Ok(_) => {}
             Err(e) => {
                 error!("failed to remove key {:?}, error: {}", &key, e);
-                mutate_result_error(error_state);
+                mutate_error_state(error_state);
                 return false;
             }
         }
@@ -244,12 +240,12 @@ where
                     output_tx.add_input(out);
                 } else {
                     error!("cannot find previous outpoint, bad data");
-                    mutate_result_error(error_state);
+                    mutate_error_state(error_state);
                     return false;
                 }
             } else {
                 error!("cannot find previous transactions, bad data");
-                mutate_result_error(error_state);
+                mutate_error_state(error_state);
                 return false;
             }
 
@@ -259,7 +255,7 @@ where
                 pos += 1;
             } else {
                 error!("cannot find previous outpoint, bad data");
-                mutate_result_error(error_state);
+                mutate_error_state(error_state);
                 return false;
             }
         }
@@ -271,11 +267,6 @@ where
     }
     sender.send(output_block).unwrap();
     true
-}
-
-#[inline]
-fn mutate_result_error(error_state: &Arc<AtomicBool>) {
-    error_state.fetch_or(true, Ordering::SeqCst);
 }
 
 #[inline(always)]

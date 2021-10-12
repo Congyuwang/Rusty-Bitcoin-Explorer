@@ -1,12 +1,10 @@
-use crate::api::BitcoinDB;
-use crate::parser::blk_file::BlkFile;
-use crate::parser::block_index::BlockIndex;
 use ahash::AHasher;
 use bitcoin::Txid;
 use std::collections::VecDeque;
 use std::hash::{Hash, Hasher};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 ///
 /// Key compression
@@ -63,24 +61,6 @@ impl<T> VecMap<T> {
 }
 
 ///
-/// Each thread owns the necessary resource for better performance.
-///
-#[derive(Clone)]
-pub(crate) struct DBCopy {
-    pub block_index: BlockIndex,
-    pub blk_file: BlkFile,
-}
-
-impl DBCopy {
-    pub(crate) fn from_bitcoin_db(db: &BitcoinDB) -> DBCopy {
-        DBCopy {
-            block_index: db.block_index.clone(),
-            blk_file: db.blk_file.clone(),
-        }
-    }
-}
-
-///
 /// Utility function for work stealing.
 /// Exclusive access to task list.
 ///
@@ -98,6 +78,11 @@ pub(crate) fn get_task<T>(
         register.send(thread_number).unwrap();
     }
     next_height
+}
+
+#[inline]
+pub(crate) fn mutate_error_state(error_state: &Arc<AtomicBool>) {
+    error_state.fetch_or(true, Ordering::SeqCst);
 }
 
 #[cfg(test)]

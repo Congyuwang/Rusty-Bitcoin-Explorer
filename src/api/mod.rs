@@ -21,11 +21,14 @@
 //!
 
 mod connected;
+
+use std::ops::Deref;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::errors::{OpError, OpResult};
 use crate::parser::script::{evaluate_script, ScriptInfo};
 use crate::parser::tx_index::TxDB;
 use std::path::Path;
+use std::sync::Arc;
 // re-exports
 pub use crate::iter::{BlockIter, ConnectedBlockIter};
 pub use crate::parser::block_index::{BlockIndex, BlockIndexRecord};
@@ -47,15 +50,28 @@ pub fn parse_script(script_pub_key: &str) -> OpResult<ScriptInfo> {
     Ok(evaluate_script(&script, Network::Bitcoin))
 }
 
+pub struct InnerDB {
+    pub block_index: BlockIndex,
+    pub blk_file: BlkFile,
+    pub tx_db: TxDB,
+}
+
 ///
 /// This is the main struct of this crate!! Click and read the doc.
 ///
 /// All queries start from initializing `BitcoinDB`.
 ///
-pub struct BitcoinDB {
-    pub block_index: BlockIndex,
-    pub blk_file: BlkFile,
-    pub tx_db: TxDB,
+/// Note: This is an Arc wrap around `InnerDB`.
+///
+#[derive(Clone)]
+pub struct BitcoinDB(Arc<InnerDB>);
+
+impl Deref for BitcoinDB {
+    type Target = InnerDB;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
 }
 
 impl BitcoinDB {
@@ -93,11 +109,12 @@ impl BitcoinDB {
         } else {
             TxDB::null()
         };
-        Ok(BitcoinDB {
+        let inner = InnerDB {
             block_index,
             blk_file: BlkFile::new(blk_path.as_path())?,
             tx_db,
-        })
+        };
+        Ok(BitcoinDB(Arc::new(inner)))
     }
 
     ///

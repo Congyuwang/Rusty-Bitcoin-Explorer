@@ -2,7 +2,7 @@ use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-use crate::iter::util::{get_task, DBCopy};
+use crate::iter::util::get_task;
 use crate::parser::proto::connected_proto::BlockConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::parser::proto::connected_proto::TxConnectable;
@@ -37,7 +37,6 @@ where
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, end: u32) -> Self {
         let cpus = num_cpus::get();
-        let db = DBCopy::from_bitcoin_db(db);
         let mut handles = Vec::with_capacity(cpus * 2);
 
         // shared error state for stopping threads early

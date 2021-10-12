@@ -1,11 +1,10 @@
 use crate::api::BitcoinDB;
-use crate::iter::fetch_async::{fetch_block, Task};
-use crate::iter::util::{get_task, DBCopy};
+use crate::iter::util::{get_task, mutate_error_state};
 use bitcoin::Block;
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, sync_channel, Receiver};
+use std::sync::mpsc::{channel, sync_channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
@@ -28,13 +27,7 @@ where
         let error_state = Arc::new(AtomicBool::new(false));
         // worker master
         let (task_register, task_order) = sync_channel(cpus * 10);
-        let mut tasks: VecDeque<Task> = VecDeque::with_capacity(heights.len());
-        for height in heights {
-            tasks.push_back(Task {
-                height,
-                error_state: error_state.clone(),
-            })
-        }
+        let tasks: VecDeque<u32> = heights.into_iter().collect();
 
         let tasks = Arc::new(Mutex::new(tasks));
         let mut handles = Vec::with_capacity(cpus);
@@ -43,7 +36,8 @@ where
             let (sender, receiver) = channel();
             let task = tasks.clone();
             let register = task_register.clone();
-            let db = DBCopy::from_bitcoin_db(db);
+            let error_state = error_state.clone();
+            let db = db.clone();
 
             // workers
             let handle = thread::spawn(move || {
@@ -52,7 +46,7 @@ where
                         // finish
                         None => break,
                         Some(task) => {
-                            if !fetch_block(&db, task, &sender) {
+                            if !fetch_block(&db, task, &error_state, &sender) {
                                 // on error
                                 break;
                             }
@@ -113,5 +107,28 @@ impl<T> Drop for BlockIter<T> {
             err.fetch_or(true, Ordering::SeqCst);
         }
         self.join();
+    }
+}
+
+///
+/// fetch_block, thread safe
+///
+#[inline]
+pub(crate) fn fetch_block<T>(db: &BitcoinDB, height: u32, error_state: &Arc<AtomicBool>, sender: &Sender<T>) -> bool
+    where
+        T: From<Block>,
+{
+    match db.get_block::<T>(height as i32) {
+        Ok(blk) => {
+            if error_state.load(Ordering::SeqCst) {
+                return false;
+            }
+            sender.send(blk).unwrap();
+            true
+        },
+        Err(_) => {
+            mutate_error_state(error_state);
+            return false;
+        }
     }
 }
