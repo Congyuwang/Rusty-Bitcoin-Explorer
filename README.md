@@ -145,9 +145,10 @@ fn main() {
 ### Iterate through blocks (in different format) with outpoints connected to outputs
 
 ```rust
+use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
+use std::path::Path;
+
 fn main() {
-    use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
-    use std::path::Path;
 
     let path = Path::new("/Users/me/bitcoin");
 
