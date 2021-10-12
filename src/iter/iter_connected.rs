@@ -8,6 +8,7 @@ use crate::parser::proto::connected_proto::BlockConnectable;
 use crate::parser::proto::connected_proto::TxConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
+#[cfg(feature = "on-disk-utxo")]
 use log::{error, warn};
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, WriteOptions, DB};
@@ -108,14 +109,14 @@ where
         let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
 
         // the channel for synchronizing cache update
-        let (block_worker_register, block_order) = sync_channel(cpus * 10);
+        let (block_worker_register, block_order) = channel();
         let block_order = Arc::new(Mutex::new(block_order));
         let mut block_receivers = Vec::with_capacity(cpus);
 
         // output insertion threads
         for thread_number in 0..cpus {
             // block streams
-            let (block_sender, block_receiver) = channel();
+            let (block_sender, block_receiver) = sync_channel(10);
             let block_receiver = Arc::new(Mutex::new(block_receiver));
 
             // clone resources
@@ -160,7 +161,7 @@ where
         }
 
         // the channel for synchronizing output order
-        let (result_register, result_order) = sync_channel(10 * cpus);
+        let (result_register, result_order) = channel();
 
         // block_streams
         let mut result_receivers = Vec::with_capacity(cpus);
@@ -168,7 +169,7 @@ where
         // consume UTXO cache and produce output
         for thread_number in 0..cpus {
             // result streams
-            let (result_sender, result_receiver) = channel();
+            let (result_sender, result_receiver) = sync_channel(10);
 
             let register = result_register.clone();
             let unspent = unspent.clone();
@@ -215,6 +216,7 @@ where
         }
     }
 
+    #[cfg(feature = "on-disk-utxo")]
     fn null() -> Self {
         let result_order = {
             let (_, receiver) = sync_channel(1);
