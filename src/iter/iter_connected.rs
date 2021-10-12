@@ -1,3 +1,32 @@
+//!
+//! Development Note:
+//!
+//! This module consists manually implemented concurrency model.
+//!
+//! Below is a basic description of the data model:
+//! - Each worker thread actively try to fetch task
+//! - There are two groups of workers in this file: producers and consumers
+//!
+//! ## Synchronization
+//! - When each thread fetch a task, it registers its thread ID (thread_num)
+//!   in a mpsc channel. When consumer consumes, it fetch from this mpsc
+//!   channel to see which thread data stream to fetch from. This ensures
+//!   the output are in right order.
+//! - An additional task number (current, or current_height) is updated
+//!   when output is received, it is compared to the output's task number
+//!   to ensure that output are received in the right order.
+//! - If order is incorrect, some one of the threads have stopped due
+//!   to exception. This will stop iterator output, and stop all producers
+//!   from fetching tasks, and attempt to flush output until all workers
+//!   have stopped.
+//!
+//! ## Error handling
+//! - When any exception occurs, stop producers from fetching new task.
+//! - Stop consumers only after all producers have stopped
+//!   (otherwise producers might block consumers from sending)
+//! - Before dropping the structure, stop all producers from fetching tasks,
+//!   and flush all remaining tasks.
+//!
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
 use crate::iter::util::get_task;
@@ -113,7 +142,6 @@ where
         let (block_worker_register, block_order) = channel();
         let block_order = Arc::new(Mutex::new(block_order));
         let mut block_receivers = Vec::with_capacity(cpus);
-        let current_height = Arc::new(AtomicU32::new(0));
 
         // output insertion threads
         for thread_number in 0..cpus {
@@ -127,7 +155,6 @@ where
             let db = db.clone();
             let block_worker_register = block_worker_register.clone();
             let iterator_stopper = iterator_stopper.clone();
-            let current_height = current_height.clone();
 
             // write without WAL
             #[cfg(feature = "on-disk-utxo")]
@@ -173,6 +200,12 @@ where
         // block_streams
         let mut result_receivers = Vec::with_capacity(cpus);
 
+        // Ensure that right block order is provided by producer.
+        // Update this variable on receiving block from producer.
+        // Check if this variable equal to block height received.
+        // Otherwise, stop producer.
+        let current_height = Arc::new(AtomicU32::new(0));
+
         // consume UTXO cache and produce output
         for thread_number in 0..cpus {
             // result streams
@@ -182,6 +215,8 @@ where
             let unspent = unspent.clone();
             let block_order = block_order.clone();
             let block_receivers = block_receivers.clone();
+            let current_height = current_height.clone();
+            let iterator_stopper = iterator_stopper.clone();
 
             let handle = thread::spawn(move || {
                 loop {
@@ -194,24 +229,34 @@ where
                             let lock = block_receivers.get(worker_number).unwrap().lock();
                             if height != current_height.load(Ordering::SeqCst) {
                                 // some producer thread has failed to send block
-                                break;
+                                // stop all producers
+                                iterator_stopper.fetch_or(true, Ordering::SeqCst);
+                                continue;
                             }
                             register.send(thread_number).unwrap();
                             match lock.unwrap().recv() {
                                 Ok(blk) => {
                                     current_height.fetch_add(1, Ordering::SeqCst);
                                     (blk, height)
-                                },
-                                Err(_) => break,
+                                }
+                                Err(_) => {
+                                    // stop all producers
+                                    iterator_stopper.fetch_or(true, Ordering::SeqCst);
+                                    continue;
+                                }
                             }
                         } else {
+                            // all producers have stopped (block order registers dropped)
+                            // may stop consumers
                             break;
                         }
                     };
                     // release receivers lock
 
                     if !connect_outpoints(&unspent, &result_sender, blk, height) {
-                        break;
+                        // stop all producers
+                        iterator_stopper.fetch_or(true, Ordering::SeqCst);
+                        continue;
                     }
                 }
             });
@@ -249,7 +294,10 @@ where
             current_height: 0,
         }
     }
+}
 
+impl<T> ConnectedBlockIter<T> {
+    /// stop workers, flush tasks
     fn kill(&mut self) {
         if !self.is_killed {
             // stop threads from getting new tasks
@@ -269,18 +317,29 @@ impl<TBlock> Iterator for ConnectedBlockIter<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.is_killed {
+            return None;
+        }
         match self.result_order.recv() {
             Ok(thread_number) => match self.result_receivers.get(thread_number).unwrap().recv() {
-                Ok(block) => Some(block),
+                Ok((block, height)) => {
+                    // Some threads might have stopped first.
+                    // while the remaining working threads produces wrong order.
+                    if self.current_height != height {
+                        self.kill();
+                        return None;
+                    }
+                    self.current_height += 1;
+                    Some(block)
+                }
+                // some worker have stopped
                 Err(_) => {
                     self.kill();
                     None
-                },
+                }
             },
-            Err(_) => {
-                self.kill();
-                None
-            },
+            // all consumers (connecting workers) have stopped
+            Err(_) => None,
         }
     }
 }

@@ -1,3 +1,7 @@
+//!
+//! View development note of iter_connected.rs for implementation
+//! details of iter_block.rs, which follows similar principles.
+//!
 use crate::api::BitcoinDB;
 use crate::iter::util::get_task;
 use bitcoin::Block;
@@ -85,7 +89,9 @@ where
             BlockIter::new(db, heights)
         }
     }
+}
 
+impl<T> BlockIter<T> {
     /// stop workers, flush tasks
     fn kill(&mut self) {
         if !self.is_killed {
@@ -111,14 +117,10 @@ impl<TBlock> Iterator for BlockIter<TBlock> {
         }
         match self.task_order.recv() {
             Ok((height, thread_number)) => {
-                // some threads have stopped working
-                let current_height = match self.heights.get(self.current) {
-                    None => {
-                        self.kill();
-                        return None;
-                    }
-                    Some(height) => *height,
-                };
+                let current_height = *self
+                    .heights
+                    .get(self.current)
+                    .expect("report this, shouldn't reach here, must debug");
 
                 // Some threads might have stopped first.
                 // while the remaining working threads produces wrong order.
@@ -132,16 +134,15 @@ impl<TBlock> Iterator for BlockIter<TBlock> {
                         self.current += 1;
                         Some(block)
                     }
+                    // some worker have stopped
                     Err(_) => {
                         self.kill();
                         None
                     }
                 }
             }
-            Err(_) => {
-                self.kill();
-                None
-            }
+            // all workers have stopped
+            Err(_) => None,
         }
     }
 }

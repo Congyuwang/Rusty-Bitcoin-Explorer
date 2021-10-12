@@ -117,8 +117,9 @@ pub(crate) fn connect_outpoints<TBlock>(
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
-    sender: &SyncSender<TBlock>,
+    sender: &SyncSender<(TBlock, u32)>,
     block: Block,
+    height: u32,
 ) -> bool
 where
     TBlock: BlockConnectable,
@@ -235,7 +236,7 @@ where
         output_block.add_tx(output_tx);
     }
 
-    sender.send(output_block).unwrap();
+    sender.send((output_block, height)).unwrap();
     true
 }
 
