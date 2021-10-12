@@ -226,7 +226,7 @@ where
             worker_thread: Some(Vec::new()),
             error_state: Arc::new(AtomicBool::new(true)),
             #[cfg(feature = "on-disk-utxo")]
-            rocks_db_path: None
+            rocks_db_path: None,
         }
     }
 }
@@ -281,5 +281,4 @@ mod test_empty {
         let b: Option<SConnectedBlock> = empty.next();
         assert!(b.is_none());
     }
-
 }
