@@ -2,7 +2,6 @@ use ahash::AHasher;
 use bitcoin::Txid;
 use std::collections::VecDeque;
 use std::hash::{Hash, Hasher};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
@@ -78,11 +77,6 @@ pub(crate) fn get_task<T>(
         register.send(thread_number).unwrap();
     }
     next_height
-}
-
-#[inline]
-pub(crate) fn mutate_error_state(error_state: &Arc<AtomicBool>) {
-    error_state.fetch_or(true, Ordering::SeqCst);
 }
 
 #[cfg(test)]

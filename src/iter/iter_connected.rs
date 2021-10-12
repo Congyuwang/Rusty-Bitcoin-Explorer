@@ -12,7 +12,6 @@ use hash_hasher::HashedMap;
 use log::{error, warn};
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, WriteOptions, DB};
-use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, sync_channel, Receiver};
@@ -22,14 +21,16 @@ use std::thread::JoinHandle;
 #[cfg(feature = "on-disk-utxo")]
 use tempdir::TempDir;
 
+const MAX_SIZE_FOR_THREAD: usize = 10;
+
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
     result_receivers: Vec<Receiver<TBlock>>,
     result_order: Receiver<usize>,
     worker_thread: Option<Vec<JoinHandle<()>>>,
-    error_state: Arc<AtomicBool>,
     #[cfg(feature = "on-disk-utxo")]
     rocks_db_path: Option<TempDir>,
+    iterator_stopper: Arc<AtomicBool>,
 }
 
 impl<TBlock> ConnectedBlockIter<TBlock>
@@ -40,9 +41,7 @@ where
     pub fn new(db: &BitcoinDB, end: u32) -> Self {
         let cpus = num_cpus::get();
         let mut handles = Vec::with_capacity(cpus * 2);
-
-        // shared error state for stopping threads early
-        let error_state = Arc::new(AtomicBool::new(false));
+        let iterator_stopper = Arc::new(AtomicBool::new(false));
 
         // UTXO cache
         #[cfg(not(feature = "on-disk-utxo"))]
@@ -116,15 +115,15 @@ where
         // output insertion threads
         for thread_number in 0..cpus {
             // block streams
-            let (block_sender, block_receiver) = sync_channel(10);
+            let (block_sender, block_receiver) = sync_channel(MAX_SIZE_FOR_THREAD);
             let block_receiver = Arc::new(Mutex::new(block_receiver));
 
             // clone resources
             let unspent = unspent.clone();
-            let error_state = error_state.clone();
             let heights = heights.clone();
             let db = db.clone();
             let block_worker_register = block_worker_register.clone();
+            let iterator_stopper = iterator_stopper.clone();
 
             // write without WAL
             #[cfg(feature = "on-disk-utxo")]
@@ -137,6 +136,10 @@ where
             // output cache insertion workers
             let handle = thread::spawn(move || {
                 loop {
+                    // stop acquiring new tasks
+                    if iterator_stopper.load(Ordering::SeqCst) {
+                        break;
+                    }
                     match get_task(&heights, &block_worker_register, thread_number) {
                         // finish
                         None => break,
@@ -147,7 +150,6 @@ where
                                 &write_options,
                                 &db,
                                 height,
-                                &error_state,
                                 &block_sender,
                             ) {
                                 break;
@@ -169,11 +171,10 @@ where
         // consume UTXO cache and produce output
         for thread_number in 0..cpus {
             // result streams
-            let (result_sender, result_receiver) = sync_channel(10);
+            let (result_sender, result_receiver) = sync_channel(MAX_SIZE_FOR_THREAD);
 
             let register = result_register.clone();
             let unspent = unspent.clone();
-            let error_state = error_state.clone();
             let block_order = block_order.clone();
             let block_receivers = block_receivers.clone();
 
@@ -183,6 +184,7 @@ where
                     let blk = {
                         let block_order_lock = block_order.lock().unwrap();
                         // receive thread_number for block receiver
+                        // might block here, must drop all senders
                         if let Ok(worker_number) = block_order_lock.recv() {
                             let lock = block_receivers.get(worker_number).unwrap().lock();
                             register.send(thread_number).unwrap();
@@ -196,7 +198,7 @@ where
                     };
                     // release receivers lock
 
-                    if !connect_outpoints(&unspent, &error_state, &result_sender, blk) {
+                    if !connect_outpoints(&unspent, &result_sender, blk) {
                         break;
                     }
                 }
@@ -210,9 +212,9 @@ where
             result_receivers,
             result_order,
             worker_thread: Some(handles),
-            error_state,
             #[cfg(feature = "on-disk-utxo")]
             rocks_db_path: Some(cache_dir),
+            iterator_stopper,
         }
     }
 
@@ -226,9 +228,9 @@ where
             result_receivers: Vec::new(),
             result_order,
             worker_thread: Some(Vec::new()),
-            error_state: Arc::new(AtomicBool::new(true)),
             #[cfg(feature = "on-disk-utxo")]
             rocks_db_path: None,
+            iterator_stopper: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -258,9 +260,13 @@ impl<T> ConnectedBlockIter<T> {
 impl<T> Drop for ConnectedBlockIter<T> {
     /// attempt to stop the worker threads
     fn drop(&mut self) {
-        {
-            let err = self.error_state.borrow_mut();
-            err.fetch_or(true, Ordering::SeqCst);
+        // stop threads from getting new tasks
+        self.iterator_stopper.fetch_or(true, Ordering::SeqCst);
+        // clear the remaining tasks in the channel
+        loop {
+            if self.next().is_none() {
+                break;
+            }
         }
         self.join();
         #[cfg(feature = "on-disk-utxo")]

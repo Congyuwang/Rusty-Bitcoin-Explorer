@@ -1,7 +1,6 @@
 use crate::api::BitcoinDB;
-use crate::iter::util::{get_task, mutate_error_state};
+use crate::iter::util::get_task;
 use bitcoin::Block;
-use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, sync_channel, Receiver, SyncSender};
@@ -9,12 +8,14 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 
+const MAX_SIZE_FOR_THREAD: usize = 10;
+
 /// iterate through blocks according to array index.
 pub struct BlockIter<TBlock> {
     receivers: Vec<Receiver<TBlock>>,
     task_order: Receiver<usize>,
     worker_thread: Option<Vec<JoinHandle<()>>>,
-    error_state: Arc<AtomicBool>,
+    iterator_stopper: Arc<AtomicBool>,
 }
 
 impl<TBlock> BlockIter<TBlock>
@@ -24,7 +25,7 @@ where
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, heights: Vec<u32>) -> Self {
         let cpus = num_cpus::get();
-        let error_state = Arc::new(AtomicBool::new(false));
+        let iterator_stopper = Arc::new(AtomicBool::new(false));
         // worker master
         let (task_register, task_order) = channel();
         let tasks: VecDeque<u32> = heights.into_iter().collect();
@@ -32,20 +33,23 @@ where
         let mut handles = Vec::with_capacity(cpus);
         let mut receivers = Vec::with_capacity(cpus);
         for thread_number in 0..cpus {
-            let (sender, receiver) = sync_channel(10);
+            let (sender, receiver) = sync_channel(MAX_SIZE_FOR_THREAD);
             let task = tasks.clone();
             let register = task_register.clone();
-            let error_state = error_state.clone();
+            let iterator_stopper = iterator_stopper.clone();
             let db = db.clone();
 
             // workers
             let handle = thread::spawn(move || {
                 loop {
+                    if iterator_stopper.load(Ordering::SeqCst) {
+                        break;
+                    }
                     match get_task(&task, &register, thread_number) {
                         // finish
                         None => break,
                         Some(task) => {
-                            if !fetch_block(&db, task, &error_state, &sender) {
+                            if !fetch_block(&db, task, &sender) {
                                 // on error
                                 break;
                             }
@@ -61,7 +65,7 @@ where
             receivers,
             task_order,
             worker_thread: Some(handles),
-            error_state,
+            iterator_stopper,
         }
     }
 
@@ -101,9 +105,13 @@ impl<T> BlockIter<T> {
 impl<T> Drop for BlockIter<T> {
     // attempt to stop the worker threads
     fn drop(&mut self) {
-        {
-            let err = self.error_state.borrow_mut();
-            err.fetch_or(true, Ordering::SeqCst);
+        // stop threads from getting new tasks
+        self.iterator_stopper.fetch_or(true, Ordering::SeqCst);
+        // clear the remaining tasks in the channel
+        loop {
+            if self.next().is_none() {
+                break;
+            }
         }
         self.join();
     }
@@ -113,25 +121,16 @@ impl<T> Drop for BlockIter<T> {
 /// fetch_block, thread safe
 ///
 #[inline]
-pub(crate) fn fetch_block<T>(
-    db: &BitcoinDB,
-    height: u32,
-    error_state: &Arc<AtomicBool>,
-    sender: &SyncSender<T>,
-) -> bool
+pub(crate) fn fetch_block<T>(db: &BitcoinDB, height: u32, sender: &SyncSender<T>) -> bool
 where
     T: From<Block>,
 {
     match db.get_block::<T>(height as i32) {
         Ok(blk) => {
-            if error_state.load(Ordering::SeqCst) {
-                return false;
-            }
             sender.send(blk).unwrap();
             true
         }
         Err(_) => {
-            mutate_error_state(error_state);
             return false;
         }
     }

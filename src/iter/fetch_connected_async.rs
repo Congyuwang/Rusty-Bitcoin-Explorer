@@ -1,6 +1,6 @@
+use crate::iter::util::Compress;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-use crate::iter::util::{mutate_error_state, Compress};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
 use crate::BitcoinDB;
 #[cfg(feature = "on-disk-utxo")]
@@ -12,12 +12,12 @@ use bitcoin::TxOut;
 use hash_hasher::HashedMap;
 use log::error;
 #[cfg(not(feature = "on-disk-utxo"))]
+#[cfg(debug_assertions)]
 use log::warn;
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::WriteOptions;
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{WriteBatch, DB};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
@@ -34,17 +34,11 @@ pub(crate) fn update_unspent_cache<TBlock>(
     #[cfg(feature = "on-disk-utxo")] write_options: &WriteOptions,
     db: &BitcoinDB,
     height: u32,
-    error_state: &Arc<AtomicBool>,
     channel: &SyncSender<Block>,
 ) -> bool
 where
     TBlock: BlockConnectable,
 {
-    // stop new tasks from loading when error
-    if error_state.load(Ordering::SeqCst) {
-        return false;
-    }
-
     match db.get_block::<Block>(height as i32) {
         #[cfg(not(feature = "on-disk-utxo"))]
         Ok(block) => {
@@ -74,13 +68,9 @@ where
 
                 new_unspent_cache.push((txid_compressed, new_unspent));
             }
-            // quick stopping in error state
-            if error_state.load(Ordering::SeqCst) {
-                return false;
-            }
             unspent.lock().unwrap().extend(new_unspent_cache);
-            channel.send(block).unwrap();
-            true
+            // if some exception happens in lower stream
+            channel.send(block).is_ok()
         }
 
         #[cfg(feature = "on-disk-utxo")]
@@ -100,26 +90,20 @@ where
                     n += 1;
                 }
             }
-            // quick stopping in error state
-            if error_state.load(Ordering::SeqCst) {
-                return false;
-            }
             match unspent.write_opt(batch, write_options) {
                 Ok(_) => {
-                    channel.send(block).unwrap();
-                    true
+                    // if some exception happens in lower stream
+                    channel.send(block).is_ok()
                 }
                 Err(e) => {
                     error!("failed to write UTXO to cache, error: {}", e);
-                    mutate_error_state(error_state);
                     false
                 }
             }
         }
 
         Err(_) => {
-            // set error_state to true
-            mutate_error_state(error_state);
+            // usually no more block
             false
         }
     }
@@ -133,18 +117,12 @@ pub(crate) fn connect_outpoints<TBlock>(
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
-    error_state: &Arc<AtomicBool>,
     sender: &SyncSender<TBlock>,
     block: Block,
 ) -> bool
 where
     TBlock: BlockConnectable,
 {
-    // stop new tasks from loading when error
-    if error_state.load(Ordering::SeqCst) {
-        return false;
-    }
-
     let block_hash = block.header.block_hash();
     let mut output_block = TBlock::from(block.header, block_hash);
 
@@ -178,7 +156,6 @@ where
             Ok(_) => {}
             Err(e) => {
                 error!("failed to remove key {:?}, error: {}", &key, e);
-                mutate_error_state(error_state);
                 return false;
             }
         }
@@ -239,12 +216,10 @@ where
                     output_tx.add_input(out);
                 } else {
                     error!("cannot find previous outpoint, bad data");
-                    mutate_error_state(error_state);
                     return false;
                 }
             } else {
                 error!("cannot find previous transactions, bad data");
-                mutate_error_state(error_state);
                 return false;
             }
 
@@ -254,16 +229,12 @@ where
                 pos += 1;
             } else {
                 error!("cannot find previous outpoint, bad data");
-                mutate_error_state(error_state);
                 return false;
             }
         }
         output_block.add_tx(output_tx);
     }
 
-    if error_state.load(Ordering::SeqCst) {
-        return false;
-    }
     sender.send(output_block).unwrap();
     true
 }
