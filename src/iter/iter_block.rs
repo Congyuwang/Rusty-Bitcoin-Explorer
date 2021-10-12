@@ -13,9 +13,12 @@ const MAX_SIZE_FOR_THREAD: usize = 10;
 /// iterate through blocks according to array index.
 pub struct BlockIter<TBlock> {
     receivers: Vec<Receiver<TBlock>>,
-    task_order: Receiver<usize>,
+    task_order: Receiver<(u32, usize)>,
+    heights: Vec<u32>,
+    current: usize,
     worker_thread: Option<Vec<JoinHandle<()>>>,
     iterator_stopper: Arc<AtomicBool>,
+    is_killed: bool,
 }
 
 impl<TBlock> BlockIter<TBlock>
@@ -28,7 +31,7 @@ where
         let iterator_stopper = Arc::new(AtomicBool::new(false));
         // worker master
         let (task_register, task_order) = channel();
-        let tasks: VecDeque<u32> = heights.into_iter().collect();
+        let tasks: VecDeque<u32> = heights.clone().into_iter().collect();
         let tasks = Arc::new(Mutex::new(tasks));
         let mut handles = Vec::with_capacity(cpus);
         let mut receivers = Vec::with_capacity(cpus);
@@ -51,6 +54,7 @@ where
                         Some(task) => {
                             if !fetch_block(&db, task, &sender) {
                                 // on error
+                                iterator_stopper.fetch_or(true, Ordering::SeqCst);
                                 break;
                             }
                         }
@@ -64,8 +68,11 @@ where
         BlockIter {
             receivers,
             task_order,
+            heights,
+            current: 0,
             worker_thread: Some(handles),
             iterator_stopper,
+            is_killed: false,
         }
     }
 
@@ -78,18 +85,63 @@ where
             BlockIter::new(db, heights)
         }
     }
+
+    /// stop workers, flush tasks
+    fn kill(&mut self) {
+        if !self.is_killed {
+            // stop threads from getting new tasks
+            self.iterator_stopper.fetch_or(true, Ordering::SeqCst);
+            // flush the remaining tasks in the channel
+            loop {
+                if self.next().is_none() {
+                    break;
+                }
+            }
+            self.is_killed = true;
+        }
+    }
 }
 
 impl<TBlock> Iterator for BlockIter<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.is_killed {
+            return None;
+        }
         match self.task_order.recv() {
-            Ok(thread_number) => match self.receivers.get(thread_number).unwrap().recv() {
-                Ok(block) => Some(block),
-                Err(_) => None,
-            },
-            Err(_) => None,
+            Ok((height, thread_number)) => {
+                // some threads have stopped working
+                let current_height = match self.heights.get(self.current) {
+                    None => {
+                        self.kill();
+                        return None;
+                    }
+                    Some(height) => *height,
+                };
+
+                // Some threads might have stopped first.
+                // while the remaining working threads produces wrong order.
+                if height != current_height {
+                    self.kill();
+                    return None;
+                }
+
+                match self.receivers.get(thread_number).unwrap().recv() {
+                    Ok(block) => {
+                        self.current += 1;
+                        Some(block)
+                    }
+                    Err(_) => {
+                        self.kill();
+                        None
+                    }
+                }
+            }
+            Err(_) => {
+                self.kill();
+                None
+            }
         }
     }
 }
@@ -105,14 +157,7 @@ impl<T> BlockIter<T> {
 impl<T> Drop for BlockIter<T> {
     // attempt to stop the worker threads
     fn drop(&mut self) {
-        // stop threads from getting new tasks
-        self.iterator_stopper.fetch_or(true, Ordering::SeqCst);
-        // clear the remaining tasks in the channel
-        loop {
-            if self.next().is_none() {
-                break;
-            }
-        }
+        self.kill();
         self.join();
     }
 }

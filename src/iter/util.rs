@@ -64,19 +64,22 @@ impl<T> VecMap<T> {
 /// Exclusive access to task list.
 ///
 #[inline(always)]
-pub(crate) fn get_task<T>(
+pub(crate) fn get_task<T: Copy + Send>(
     tasks: &Arc<Mutex<VecDeque<T>>>,
-    register: &Sender<usize>,
+    register: &Sender<(T, usize)>,
     thread_number: usize,
 ) -> Option<T> {
     // lock task list
     let mut task = tasks.lock().unwrap();
-    let next_height = task.pop_front();
+    let next_task = task.pop_front();
     // register task stealing
-    if next_height.is_some() {
-        register.send(thread_number).unwrap();
+    match next_task {
+        Some(next_task) => {
+            register.send((next_task, thread_number)).unwrap();
+            Some(next_task)
+        }
+        None => None,
     }
-    next_height
 }
 
 #[cfg(test)]
