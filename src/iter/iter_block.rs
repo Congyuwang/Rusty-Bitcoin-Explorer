@@ -114,9 +114,14 @@ impl<T> Drop for BlockIter<T> {
 /// fetch_block, thread safe
 ///
 #[inline]
-pub(crate) fn fetch_block<T>(db: &BitcoinDB, height: u32, error_state: &Arc<AtomicBool>, sender: &Sender<T>) -> bool
-    where
-        T: From<Block>,
+pub(crate) fn fetch_block<T>(
+    db: &BitcoinDB,
+    height: u32,
+    error_state: &Arc<AtomicBool>,
+    sender: &Sender<T>,
+) -> bool
+where
+    T: From<Block>,
 {
     match db.get_block::<T>(height as i32) {
         Ok(blk) => {
@@ -125,7 +130,7 @@ pub(crate) fn fetch_block<T>(db: &BitcoinDB, height: u32, error_state: &Arc<Atom
             }
             sender.send(blk).unwrap();
             true
-        },
+        }
         Err(_) => {
             mutate_error_state(error_state);
             return false;

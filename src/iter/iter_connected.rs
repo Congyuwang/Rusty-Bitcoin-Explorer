@@ -1,13 +1,14 @@
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
+use crate::iter::util::get_task;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-use crate::iter::util::get_task;
 use crate::parser::proto::connected_proto::BlockConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::parser::proto::connected_proto::TxConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
+use log::{error, warn};
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, WriteOptions, DB};
 use std::borrow::BorrowMut;
@@ -27,7 +28,7 @@ pub struct ConnectedBlockIter<TBlock> {
     worker_thread: Option<Vec<JoinHandle<()>>>,
     error_state: Arc<AtomicBool>,
     #[cfg(feature = "on-disk-utxo")]
-    rocks_db_path: TempDir,
+    rocks_db_path: Option<TempDir>,
 }
 
 impl<TBlock> ConnectedBlockIter<TBlock>
@@ -48,7 +49,15 @@ where
             Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
         > = Arc::new(Mutex::new(HashedMap::default()));
         #[cfg(feature = "on-disk-utxo")]
-        let cache_dir = TempDir::new("rocks_db").expect("failed to create rocksdb temp dir");
+        let cache_dir = {
+            match TempDir::new("rocks_db") {
+                Ok(tempdir) => tempdir,
+                Err(e) => {
+                    error!("failed to create rocksDB tempdir for UTXO: {}", e);
+                    return ConnectedBlockIter::null();
+                }
+            }
+        };
         #[cfg(feature = "on-disk-utxo")]
         let options = {
             let mut options = Options::default();
@@ -87,7 +96,13 @@ where
             options
         };
         #[cfg(feature = "on-disk-utxo")]
-        let unspent = Arc::new(DB::open(&options, &cache_dir).expect("failed to open rocksdb"));
+        let unspent = Arc::new(match DB::open(&options, &cache_dir) {
+            Ok(db) => db,
+            Err(e) => {
+                error!("failed to create temp rocksDB for UTXO: {}", e);
+                return ConnectedBlockIter::null();
+            }
+        });
 
         // all tasks
         let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
@@ -196,7 +211,22 @@ where
             worker_thread: Some(handles),
             error_state,
             #[cfg(feature = "on-disk-utxo")]
-            rocks_db_path: cache_dir,
+            rocks_db_path: Some(cache_dir),
+        }
+    }
+
+    fn null() -> Self {
+        let result_order = {
+            let (_, receiver) = sync_channel(1);
+            receiver
+        };
+        ConnectedBlockIter {
+            result_receivers: Vec::new(),
+            result_order,
+            worker_thread: Some(Vec::new()),
+            error_state: Arc::new(AtomicBool::new(true)),
+            #[cfg(feature = "on-disk-utxo")]
+            rocks_db_path: None
         }
     }
 }
@@ -232,6 +262,24 @@ impl<T> Drop for ConnectedBlockIter<T> {
         }
         self.join();
         #[cfg(feature = "on-disk-utxo")]
-        DB::destroy(&Options::default(), &self.rocks_db_path).unwrap();
+        if let Some(rocks_db_path) = self.rocks_db_path.take() {
+            let result = DB::destroy(&Options::default(), &rocks_db_path);
+            if let Err(e) = result {
+                warn!("failed to destroy temp rocksDB, {}", e);
+            }
+        }
     }
+}
+
+#[cfg(test)]
+mod test_empty {
+    use crate::{ConnectedBlockIter, SConnectedBlock};
+
+    #[test]
+    fn test_empty() {
+        let mut empty = ConnectedBlockIter::null();
+        let b: Option<SConnectedBlock> = empty.next();
+        assert!(b.is_none());
+    }
+
 }

@@ -1,7 +1,8 @@
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-use crate::iter::util::{Compress, mutate_error_state};
+use crate::iter::util::{mutate_error_state, Compress};
 use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
+use crate::BitcoinDB;
 #[cfg(feature = "on-disk-utxo")]
 use bitcoin::consensus::{Decodable, Encodable};
 use bitcoin::Block;
@@ -9,9 +10,9 @@ use bitcoin::Block;
 use bitcoin::TxOut;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
+use log::error;
 #[cfg(not(feature = "on-disk-utxo"))]
 use log::warn;
-use log::error;
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::WriteOptions;
 #[cfg(feature = "on-disk-utxo")]
@@ -21,7 +22,6 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
-use crate::BitcoinDB;
 
 ///
 /// read block, update cache
@@ -123,7 +123,6 @@ where
             false
         }
     }
-
 }
 
 ///

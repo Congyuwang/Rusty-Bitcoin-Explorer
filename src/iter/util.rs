@@ -2,9 +2,9 @@ use ahash::AHasher;
 use bitcoin::Txid;
 use std::collections::VecDeque;
 use std::hash::{Hash, Hasher};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
 
 ///
 /// Key compression

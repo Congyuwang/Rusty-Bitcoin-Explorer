@@ -22,11 +22,11 @@
 
 mod connected;
 
-use std::ops::Deref;
 use crate::parser::blk_file::BlkFile;
 use crate::parser::errors::{OpError, OpResult};
 use crate::parser::script::{evaluate_script, ScriptInfo};
 use crate::parser::tx_index::TxDB;
+use std::ops::Deref;
 use std::path::Path;
 use std::sync::Arc;
 // re-exports
