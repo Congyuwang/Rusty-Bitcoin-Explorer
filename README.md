@@ -35,7 +35,7 @@ SSD for better performance.
 db.iter_block::<SBlock>(0, 700000)
 ``` 
 - Time: about 10 minutes
-- Peak Memory: <= 500 MB
+- Peak Memory: 1 GB
 
 ### Iteration Through All Blocks (0 - 700000) With Input Addresses 
 ```

@@ -18,7 +18,7 @@ use rocksdb::WriteOptions;
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{WriteBatch, DB};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::SyncSender;
+use std::sync::mpsc::Sender;
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
@@ -35,7 +35,7 @@ pub(crate) fn update_unspent_cache<TBlock>(
     db: &BitcoinDB,
     height: u32,
     error_state: &Arc<AtomicBool>,
-    channel: &SyncSender<Block>,
+    channel: &Sender<Block>,
 ) -> bool
 where
     TBlock: BlockConnectable,
@@ -134,7 +134,7 @@ pub(crate) fn connect_outpoints<TBlock>(
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     error_state: &Arc<AtomicBool>,
-    sender: &SyncSender<TBlock>,
+    sender: &Sender<TBlock>,
     block: Block,
 ) -> bool
 where
