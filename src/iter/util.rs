@@ -3,7 +3,7 @@ use bitcoin::Txid;
 use std::collections::VecDeque;
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::SyncSender;
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
 ///
@@ -67,7 +67,7 @@ impl<T> VecMap<T> {
 #[inline(always)]
 pub(crate) fn get_task<T>(
     tasks: &Arc<Mutex<VecDeque<T>>>,
-    register: &SyncSender<usize>,
+    register: &Sender<usize>,
     thread_number: usize,
 ) -> Option<T> {
     // lock task list

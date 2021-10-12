@@ -4,7 +4,7 @@ use bitcoin::Block;
 use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, sync_channel, Receiver, Sender};
+use std::sync::mpsc::{channel, sync_channel, Receiver, SyncSender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
@@ -26,14 +26,13 @@ where
         let cpus = num_cpus::get();
         let error_state = Arc::new(AtomicBool::new(false));
         // worker master
-        let (task_register, task_order) = sync_channel(cpus * 10);
+        let (task_register, task_order) = channel();
         let tasks: VecDeque<u32> = heights.into_iter().collect();
-
         let tasks = Arc::new(Mutex::new(tasks));
         let mut handles = Vec::with_capacity(cpus);
         let mut receivers = Vec::with_capacity(cpus);
         for thread_number in 0..cpus {
-            let (sender, receiver) = channel();
+            let (sender, receiver) = sync_channel(10);
             let task = tasks.clone();
             let register = task_register.clone();
             let error_state = error_state.clone();
@@ -118,7 +117,7 @@ pub(crate) fn fetch_block<T>(
     db: &BitcoinDB,
     height: u32,
     error_state: &Arc<AtomicBool>,
-    sender: &Sender<T>,
+    sender: &SyncSender<T>,
 ) -> bool
 where
     T: From<Block>,
