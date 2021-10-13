@@ -99,9 +99,11 @@ impl<T> BlockIter<T> {
             self.iterator_stopper.fetch_or(true, Ordering::SeqCst);
             // flush the remaining tasks in the channel
             loop {
-                if self.next().is_none() {
-                    break;
-                }
+                let _ = match self.task_order.recv() {
+                    Ok((_, thread_number)) => self.receivers.get(thread_number).unwrap().recv(),
+                    // all workers have stopped
+                    Err(_) => break,
+                };
             }
             self.is_killed = true;
         }

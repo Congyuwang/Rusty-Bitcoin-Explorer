@@ -27,6 +27,10 @@
 //! - Before dropping the structure, stop all producers from fetching tasks,
 //!   and flush all remaining tasks.
 //!
+//! ## Temporary RocksDB Storage
+//! - A temporary rocksDB will be created in system, which will be cleared up
+//!   once the iterator is dropped.
+//!
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
 use crate::iter::util::get_task;
@@ -304,9 +308,11 @@ impl<T> ConnectedBlockIter<T> {
             self.iterator_stopper.fetch_or(true, Ordering::SeqCst);
             // flush the remaining tasks in the channel
             loop {
-                if self.next().is_none() {
-                    break;
-                }
+                let _ = match self.result_order.recv() {
+                    Ok(thread_number) => self.result_receivers.get(thread_number).unwrap().recv(),
+                    // all consumers (connecting workers) have stopped
+                    Err(_) => break,
+                };
             }
             self.is_killed = true;
         }
