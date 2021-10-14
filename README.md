@@ -62,6 +62,26 @@ bitcoin-explorer = { version = "^2.1", default-features = false }
 
 ## Examples
 
+### get total number of blocks and transactions available on disk
+```rust
+use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
+use std::path::Path;
+
+fn main() {
+
+    let path = Path::new("/Users/me/bitcoin");
+    let db = BitcoinDB::new(path, false).unwrap();
+
+    let block_count = db.get_block_count();
+
+    let total_number_of_transactions = (0..block_count)
+        .map(|i| db.get_header(i).unwrap().n_tx)
+        .sum::<u32>();
+
+}
+
+```
+
 ### get a block (i.e., see doc for what is full/simple format)
 
 ```rust
@@ -142,7 +162,7 @@ fn main() {
 }
 ```
 
-### Iterate through blocks (in different format) with outpoints connected to outputs
+### Iterate through all blocks with Input Addresses Found
 
 ```rust
 use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
@@ -154,7 +174,7 @@ fn main() {
 
     // launch without reading txindex
     let db = BitcoinDB::new(path, false).unwrap();
-    let end = db.get_max_height() as u32;
+    let end = db.get_block_count() as u32;
 
     // iterate over all blocks found (simple connected format)
     for block in db.iter_connected_block::<SConnectedBlock>(end) {

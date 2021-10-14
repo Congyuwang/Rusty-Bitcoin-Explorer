@@ -162,14 +162,14 @@ impl BitcoinDB {
     /// // launch without reading txindex
     /// let db = BitcoinDB::new(path, false).unwrap();
     ///
-    /// let mut total_number: usize = 0;
+    /// let mut total_number_of_tx: usize = 0;
     ///
     /// // This computation should finish immediately. No Disk Access.
-    /// for i in 0..700000 {
+    /// for i in 0..db.get_block_count() {
     ///     let header = db.get_header(i).unwrap();
-    ///     total_number += header.n_tx as usize;
+    ///     total_number_of_tx += header.n_tx as usize;
     /// }
-    /// println!("total tx from block 0 to 700000: {}.", total_number);
+    /// println!("total number of transactions found on disk : {}.", total_number_of_tx);
     /// ```
     ///
     pub fn get_header(&self, height: usize) -> OpResult<&BlockIndexRecord> {
