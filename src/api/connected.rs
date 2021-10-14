@@ -8,35 +8,51 @@ impl BitcoinDB {
     ///
     /// Get a block with inputs replaced by connected outputs.
     ///
-    /// This function requires `txindex` to be set to `true`,
-    /// and `txindex=1` when running Bitcoin Core.
+    /// This function requires `txindex` to be set to `true` for `BitcoinDB`,
+    /// and requires that flag `txindex=1` has been enabled when
+    /// running Bitcoin Core.
+    ///
+    /// A transaction cannot be found using this function if it is
+    /// not yet indexed using `txindex`.
     ///
     /// # Caveat!!
     ///
-    /// This is a *very slow* function!!
-    /// For massive processing of `connected` blocks, use `iter`.
+    /// ## Performance Warning
+    ///
+    /// Slow! For massive computation, use `db.iter_connected_block()`.
     ///
     pub fn get_connected_block<T: BlockConnectable>(&self, height: i32) -> OpResult<T> {
         if !self.tx_db.is_open() {
             return Err(OpError::from("TxDB not open"));
         }
         let tx = self.get_block(height)?;
-        Ok(T::connect(tx, &self.tx_db, &self.blk_file))
+        T::connect(tx, &self.tx_db, &self.blk_file)
     }
 
     ///
     /// Get a transaction with outpoints replaced by outputs.
     ///
+    /// This function requires `txindex` to be set to `true` for `BitcoinDB`,
+    /// and requires that flag `txindex=1` has been enabled when
+    /// running Bitcoin Core.
+    ///
+    /// A transaction cannot be found using this function if it is
+    /// not yet indexed using `txindex`.
+    ///
     /// Format: `full (FConnectedTransaction)` / `simple (SConnectedTransaction)`.
     ///
     /// # Caveats
     ///
-    /// Slow! Not suitable for massive computation. Use `iter`.
+    /// ## Performance Warning
+    ///
+    /// Slow! For massive computation, use `db.iter_connected_block()`.
     ///
     pub fn get_connected_transaction<T: TxConnectable>(&self, txid: &Txid) -> OpResult<T> {
+        if !self.tx_db.is_open() {
+            return Err(OpError::from("TxDB not open"));
+        }
         let tx = self.get_transaction(txid)?;
-        let tx_parsed = T::connect(tx, &self.tx_db, &self.blk_file);
-        Ok(tx_parsed)
+        T::connect(tx, &self.tx_db, &self.blk_file)
     }
 
     ///
