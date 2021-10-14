@@ -26,7 +26,7 @@ impl BitcoinDB {
             return Err(OpError::from("TxDB not open"));
         }
         let tx = self.get_block(height)?;
-        T::connect(tx, &self.tx_db, &self.blk_file)
+        T::connect(tx, &self.tx_db, &self.block_index, &self.blk_file)
     }
 
     ///
@@ -52,7 +52,7 @@ impl BitcoinDB {
             return Err(OpError::from("TxDB not open"));
         }
         let tx = self.get_transaction(txid)?;
-        T::connect(tx, &self.tx_db, &self.blk_file)
+        T::connect(tx, &self.tx_db, &self.block_index, &self.blk_file)
     }
 
     ///

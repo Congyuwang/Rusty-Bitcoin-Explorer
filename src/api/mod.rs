@@ -265,6 +265,10 @@ impl BitcoinDB {
         if !self.tx_db.is_open() {
             return Err(OpError::from("TxDB not open"));
         }
+        // give special treatment for genesis transaction
+        if self.tx_db.is_genesis_tx(txid) {
+            return Ok(self.get_block::<Block>(0)?.txdata.swap_remove(0).into());
+        }
         let record = self.tx_db.get_tx_record(txid)?;
         let tx = self
             .blk_file

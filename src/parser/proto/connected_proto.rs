@@ -3,6 +3,7 @@ use crate::parser::errors::{OpError, OpResult};
 use crate::parser::proto::full_proto::{FBlockHeader, FTxOut};
 use crate::parser::proto::simple_proto::{SBlockHeader, STxOut};
 use crate::parser::tx_index::TxDB;
+use crate::BlockIndex;
 use bitcoin::{Block, BlockHash, BlockHeader, Transaction, TxIn, TxOut, Txid};
 use log::warn;
 use rayon::prelude::*;
@@ -43,6 +44,7 @@ pub struct FConnectedTransaction {
 fn connect_output<Tx>(
     transactions: Vec<Transaction>,
     tx_db: &TxDB,
+    blk_index: &BlockIndex,
     blk_file: &BlkFile,
 ) -> OpResult<Vec<Tx>>
 where
@@ -52,18 +54,13 @@ where
 
     let mut connected_outputs: VecDeque<Option<TxOut>> = all_tx_in
         .par_iter()
-        .map(|x| outpoint_connect(x, tx_db, blk_file))
+        .map(|x| outpoint_connect(x, tx_db, blk_index, blk_file))
         .collect();
 
     // reconstruct block
     let mut connected_tx = Vec::with_capacity(transactions.len());
     for tx in transactions {
-
-        let outpoints_count = if tx.is_coin_base() {
-            0
-        } else {
-            tx.input.len()
-        };
+        let outpoints_count = if tx.is_coin_base() { 0 } else { tx.input.len() };
 
         let mut outputs = Vec::with_capacity(outpoints_count);
         for _ in 0..tx.input.len() {
@@ -90,11 +87,30 @@ where
     Ok(connected_tx)
 }
 
-fn outpoint_connect(tx_in: &TxIn, tx_db: &TxDB, blk_file: &BlkFile) -> Option<TxOut> {
+fn outpoint_connect(
+    tx_in: &TxIn,
+    tx_db: &TxDB,
+    blk_index: &BlockIndex,
+    blk_file: &BlkFile,
+) -> Option<TxOut> {
     let outpoint = tx_in.previous_output;
     let tx_id = &outpoint.txid;
     let n = outpoint.vout;
-    if !is_coin_base(&tx_in) {
+    if !is_coin_base(tx_in) {
+        if tx_db.is_genesis_tx(tx_id) {
+            return match blk_index.records.get(0) {
+                None => None,
+                Some(pos) => match blk_file.read_block(pos.n_file, pos.n_data_pos) {
+                    Ok(mut blk) => {
+                        let mut tx = blk.txdata.swap_remove(0);
+                        Some(
+                            tx.output.swap_remove(0)
+                        )
+                    }
+                    Err(_) => None,
+                },
+            };
+        }
         if let Ok(record) = tx_db.get_tx_record(tx_id) {
             if let Ok(mut tx) =
                 blk_file.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)
@@ -139,25 +155,30 @@ pub trait TxConnectable {
 
     fn from(tx: &Transaction) -> Self;
     fn add_input(&mut self, input: Self::TOut);
-    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> OpResult<Self> where Self: Sized;
+    fn connect(tx: Transaction, tx_db: &TxDB, blk_index: &BlockIndex, blk_file: &BlkFile) -> OpResult<Self>
+    where
+        Self: Sized;
 }
 
-
 #[inline]
-fn connect_output_tx_in(tx_in: Vec<TxIn>, is_coinbase: bool, tx_db: &TxDB, blk_file: &BlkFile) -> OpResult<Vec<TxOut>> {
+fn connect_output_tx_in(
+    tx_in: Vec<TxIn>,
+    is_coinbase: bool,
+    tx_db: &TxDB,
+    blk_index: &BlockIndex,
+    blk_file: &BlkFile,
+) -> OpResult<Vec<TxOut>> {
     let connected_outputs: Vec<TxOut> = tx_in
         .par_iter()
-        .filter_map(|x| outpoint_connect(x, tx_db, blk_file))
+        .filter_map(|x| outpoint_connect(x, tx_db, blk_index, blk_file))
         .collect();
 
-    let outpoints_count = if is_coinbase {
-        0
-    } else {
-        tx_in.len()
-    };
+    let outpoints_count = if is_coinbase { 0 } else { tx_in.len() };
 
     if connected_outputs.len() != outpoints_count {
-        Err(OpError::from("some outpoints aren't found, tx_index is not fully synced"))
+        Err(OpError::from(
+            "some outpoints aren't found, tx_index is not fully synced",
+        ))
     } else {
         Ok(connected_outputs)
     }
@@ -179,12 +200,12 @@ impl TxConnectable for FConnectedTransaction {
         self.input.push(input);
     }
 
-    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> OpResult<Self> {
+    fn connect(tx: Transaction, tx_db: &TxDB, blk_index: &BlockIndex, blk_file: &BlkFile) -> OpResult<Self> {
         let is_coinbase = tx.is_coin_base();
         Ok(FConnectedTransaction {
             lock_time: tx.lock_time,
             txid: tx.txid(),
-            input: connect_output_tx_in(tx.input, is_coinbase, tx_db, blk_file)?
+            input: connect_output_tx_in(tx.input, is_coinbase, tx_db, blk_index, blk_file)?
                 .into_iter()
                 .map(|x| x.into())
                 .collect(),
@@ -208,11 +229,11 @@ impl TxConnectable for SConnectedTransaction {
         self.input.push(input);
     }
 
-    fn connect(tx: Transaction, tx_db: &TxDB, blk_file: &BlkFile) -> OpResult<Self> {
+    fn connect(tx: Transaction, tx_db: &TxDB, blk_index: &BlockIndex, blk_file: &BlkFile) -> OpResult<Self> {
         let is_coinbase = tx.is_coin_base();
         Ok(SConnectedTransaction {
             txid: tx.txid(),
-            input: connect_output_tx_in(tx.input, is_coinbase, tx_db, blk_file)?
+            input: connect_output_tx_in(tx.input, is_coinbase, tx_db, blk_index, blk_file)?
                 .into_iter()
                 .map(|x| x.into())
                 .collect(),
@@ -226,7 +247,9 @@ pub trait BlockConnectable {
 
     fn from(block_header: BlockHeader, block_hash: BlockHash) -> Self;
     fn add_tx(&mut self, tx: Self::Tx);
-    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> OpResult<Self> where Self: Sized;
+    fn connect(block: Block, tx_db: &TxDB, blk_index: &BlockIndex, blk_file: &BlkFile) -> OpResult<Self>
+    where
+        Self: Sized;
 }
 
 impl BlockConnectable for FConnectedBlock {
@@ -243,11 +266,11 @@ impl BlockConnectable for FConnectedBlock {
         self.txdata.push(tx);
     }
 
-    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> OpResult<Self> {
+    fn connect(block: Block, tx_db: &TxDB, blk_index: &BlockIndex, blk_file: &BlkFile) -> OpResult<Self> {
         let block_hash = block.header.block_hash();
         Ok(FConnectedBlock {
             header: FBlockHeader::parse(block.header, block_hash),
-            txdata: connect_output(block.txdata, tx_db, blk_file)?,
+            txdata: connect_output(block.txdata, tx_db, blk_index, blk_file)?,
         })
     }
 }
@@ -266,11 +289,11 @@ impl BlockConnectable for SConnectedBlock {
         self.txdata.push(tx);
     }
 
-    fn connect(block: Block, tx_db: &TxDB, blk_file: &BlkFile) -> OpResult<Self> {
+    fn connect(block: Block, tx_db: &TxDB, blk_index: &BlockIndex, blk_file: &BlkFile) -> OpResult<Self> {
         let block_hash = block.header.block_hash();
         Ok(SConnectedBlock {
             header: SBlockHeader::parse(block.header, block_hash),
-            txdata: connect_output(block.txdata, tx_db, blk_file)?,
+            txdata: connect_output(block.txdata, tx_db, blk_index, blk_file)?,
         })
     }
 }
