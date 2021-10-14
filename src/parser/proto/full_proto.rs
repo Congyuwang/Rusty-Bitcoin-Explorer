@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 /// - `output addresses`
 /// - `output script types`
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct FBlock {
     pub header: FBlockHeader,
     pub txdata: Vec<FTransaction>,
@@ -33,7 +33,7 @@ impl From<Block> for FBlock {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct FBlockHeader {
     pub version: i32,
     pub block_hash: BlockHash,
@@ -64,7 +64,7 @@ impl FBlockHeader {
 /// - `transaction ID`
 /// - `output script type`
 /// - `output addresses`
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct FTransaction {
     pub version: i32,
     pub lock_time: u32,
@@ -88,7 +88,7 @@ impl From<Transaction> for FTransaction {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct FTxOut {
     pub value: u64,
     pub script_pubkey: bitcoin::Script,

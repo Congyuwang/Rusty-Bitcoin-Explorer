@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 /// - `output public script key hash`
 ///
 /// `SBlock` reduces the amount of data memorized or transferred.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SBlock {
     pub header: SBlockHeader,
     pub txdata: Vec<STransaction>,
@@ -41,7 +41,7 @@ impl From<Block> for SBlock {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SBlockHeader {
     pub block_hash: BlockHash,
     pub time: u32,
@@ -67,7 +67,7 @@ impl SBlockHeader {
 /// - `output public script key hash`
 ///
 /// It reduces the amount of data memorized or transferred (to python).
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct STransaction {
     pub txid: Txid,
     /// List of inputs
@@ -86,7 +86,7 @@ impl From<Transaction> for STransaction {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct STxIn {
     pub txid: Txid,
     pub vout: u32,
@@ -101,7 +101,7 @@ impl From<TxIn> for STxIn {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct STxOut {
     pub value: u64,
     pub addresses: Box<[Address]>,

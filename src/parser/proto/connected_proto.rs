@@ -1,4 +1,5 @@
 use crate::parser::blk_file::BlkFile;
+use crate::parser::errors::{OpError, OpResult};
 use crate::parser::proto::full_proto::{FBlockHeader, FTxOut};
 use crate::parser::proto::simple_proto::{SBlockHeader, STxOut};
 use crate::parser::tx_index::TxDB;
@@ -8,19 +9,19 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SConnectedBlock {
     pub header: SBlockHeader,
     pub txdata: Vec<SConnectedTransaction>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct FConnectedBlock {
     pub header: FBlockHeader,
     pub txdata: Vec<FConnectedTransaction>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SConnectedTransaction {
     pub txid: Txid,
     /// List of inputs
@@ -29,7 +30,7 @@ pub struct SConnectedTransaction {
     pub output: Vec<STxOut>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct FConnectedTransaction {
     pub lock_time: u32,
     pub txid: Txid,
@@ -67,8 +68,6 @@ where
         let mut outputs = Vec::with_capacity(outpoints_count);
         for _ in 0..tx.input.len() {
             let connected_out = connected_outputs.pop_front().unwrap();
-            // Do not push None, None is warned in log.warn
-            // although None is caused by error.
             if let Some(out) = connected_out {
                 // also do not push the null input connected to coinbase transaction
                 if out.value != 0xffffffffffffffff {
