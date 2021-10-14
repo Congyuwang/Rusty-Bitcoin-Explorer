@@ -374,13 +374,16 @@ impl<T> Drop for ConnectedBlockIter<T> {
 }
 
 #[cfg(test)]
+#[cfg(feature = "on-disk-utxo")]
 mod test_empty {
     use crate::{ConnectedBlockIter, SConnectedBlock};
 
     #[test]
     fn test_empty() {
         let mut empty = ConnectedBlockIter::null();
-        let b: Option<SConnectedBlock> = empty.next();
-        assert!(b.is_none());
+        for _ in 0..100 {
+            let b: Option<SConnectedBlock> = empty.next();
+            assert!(b.is_none());
+        }
     }
 }
