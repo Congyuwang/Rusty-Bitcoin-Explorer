@@ -8,6 +8,7 @@ keywords = ["blockchain", "bitcoin", "explorer", "parser", "concurrency"]
 description = "High Performance Blockchain Deserializer"
 homepage = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
 repository = "https://github.com/Congyuwang/Rusty-Bitcoin-Explorer"
+exclude = ["./resources"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
