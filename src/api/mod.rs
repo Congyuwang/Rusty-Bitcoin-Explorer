@@ -120,8 +120,28 @@ impl BitcoinDB {
     ///
     /// Get the maximum height found in block index.
     ///
+    /// Note, not all blocks lower than this height have
+    /// been downloaded (different from `get_block_count()`).
+    ///
     pub fn get_max_height(&self) -> usize {
         self.block_index.records.len()
+    }
+
+    ///
+    /// Get the maximum number of blocks downloaded.
+    ///
+    /// This API guarantee that block 0 to `get_block_count() - 1`
+    /// have been downloaded and available for query.
+    ///
+    pub fn get_block_count(&self) -> usize {
+        let records = self.block_index.records.len();
+        for h in 0..records {
+            // n_tx == 0 indicates that the block is not downloaded
+            if self.block_index.records.get(h).unwrap().n_tx == 0 {
+                return h;
+            }
+        }
+        return records;
     }
 
     ///
@@ -210,10 +230,15 @@ impl BitcoinDB {
         }
     }
 
+    ///
     /// Get a transaction by providing txid.
     ///
-    /// This function requires `txindex` to be set to `true`,
-    /// and `txindex=1` when running Bitcoin Core.
+    /// This function requires `txindex` to be set to `true` for `BitcoinDB`,
+    /// and requires that flag `txindex=1` has been enabled when
+    /// running Bitcoin Core.
+    ///
+    /// A transaction cannot be found using this function if it is
+    /// not yet indexed using `txindex`.
     ///
     /// # Example
     /// ```rust
@@ -250,8 +275,12 @@ impl BitcoinDB {
     ///
     /// Get the height of the block containing a particular transaction.
     ///
-    /// This function requires `txindex` to be set to `true`,
-    /// and `txindex=1` when running Bitcoin Core.
+    /// This function requires `txindex` to be set to `true` for `BitcoinDB`,
+    /// and requires that flag `txindex=1` has been enabled when
+    /// running Bitcoin Core.
+    ///
+    /// A transaction cannot be found using this function if it is
+    /// not yet indexed using `txindex`.
     ///
     pub fn get_height_of_transaction(&self, txid: &Txid) -> OpResult<i32> {
         if !self.tx_db.is_open() {
