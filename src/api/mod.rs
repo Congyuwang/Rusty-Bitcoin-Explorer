@@ -123,6 +123,9 @@ impl BitcoinDB {
     /// Note, not all blocks lower than this height have
     /// been downloaded (different from `get_block_count()`).
     ///
+    /// Deprecated: use `get_block_count()`
+    ///
+    #[deprecated(since = "1.2.6", note = "use `get_block_count()` instead")]
     pub fn get_max_height(&self) -> usize {
         self.block_index.records.len()
     }
