@@ -157,6 +157,5 @@ pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
         }
     }
     block_index.sort_by_key(|b| b.n_height);
-    info!("Longest chain: {}", &block_index.len());
     Ok(block_index)
 }
