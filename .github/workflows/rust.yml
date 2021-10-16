@@ -21,7 +21,7 @@ jobs:
     - name: Checkout LFS objects
       run: git lfs checkout
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --release
     - name: Run tests default
       run: cargo test --release --package bitcoin-explorer -- --test-threads=1 --show-output
     - name: Run tests no-default
