@@ -44,8 +44,16 @@ pub use bitcoin::{Address, Block, BlockHash, BlockHeader, Network, Script, Trans
 ///
 /// Extract addresses from a script public key.
 ///
-#[inline]
+#[deprecated(since = "1.2.7", note = "use `get_addresses_from_script` instead")]
 pub fn parse_script(script_pub_key: &str) -> OpResult<ScriptInfo> {
+    get_addresses_from_script(script_pub_key)
+}
+
+///
+/// Extract addresses from a script public key.
+///
+#[inline]
+pub fn get_addresses_from_script(script_pub_key: &str) -> OpResult<ScriptInfo> {
     let script = Script::from_hex(&script_pub_key)?;
     Ok(evaluate_script(&script, Network::Bitcoin))
 }
@@ -198,7 +206,7 @@ impl BitcoinDB {
     ///
     /// Note that the hash is a hex string of the block hash.
     ///
-    pub fn get_height_from_hash(&self, hash: &str) -> OpResult<i32> {
+    pub fn get_height_from_hash(&self, hash: &BlockHash) -> OpResult<i32> {
         match self.block_index.hash_to_height.get(hash) {
             None => Err(OpError::from("hash not found")),
             Some(h) => Ok(*h),

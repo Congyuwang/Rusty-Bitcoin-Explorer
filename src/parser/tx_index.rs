@@ -11,7 +11,6 @@ use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::{Arc, RwLock};
 
 const GENESIS_TXID: &str = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
 
@@ -34,7 +33,7 @@ impl db_key::Key for TxKey {
 pub struct TxDB {
     db: Option<Database<TxKey>>,
     // used for reverse looking up to block height
-    file_pos_to_height: BTreeMap<i32, Arc<RwLock<BTreeMap<u32, i32>>>>,
+    file_pos_to_height: BTreeMap<(i32, u32), i32>,
     genesis_txid: Txid,
 }
 
@@ -44,14 +43,8 @@ impl TxDB {
         let option_db = TxDB::try_open_db(path);
         if let Some(db) = option_db {
             let mut file_pos_to_height = BTreeMap::new();
-            for b in &blk_index.records {
-                let height = b.n_height;
-                if !file_pos_to_height.contains_key(&b.n_file) {
-                    file_pos_to_height.insert(b.n_file, Arc::new(RwLock::new(BTreeMap::new())));
-                }
-                let pos_to_height = file_pos_to_height.get(&b.n_file).unwrap().clone();
-                let mut map = pos_to_height.write().unwrap();
-                map.insert(b.n_data_pos, height);
+            for b in blk_index.records.iter() {
+                file_pos_to_height.insert((b.n_file, b.n_data_pos), b.n_height);
             }
             TxDB {
                 db: Some(db),
@@ -138,16 +131,9 @@ impl TxDB {
         }
         let record: TransactionRecord = self.get_tx_record(txid)?;
         let file_pos_height = &self.file_pos_to_height;
-        match file_pos_height.get(&record.n_file) {
+        match file_pos_height.get(&(record.n_file, record.n_pos)) {
             None => Err(OpError::from("transaction not found")),
-            Some(pos_height) => {
-                let pos_height = Arc::clone(pos_height);
-                let pos_height = pos_height.read().unwrap();
-                match pos_height.get(&record.n_pos) {
-                    None => Err(OpError::from("transaction not found")),
-                    Some(height) => Ok(*height),
-                }
-            }
+            Some(pos_height) => Ok(*pos_height)
         }
     }
 }

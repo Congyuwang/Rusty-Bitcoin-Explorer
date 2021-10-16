@@ -1,7 +1,6 @@
 use crate::parser::errors::OpResult;
 use crate::parser::reader::BlockchainRead;
-use bitcoin::hashes::hex::ToHex;
-use bitcoin::BlockHeader;
+use bitcoin::{BlockHash, BlockHeader};
 use leveldb::database::iterator::LevelDBIterator;
 use leveldb::database::Database;
 use leveldb::iterator::Iterable;
@@ -99,17 +98,21 @@ fn is_block_index_record(data: &[u8]) -> bool {
 
 #[derive(Clone)]
 pub struct BlockIndex {
-    pub records: Vec<BlockIndexRecord>,
-    pub hash_to_height: HashMap<String, i32>,
+    pub records: Box<[BlockIndexRecord]>,
+    pub hash_to_height: HashMap<BlockHash, i32>,
 }
 
 impl BlockIndex {
     pub(crate) fn new(p: &Path) -> OpResult<BlockIndex> {
         let records = load_block_index(p)?;
         let mut hash_to_height = HashMap::with_capacity(records.len());
-        for b in &records {
-            let this_block_hash = b.block_header.block_hash();
-            hash_to_height.insert(this_block_hash.to_hex(), b.n_height);
+        let mut check_height = 0;
+        for b in records.iter() {
+            assert_eq!(check_height, b.n_height,
+                       "some block info missing from block index levelDB,\
+                       delete Bitcoin folder and re-download!");
+            hash_to_height.insert(b.block_header.block_hash(), b.n_height);
+            check_height += 1;
         }
         hash_to_height.shrink_to_fit();
         Ok(BlockIndex {
@@ -136,7 +139,7 @@ impl db_key::Key for BlockKey {
 }
 
 /// load all block index in memory from disk (i.e. `blocks/index` path)
-pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
+pub fn load_block_index(path: &Path) -> OpResult<Box<[BlockIndexRecord]>> {
     let mut block_index = Vec::with_capacity(800000);
 
     info!("Start loading block_index");
@@ -157,5 +160,5 @@ pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
         }
     }
     block_index.sort_by_key(|b| b.n_height);
-    Ok(block_index)
+    Ok(block_index.into_boxed_slice())
 }
