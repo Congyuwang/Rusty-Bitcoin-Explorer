@@ -33,13 +33,13 @@ pub(crate) fn update_unspent_cache<TBlock>(
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     #[cfg(feature = "on-disk-utxo")] write_options: &WriteOptions,
     db: &BitcoinDB,
-    height: u32,
+    height: usize,
     channel: &SyncSender<Block>,
 ) -> bool
 where
     TBlock: BlockConnectable,
 {
-    match db.get_block::<Block>(height as i32) {
+    match db.get_block::<Block>(height) {
         #[cfg(not(feature = "on-disk-utxo"))]
         Ok(block) => {
             let mut new_unspent_cache = Vec::with_capacity(block.txdata.len());
@@ -117,9 +117,9 @@ pub(crate) fn connect_outpoints<TBlock>(
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
-    sender: &SyncSender<(TBlock, u32)>,
+    sender: &SyncSender<(TBlock, usize)>,
     block: Block,
-    height: u32,
+    height: usize,
 ) -> bool
 where
     TBlock: BlockConnectable,

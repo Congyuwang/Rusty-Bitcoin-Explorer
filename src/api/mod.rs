@@ -232,8 +232,8 @@ impl BitcoinDB {
     /// let block: SBlock = db.get_block(600000).unwrap();
     /// ```
     ///
-    pub fn get_block<T: From<Block>>(&self, height: i32) -> OpResult<T> {
-        if let Some(index) = self.block_index.records.get(height as usize) {
+    pub fn get_block<T: From<Block>>(&self, height: usize) -> OpResult<T> {
+        if let Some(index) = self.block_index.records.get(height) {
             let blk = self.blk_file.read_block(index.n_file, index.n_data_pos)?;
             Ok(blk.into())
         } else {
@@ -356,7 +356,7 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn iter_block<T>(&self, start: u32, end: u32) -> BlockIter<T>
+    pub fn iter_block<T>(&self, start: usize, end: usize) -> BlockIter<T>
     where
         T: From<Block> + Send + 'static,
     {
@@ -420,7 +420,7 @@ impl BitcoinDB {
     ///
     /// ```
     ///
-    pub fn iter_heights<T: 'static + From<Block> + Send>(&self, heights: Vec<u32>) -> BlockIter<T> {
+    pub fn iter_heights<T: 'static + From<Block> + Send>(&self, heights: Vec<usize>) -> BlockIter<T> {
         BlockIter::new(self, heights)
     }
 }

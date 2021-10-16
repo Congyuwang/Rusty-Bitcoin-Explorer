@@ -21,7 +21,7 @@ impl BitcoinDB {
     ///
     /// Slow! For massive computation, use `db.iter_connected_block()`.
     ///
-    pub fn get_connected_block<T: BlockConnectable>(&self, height: i32) -> OpResult<T> {
+    pub fn get_connected_block<T: BlockConnectable>(&self, height: usize) -> OpResult<T> {
         if !self.tx_db.is_open() {
             return Err(OpError::from("TxDB not open"));
         }
@@ -93,7 +93,7 @@ impl BitcoinDB {
     /// }
     /// ```
     ///
-    pub fn iter_connected_block<TBlock>(&self, end: u32) -> ConnectedBlockIter<TBlock>
+    pub fn iter_connected_block<TBlock>(&self, end: usize) -> ConnectedBlockIter<TBlock>
     where
         TBlock: 'static + BlockConnectable + Send,
     {

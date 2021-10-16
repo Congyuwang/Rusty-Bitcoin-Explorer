@@ -9,8 +9,9 @@ mod iterator_tests {
     use bitcoin_explorer::{BitcoinDB, SBlock, SConnectedBlock, SConnectedTransaction};
     use std::path::PathBuf;
 
-    const END: u32 = 700000;
+    const END: usize = 700000;
 
+    /// utility function
     fn get_test_db() -> BitcoinDB {
         let mut crate_root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         crate_root_dir.push("./resources/tests/Bitcoin");
@@ -18,6 +19,7 @@ mod iterator_tests {
     }
 
     #[test]
+    /// iterate through all blocks, check order and correctness
     fn test_iter_block() {
         let db = get_test_db();
 
@@ -27,24 +29,28 @@ mod iterator_tests {
             assert_eq!(blk, blk_ref);
             h += 1;
         }
+        // assert that all blocks are read
         assert_eq!(h as usize, db.get_block_count())
     }
 
     #[test]
-    /// see that iterator ends correctly
+    /// iterate through part of the chain
     fn test_iter_block_early_end() {
         let db = get_test_db();
+        let start = 100;
         let early_end = 100000;
 
-        let mut h = 0;
-        for _ in db.iter_block::<SBlock>(0, early_end) {
+        let mut h = start;
+        for blk in db.iter_block::<SBlock>(start, early_end) {
+            let blk_ref = db.get_block::<SBlock>(h).unwrap();
+            assert_eq!(blk, blk_ref);
             h += 1;
         }
-        assert_eq!(h as u32, early_end)
+        assert_eq!(h, early_end)
     }
 
     #[test]
-    /// ensure that the iterator can be dropped
+    /// ensure that the iterator can be dropped after breaking loop
     fn test_iter_block_break() {
         let db = get_test_db();
         let break_height = 100000;
@@ -62,6 +68,7 @@ mod iterator_tests {
     }
 
     #[test]
+    /// ensure that `get_transaction` responds with correct transaction
     fn test_get_transactions() {
         let db = get_test_db();
         let early_end = 100000;
@@ -74,19 +81,22 @@ mod iterator_tests {
     }
 
     #[test]
+    /// iterate through all blocks
     fn test_iter_connected() {
         let db = get_test_db();
 
         let mut h = 0;
         for blk in db.iter_connected_block::<SConnectedBlock>(END) {
+            // check that blocks are produced in correct order
             assert_eq!(blk.header, db.get_block::<SBlock>(h).unwrap().header);
             h += 1;
         }
+        // assert that all blocks are read
         assert_eq!(h as usize, db.get_block_count())
     }
 
     #[test]
-    /// see that iterator ends correctly
+    /// iterate through part of the chain
     fn test_iter_connected_early_end() {
         let db = get_test_db();
         let early_end = 100000;
@@ -97,10 +107,11 @@ mod iterator_tests {
             assert_eq!(blk, blk_ref);
             h += 1;
         }
+        assert_eq!(h, early_end)
     }
 
     #[test]
-    /// ensure that the iterator can be dropped
+    /// ensure that the iterator can be dropped after breaking loop
     fn test_iter_connected_break() {
         let db = get_test_db();
         let break_height = 100000;
@@ -124,6 +135,7 @@ mod iterator_tests {
     }
 
     #[test]
+    /// ensure that `get_connected_transaction` responds with correct transaction
     fn test_get_connected_transactions() {
         let db = get_test_db();
         let early_end = 100000;

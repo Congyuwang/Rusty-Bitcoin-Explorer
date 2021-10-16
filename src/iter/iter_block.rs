@@ -17,8 +17,9 @@ const MAX_SIZE_FOR_THREAD: usize = 10;
 /// iterate through blocks according to array index.
 pub struct BlockIter<TBlock> {
     receivers: Vec<Receiver<TBlock>>,
-    task_order: Receiver<(u32, usize)>,
-    heights: Vec<u32>,
+    // Receiver<(height, thread)>
+    task_order: Receiver<(usize, usize)>,
+    heights: Vec<usize>,
     current: usize,
     worker_thread: Option<Vec<JoinHandle<()>>>,
     iterator_stopper: Arc<AtomicBool>,
@@ -30,12 +31,12 @@ where
     TBlock: From<Block> + Send + 'static,
 {
     /// the worker threads are dispatched in this `new` constructor!
-    pub fn new(db: &BitcoinDB, heights: Vec<u32>) -> Self {
+    pub fn new(db: &BitcoinDB, heights: Vec<usize>) -> Self {
         let cpus = num_cpus::get();
         let iterator_stopper = Arc::new(AtomicBool::new(false));
         // worker master
         let (task_register, task_order) = channel();
-        let tasks: VecDeque<u32> = heights.clone().into_iter().collect();
+        let tasks: VecDeque<usize> = heights.clone().into_iter().collect();
         let tasks = Arc::new(Mutex::new(tasks));
         let mut handles = Vec::with_capacity(cpus);
         let mut receivers = Vec::with_capacity(cpus);
@@ -81,11 +82,11 @@ where
     }
 
     /// the worker threads are dispatched in this `new` constructor!
-    pub fn from_range(db: &BitcoinDB, start: u32, end: u32) -> Self {
+    pub fn from_range(db: &BitcoinDB, start: usize, end: usize) -> Self {
         if end <= start {
             BlockIter::new(db, Vec::new())
         } else {
-            let heights: Vec<u32> = (start..end).collect();
+            let heights: Vec<usize> = (start..end).collect();
             BlockIter::new(db, heights)
         }
     }
@@ -169,11 +170,11 @@ impl<T> Drop for BlockIter<T> {
 /// fetch_block, thread safe
 ///
 #[inline]
-pub(crate) fn fetch_block<T>(db: &BitcoinDB, height: u32, sender: &SyncSender<T>) -> bool
+pub(crate) fn fetch_block<T>(db: &BitcoinDB, height: usize, sender: &SyncSender<T>) -> bool
 where
     T: From<Block>,
 {
-    match db.get_block::<T>(height as i32) {
+    match db.get_block::<T>(height) {
         Ok(blk) => {
             sender.send(blk).unwrap();
             true

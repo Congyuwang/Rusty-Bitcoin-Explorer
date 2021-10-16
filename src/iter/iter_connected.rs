@@ -46,7 +46,7 @@ use log::{error, warn};
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, WriteOptions, DB};
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, sync_channel, Receiver};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -58,14 +58,14 @@ const MAX_SIZE_FOR_THREAD: usize = 10;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
-    result_receivers: Vec<Receiver<(TBlock, u32)>>,
+    result_receivers: Vec<Receiver<(TBlock, usize)>>,
     result_order: Receiver<usize>,
     worker_thread: Option<Vec<JoinHandle<()>>>,
     #[cfg(feature = "on-disk-utxo")]
     rocks_db_path: Option<TempDir>,
     iterator_stopper: Arc<AtomicBool>,
     is_killed: bool,
-    current_height: u32,
+    current_height: usize,
 }
 
 impl<TBlock> ConnectedBlockIter<TBlock>
@@ -73,7 +73,7 @@ where
     TBlock: 'static + BlockConnectable + Send,
 {
     /// the worker threads are dispatched in this `new` constructor!
-    pub fn new(db: &BitcoinDB, end: u32) -> Self {
+    pub fn new(db: &BitcoinDB, end: usize) -> Self {
         let cpus = num_cpus::get();
         let mut handles = Vec::with_capacity(cpus * 2);
         let iterator_stopper = Arc::new(AtomicBool::new(false));
@@ -140,7 +140,7 @@ where
         });
 
         // all tasks
-        let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<u32>>()));
+        let heights = Arc::new(Mutex::new((0..end).collect::<VecDeque<usize>>()));
 
         // the channel for synchronizing cache update
         let (block_worker_register, block_order) = channel();
@@ -208,7 +208,7 @@ where
         // Update this variable on receiving block from producer.
         // Check if this variable equal to block height received.
         // Otherwise, stop producer.
-        let current_height = Arc::new(AtomicU32::new(0));
+        let current_height = Arc::new(AtomicUsize::new(0));
 
         // consume UTXO cache and produce output
         for thread_number in 0..cpus {
