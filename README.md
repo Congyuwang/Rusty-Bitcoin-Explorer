@@ -11,58 +11,49 @@ bitcoin blockchain.
 
 Support bitcoin MainNet, might support other networks in the future.
 
+## Features
+
+### **1. Block & Script Decoding**
+
+- Qeury blocks based on block heights.
+- Decode Bitcoin Core native levelDB info.
+- Decode addresses from output scripts (supporting all standard scripts, including Multi-Sig scripts).
+- Find input addresses using on-disk UTXO cache (iter_connected_block()).
+
+### **2. Concurrency + Iterator + Sequential Output**
+
+- Fast concurrent reading but producing sequential output.
+- Work-stealing with registry to maximize efficiency.
+- Native Iterator interface (support `for in` syntax).
+- Robust exception handling in multi-threading.
+- Data racing and deadlock free data model.
+
+### **3. Small Memory Foot Print (< 4 GB RAM)**
+
+- Compress 256-bit TxID to u128 keys in UTXO.
+- Use a fast on-disk UTXO storage (RocksDB).
+- Configurable in-memory UTXO cache (non-default feature).
+
+### **4. Generic User Interface**
+
+- Use static generic to offer different output formats for various APIs.
+
+### **5. Thorough Testing**
+
+- Throughly tested for correctness using rust *integration tests*.
+
+### **6. Build for Rust + Python (Multi-OS PyPI wheels)**
+
+- Built and published PyPI wheels for `python 3.6-3.10` across `Windows x86/x64`, `MacOS x86_64/arm64`, and `Linux x86_64`.
+- Rust library on [crates.io](https://crates.io) called *bitcoin-explorer*.
+
 ## Documentation
 
 See [Rust Documentation](https://docs.rs/bitcoin-explorer/)
 
-## Hardware Requirements
-
-### Memory Requirement
-Memory requirement: 8 GB physical RAM.
-
-### Disk Requirement
-SSD for better performance.
-
-## Benchmarking
-
-- OS: `x86_64` Windows 10
-- CPU: Intel i7-9700 @ 3.00GHZ (4-core, 8-threads)
-- Memory: 16 GB 2667 Mhz
-- Disk: WDC SN730 512GB (SSD)
-
-### Iteration Through All Blocks (0 - 700000)
-```
-db.iter_block::<SBlock>(0, 700000)
-``` 
-- Time: about 10 minutes
-- Peak Memory: <= 500 MB
-
-### Iteration Through All Blocks (0 - 700000) With Input Addresses 
-```
-db.iter_connected_block::<SConnectedBlock>(700000)
-```
-#### Using default configuration
-
-Compile with default features (Cargo.toml):
-```toml
-bitcoin-explorer = "^2.1"
-```
-
-- Time: about 2.5 hours
-- Peak Memory: 4 GB
-
-#### Using non-default configuration (large RAM for good performance)
-
-Compile with non-default features (Cargo.toml):
-```toml
-bitcoin-explorer = { version = "^2.1", default-features = false }
-```
-- Time: about 30 minutes
-- Peak Memory: 32 GB
-
 ## Examples
 
-### get total number of blocks and transactions available on disk
+### Get total number of blocks and transactions available on disk
 ```rust
 use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
 use std::path::Path;
@@ -82,7 +73,7 @@ fn main() {
 
 ```
 
-### get a block (i.e., see doc for what is full/simple format)
+### Get a block (i.e., see doc for what is full/simple format (`FBlock`/`SBlock`) )
 
 ```rust
 use bitcoin_explorer::{BitcoinDB, FBlock, SBlock, Block};
@@ -101,7 +92,7 @@ fn main() {
 }
 ```
 
-### get a transaction (in different formats)
+### Get a transaction (in different formats)
 
 Note: this requires building tx index with `--txindex=1` flag using Bitcoin Core.
 
@@ -127,7 +118,7 @@ fn main() {
 }
 ```
 
-### Iterate through blocks (in different formats)
+### Iterate through all blocks (in different formats)
 
 ```rust
 use bitcoin_explorer::{BitcoinDB, Block, SBlock, FBlock};
@@ -139,22 +130,22 @@ fn main() {
     // launch without reading txindex
     let db = BitcoinDB::new(path, false).unwrap();
 
-    // iterate over block from 600000 to 700000
-    for block in db.iter_block::<Block>(600000, 700000) {
+    // iterate over block from 0 to 1000
+    for block in db.iter_block::<Block>(0, 1000) {
         for tx in block.txdata {
             println!("do something for this transaction");
         }
     }
 
-    // iterate over block from 600000 to 700000
-    for block in db.iter_block::<FBlock>(600000, 700000) {
+    // iterate over block from 1000 to end
+    for block in db.iter_block::<FBlock>(1000, db.get_block_count() as usize) {
         for tx in block.txdata {
             println!("do something for this transaction");
         }
     }
 
-    // iterate over block from 600000 to 700000
-    for block in db.iter_block::<SBlock>(600000, 700000) {
+    // iterate over block from 0 to end
+    for block in db.iter_block::<SBlock>(0, db.get_block_count() as usize) {
         for tx in block.txdata {
             println!("do something for this transaction");
         }
@@ -162,7 +153,7 @@ fn main() {
 }
 ```
 
-### Iterate through all blocks with Input Addresses Found
+### Iterate through all blocks with Input Addresses Found (`ConnectedBlock`)
 
 ```rust
 use bitcoin_explorer::{BitcoinDB, FConnectedBlock, SConnectedBlock};
@@ -184,6 +175,60 @@ fn main() {
     }
 }
 ```
+
+## Hardware Requirements
+
+### Memory Requirement
+
+Memory requirement: 8 GB physical RAM.
+
+### Disk Requirement
+
+SSD for better performance.
+
+## Benchmarking
+
+- OS: `x86_64` Windows 10
+- CPU: Intel i7-9700 @ 3.00GHZ (4-core, 8-threads)
+- Memory: 16 GB 2667 Mhz
+- Disk: WDC SN730 512GB (SSD)
+
+### Iteration Through All Blocks (0 - 700000)
+
+```rust
+db.iter_block::<SBlock>(0, 700000)
+```
+
+- Time: about 10 minutes
+- Peak Memory: <= 500 MB
+
+### Iteration Through All Blocks (0 - 700000) With Input Addresses 
+
+```rust
+db.iter_connected_block::<SConnectedBlock>(700000)
+```
+
+#### Using default configuration
+
+Compile with default features (Cargo.toml):
+
+```toml
+bitcoin-explorer = "^2.1"
+```
+
+- Time: about 2.5 hours
+- Peak Memory: 4 GB
+
+#### Using non-default configuration (large RAM for good performance)
+
+Compile with non-default features (Cargo.toml):
+
+```toml
+bitcoin-explorer = { version = "^2.1", default-features = false }
+```
+
+- Time: about 30 minutes
+- Peak Memory: 32 GB
 
 ## Notes
 
