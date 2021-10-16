@@ -30,7 +30,7 @@ impl Compress for Txid {
 ///
 #[cfg(not(feature = "on-disk-utxo"))]
 pub(crate) struct VecMap<T> {
-    size: u16,
+    size: u32,
     inner: Box<[Option<T>]>,
 }
 
@@ -39,7 +39,7 @@ impl<T> VecMap<T> {
     #[inline(always)]
     pub(crate) fn from_vec(slice: Box<[Option<T>]>) -> Self {
         VecMap {
-            size: slice.len() as u16,
+            size: slice.len() as u32,
             inner: slice,
         }
     }

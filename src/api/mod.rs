@@ -206,10 +206,10 @@ impl BitcoinDB {
     ///
     /// Note that the hash is a hex string of the block hash.
     ///
-    pub fn get_height_from_hash(&self, hash: &BlockHash) -> OpResult<i32> {
+    pub fn get_height_from_hash(&self, hash: &BlockHash) -> OpResult<usize> {
         match self.block_index.hash_to_height.get(hash) {
             None => Err(OpError::from("hash not found")),
-            Some(h) => Ok(*h),
+            Some(h) => Ok(*h as usize),
         }
     }
 
@@ -297,7 +297,7 @@ impl BitcoinDB {
     /// A transaction cannot be found using this function if it is
     /// not yet indexed using `txindex`.
     ///
-    pub fn get_height_of_transaction(&self, txid: &Txid) -> OpResult<i32> {
+    pub fn get_height_of_transaction(&self, txid: &Txid) -> OpResult<usize> {
         if !self.tx_db.is_open() {
             return Err(OpError::from("TxDB not open"));
         }

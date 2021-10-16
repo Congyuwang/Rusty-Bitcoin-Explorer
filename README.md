@@ -15,7 +15,7 @@ Support bitcoin MainNet, might support other networks in the future.
 
 ### **1. Block & Script Decoding**
 
-- Qeury blocks based on block heights.
+- Query blocks based on block heights.
 - Decode Bitcoin Core native levelDB info.
 - Decode addresses from output scripts (supporting all standard scripts, including Multi-Sig scripts).
 - Find input addresses using on-disk UTXO cache (iter_connected_block()).
@@ -28,7 +28,7 @@ Support bitcoin MainNet, might support other networks in the future.
 - Robust exception handling in multi-threading.
 - Data racing and deadlock free data model.
 
-### **3. Small Memory Foot Print (< 4 GB RAM)**
+### **3. Small Memory Footprint (< 4 GB RAM)**
 
 - Compress 256-bit TxID to u128 keys in UTXO.
 - Use a fast on-disk UTXO storage (RocksDB).
@@ -40,7 +40,7 @@ Support bitcoin MainNet, might support other networks in the future.
 
 ### **5. Thorough Testing**
 
-- Throughly tested for correctness using rust *integration tests*.
+- Thoroughly tested for correctness using rust *integration tests*.
 
 ### **6. Build for Rust + Python (Multi-OS PyPI wheels)**
 
@@ -138,14 +138,14 @@ fn main() {
     }
 
     // iterate over block from 1000 to end
-    for block in db.iter_block::<FBlock>(1000, db.get_block_count() as usize) {
+    for block in db.iter_block::<FBlock>(1000, db.get_block_count()) {
         for tx in block.txdata {
             println!("do something for this transaction");
         }
     }
 
     // iterate over block from 0 to end
-    for block in db.iter_block::<SBlock>(0, db.get_block_count() as usize) {
+    for block in db.iter_block::<SBlock>(0, db.get_block_count()) {
         for tx in block.txdata {
             println!("do something for this transaction");
         }
@@ -165,7 +165,7 @@ fn main() {
 
     // launch without reading txindex
     let db = BitcoinDB::new(path, false).unwrap();
-    let end = db.get_block_count() as u32;
+    let end = db.get_block_count();
 
     // iterate over all blocks found (simple connected format)
     for block in db.iter_connected_block::<SConnectedBlock>(end) {

@@ -124,7 +124,7 @@ impl TxDB {
         }
     }
 
-    pub(crate) fn get_block_height_of_tx(&self, txid: &Txid) -> OpResult<i32> {
+    pub(crate) fn get_block_height_of_tx(&self, txid: &Txid) -> OpResult<usize> {
         // genesis transaction requires special treatment
         if self.is_genesis_tx(txid) {
             return Ok(0);
@@ -133,7 +133,7 @@ impl TxDB {
         let file_pos_height = &self.file_pos_to_height;
         match file_pos_height.get(&(record.n_file, record.n_pos)) {
             None => Err(OpError::from("transaction not found")),
-            Some(pos_height) => Ok(*pos_height)
+            Some(pos_height) => Ok(*pos_height as usize)
         }
     }
 }
