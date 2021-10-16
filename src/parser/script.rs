@@ -3,7 +3,7 @@ use bitcoin::blockdata::opcodes::{all, All};
 use bitcoin::blockdata::script::Instruction;
 use bitcoin::util::address::Payload;
 use bitcoin::{Address, Network, PubkeyHash, PublicKey, Script};
-use bitcoin_hashes::{hash160, Hash};
+use bitcoin::hashes::{hash160, Hash};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use Instruction::{Op, PushBytes};

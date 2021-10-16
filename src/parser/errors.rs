@@ -105,8 +105,8 @@ impl From<bitcoin::hashes::hex::Error> for OpError {
     }
 }
 
-impl From<bitcoin_hashes::Error> for OpError {
-    fn from(_: bitcoin_hashes::Error) -> Self {
+impl From<bitcoin::hashes::Error> for OpError {
+    fn from(_: bitcoin::hashes::Error) -> Self {
         Self::from("bitcoin_hash error")
     }
 }
