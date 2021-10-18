@@ -29,8 +29,8 @@ pub trait TxConnectable {
         blk_index: &BlockIndex,
         blk_file: &BlkFile,
     ) -> OpResult<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }
 
 ///
@@ -52,8 +52,8 @@ pub trait BlockConnectable {
         blk_index: &BlockIndex,
         blk_file: &BlkFile,
     ) -> OpResult<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }
 
 ///
@@ -102,7 +102,6 @@ pub struct FConnectedTransaction {
     /// List of outputs
     pub output: Vec<FTxOut>,
 }
-
 
 impl TxConnectable for FConnectedTransaction {
     type TOut = FTxOut;
@@ -319,8 +318,8 @@ fn connect_output<Tx>(
     blk_index: &BlockIndex,
     blk_file: &BlkFile,
 ) -> OpResult<Vec<Tx>>
-    where
-        Tx: TxConnectable,
+where
+    Tx: TxConnectable,
 {
     let all_tx_in = get_all_tx_in(&transactions);
 

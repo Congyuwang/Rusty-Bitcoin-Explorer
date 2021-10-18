@@ -133,7 +133,7 @@ impl TxDB {
         let file_pos_height = &self.file_pos_to_height;
         match file_pos_height.get(&(record.n_file, record.n_pos)) {
             None => Err(OpError::from("transaction not found")),
-            Some(pos_height) => Ok(*pos_height as usize)
+            Some(pos_height) => Ok(*pos_height as usize),
         }
     }
 }

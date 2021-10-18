@@ -1,9 +1,9 @@
 use crate::parser::errors::{OpError, OpResult};
 use bitcoin::blockdata::opcodes::{all, All};
 use bitcoin::blockdata::script::Instruction;
+use bitcoin::hashes::{hash160, Hash};
 use bitcoin::util::address::Payload;
 use bitcoin::{Address, Network, PubkeyHash, PublicKey, Script};
-use bitcoin::hashes::{hash160, Hash};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use Instruction::{Op, PushBytes};

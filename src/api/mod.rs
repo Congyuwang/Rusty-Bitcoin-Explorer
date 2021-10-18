@@ -420,7 +420,10 @@ impl BitcoinDB {
     ///
     /// ```
     ///
-    pub fn iter_heights<T: 'static + From<Block> + Send>(&self, heights: Vec<usize>) -> BlockIter<T> {
+    pub fn iter_heights<T: 'static + From<Block> + Send>(
+        &self,
+        heights: Vec<usize>,
+    ) -> BlockIter<T> {
         BlockIter::new(self, heights)
     }
 }

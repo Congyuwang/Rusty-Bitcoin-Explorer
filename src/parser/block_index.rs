@@ -108,9 +108,11 @@ impl BlockIndex {
         let mut hash_to_height = HashMap::with_capacity(records.len());
         let mut check_height = 0;
         for b in records.iter() {
-            assert_eq!(check_height, b.n_height,
-                       "some block info missing from block index levelDB,\
-                       delete Bitcoin folder and re-download!");
+            assert_eq!(
+                check_height, b.n_height,
+                "some block info missing from block index levelDB,\
+                       delete Bitcoin folder and re-download!"
+            );
             hash_to_height.insert(b.block_header.block_hash(), b.n_height);
             check_height += 1;
         }
