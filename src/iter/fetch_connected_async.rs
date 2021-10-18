@@ -15,8 +15,6 @@ use log::error;
 #[cfg(debug_assertions)]
 use log::warn;
 #[cfg(feature = "on-disk-utxo")]
-use rocksdb::WriteOptions;
-#[cfg(feature = "on-disk-utxo")]
 use rocksdb::{WriteBatch, DB};
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
@@ -30,7 +28,6 @@ pub(crate) fn update_unspent_cache<TBlock>(
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
-    #[cfg(feature = "on-disk-utxo")] write_options: &WriteOptions,
     db: &BitcoinDB,
     height: usize,
 ) -> Result<Block, ()>
@@ -88,7 +85,7 @@ where
                     n += 1;
                 }
             }
-            match unspent.write_opt(batch, write_options) {
+            match unspent.write_without_wal(batch) {
                 Ok(_) => {
                     // if some exception happens in lower stream
                     Ok(block)

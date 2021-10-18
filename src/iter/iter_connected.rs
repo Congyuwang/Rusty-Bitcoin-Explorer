@@ -9,9 +9,10 @@ use crate::parser::proto::connected_proto::TxConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
 #[cfg(feature = "on-disk-utxo")]
-use log::{error, warn};
+use log::error;
+use num_cpus;
 #[cfg(feature = "on-disk-utxo")]
-use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, WriteOptions, DB};
+use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, DB};
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
@@ -22,6 +23,7 @@ use tempdir::TempDir;
 pub struct ConnectedBlockIter<TBlock> {
     inner: ParIter<TBlock>,
     #[cfg(feature = "on-disk-utxo")]
+    #[allow(dead_code)]
     cache: Option<TempDir>,
 }
 
@@ -52,7 +54,7 @@ where
             // create table
             options.create_if_missing(true);
             // config to more jobs
-            options.set_max_background_jobs(cpus as i32);
+            options.set_max_background_jobs(num_cpus::get() as i32);
             // configure mem-table to a large value (1 GB)
             options.set_write_buffer_size(0x40000000);
             // configure l0 and l1 size, let them have the same size (4 GB)
@@ -80,12 +82,6 @@ where
                 }
             })
         };
-        #[cfg(feature = "on-disk-utxo")]
-        let write_options = {
-            let mut opt = WriteOptions::default();
-            opt.disable_wal(true);
-            opt
-        };
         // all tasks
         let heights = 0..end;
         let db_copy = db.clone();
@@ -94,7 +90,6 @@ where
             update_unspent_cache::<TBlock>(
                 &unspent_copy,
                 #[cfg(feature = "on-disk-utxo")]
-                &write_options,
                 &db_copy,
                 height,
             )
@@ -113,7 +108,7 @@ where
     #[cfg(feature = "on-disk-utxo")]
     fn null() -> Self {
         ConnectedBlockIter {
-            inner: ParIter::new(Vec::new(), |a: usize| Err(())),
+            inner: ParIter::new(Vec::new(), |_: usize| Err(())),
             #[cfg(feature = "on-disk-utxo")]
             cache: None,
         }

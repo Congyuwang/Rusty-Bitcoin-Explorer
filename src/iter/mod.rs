@@ -3,9 +3,9 @@
 //!
 
 mod fetch_connected_async;
-mod par_iter;
 mod iter_block;
 mod iter_connected;
+mod par_iter;
 mod util;
 
 pub use iter_block::BlockIter;
