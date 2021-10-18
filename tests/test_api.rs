@@ -150,4 +150,16 @@ mod iterator_tests {
             }
         }
     }
+
+    #[test]
+    fn test_iter_block_heights() {
+        let db = get_test_db();
+        let test_heights = vec![3, 6, 2, 7, 1, 8, 3, 8, 1, 8, 2, 7, 21];
+        let blocks_ref: Vec<SBlock> = test_heights
+            .iter()
+            .map(|h| db.get_block::<SBlock>(*h).unwrap())
+            .collect();
+        let blocks: Vec<SBlock> = db.iter_heights::<SBlock, _>(test_heights).collect();
+        assert_eq!(blocks, blocks_ref)
+    }
 }

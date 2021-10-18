@@ -364,7 +364,7 @@ impl BitcoinDB {
     }
 
     ///
-    /// Iterate through all blocks for a given heights (excluded).
+    /// Iterate through all blocks of given heights.
     ///
     /// Formats: `Block` / `FBlock` / `SBlock`.
     ///
@@ -397,21 +397,21 @@ impl BitcoinDB {
     /// let some_heights = vec![3, 5, 7, 9];
     ///
     /// // iterate over blocks from 600000 to 700000
-    /// for block in db.iter_heights::<Block>(some_heights.clone()) {
+    /// for block in db.iter_heights::<Block, _>(some_heights.clone()) {
     ///     for tx in block.txdata {
     ///         println!("do something for this transaction");
     ///     }
     /// }
     ///
     /// // iterate over simple blocks from 600000 to 700000
-    /// for block in db.iter_heights::<SBlock>(some_heights.clone()) {
+    /// for block in db.iter_heights::<SBlock, _>(some_heights.clone()) {
     ///     for tx in block.txdata {
     ///         println!("do something for this transaction");
     ///     }
     /// }
     ///
     /// // iterate over full blocks from 600000 to 700000
-    /// for block in db.iter_heights::<FBlock>(some_heights.clone()) {
+    /// for block in db.iter_heights::<FBlock, _>(some_heights.clone()) {
     ///     for tx in block.txdata {
     ///         println!("do something for this transaction");
     ///     }

@@ -1,10 +1,15 @@
+//!
+//! # Parallel Iterator Implementation
+//!
+//! An Iterator backed by concurrent worker threads with output order consistency.
+//!
 //! ## Synchronization
 //! - When each thread fetch a task, it registers its thread ID (thread_num)
 //!   in a mpsc channel. When consumer consumes, it fetch from this mpsc
 //!   channel to see which thread data stream to fetch from. This ensures
 //!   the output are in right order.
-//! - An additional task number (current, or current_height) is updated
-//!   when output is received, it is compared to the output's task number
+//! - An additional `current` is updated when output is produced,
+//!   it is compared to the output's task number
 //!   to ensure that output are received in the right order.
 //! - If order is incorrect, some one of the threads have stopped due
 //!   to exception. This will stop iterator output, and stop all producers
@@ -13,8 +18,6 @@
 //!
 //! ## Error handling
 //! - When any exception occurs, stop producers from fetching new task.
-//! - Stop consumers only after all producers have stopped
-//!   (otherwise producers might block consumers from sending)
 //! - Before dropping the structure, stop all producers from fetching tasks,
 //!   and flush all remaining tasks.
 //!
@@ -29,12 +32,17 @@ const MAX_SIZE_FOR_THREAD: usize = 10;
 
 /// iterate through blocks according to array index.
 pub struct ParIter<R> {
+    /// Result receivers, one for each worker thread
     receivers: Vec<Receiver<R>>,
-    // Receiver<(task_number, thread)>
+    /// Receiver<(task_number, thread)>
     task_order: Receiver<(usize, usize)>,
+    /// current task number
     current: usize,
+    /// handles to join worker threads
     worker_thread: Option<Vec<JoinHandle<()>>>,
+    /// flag to stop workers from fetching new tasks
     iterator_stopper: Arc<AtomicBool>,
+    /// indicate that workers have all been killed
     is_killed: bool,
 }
 
@@ -42,7 +50,9 @@ impl<R> ParIter<R>
 where
     R: Send + 'static,
 {
+    ///
     /// the worker threads are dispatched in this `new` constructor!
+    ///
     pub fn new<T, TL, F>(tasks: TL, task_executor: F) -> Self
     where
         F: Send + Clone + 'static + Fn(T) -> Result<R, ()>,
@@ -101,7 +111,10 @@ where
 }
 
 impl<R> ParIter<R> {
-    /// stop workers, flush tasks
+    ///
+    /// stop workers from fetching new tasks, and flush remaining works
+    /// to prevent blocking.
+    ///
     pub fn kill(&mut self) {
         if !self.is_killed {
             // stop threads from getting new tasks
@@ -114,11 +127,17 @@ impl<R> ParIter<R> {
                     Err(_) => break,
                 };
             }
+            // loop break only when task_order is dropped (all workers have stopped)
             self.is_killed = true;
         }
     }
 }
 
+///
+/// A helper function that locks tasks,
+/// register thread_number and task_number
+/// before releasing tasks lock.
+///
 fn get_task<T, TL>(
     tasks: &Arc<Mutex<Enumerate<TL>>>,
     register: &Sender<(usize, usize)>,
@@ -144,6 +163,9 @@ where
 impl<R> Iterator for ParIter<R> {
     type Item = R;
 
+    ///
+    /// The output API, use next to fetch result from the iterator.
+    ///
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_killed {
             return None;
@@ -176,6 +198,11 @@ impl<R> Iterator for ParIter<R> {
 }
 
 impl<R> ParIter<R> {
+    ///
+    /// Join worker threads. This can be only called once.
+    /// Otherwise it results in panic.
+    /// This is automatically called in `join()`
+    ///
     fn join(&mut self) {
         for handle in self.worker_thread.take().unwrap() {
             handle.join().unwrap()
@@ -184,7 +211,9 @@ impl<R> ParIter<R> {
 }
 
 impl<R> Drop for ParIter<R> {
-    // attempt to stop the worker threads
+    ///
+    /// Stop worker threads, join the threads.
+    ///
     fn drop(&mut self) {
         self.kill();
         self.join();
