@@ -109,7 +109,7 @@ where
     #[cfg(feature = "on-disk-utxo")]
     fn null() -> Self {
         ConnectedBlockIter {
-            inner: ParIter::new(Vec::new(), |_: usize| Err(())),
+            inner: Vec::new().into_par_iter_sync(|_: usize| Err(())),
             #[cfg(feature = "on-disk-utxo")]
             cache: None,
         }
