@@ -17,6 +17,7 @@ default = ["on-disk-utxo"]
 on-disk-utxo = ["rocksdb", "tempdir"]
 
 [dependencies]
+par-iter-sync = "^0.1"
 byteorder = "^1.4"
 serde = "^1.0"
 rayon = "^1.5"

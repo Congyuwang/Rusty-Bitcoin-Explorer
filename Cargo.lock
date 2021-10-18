@@ -68,6 +68,7 @@ dependencies = [
  "leveldb",
  "log",
  "num_cpus",
+ "par-iter-sync",
  "rayon",
  "rocksdb",
  "serde",
@@ -380,6 +381,15 @@ name = "once_cell"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
+
+[[package]]
+name = "par-iter-sync"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc87781d93307261809a14b4c6f38aff4b8fd0eb68549faae861ba02707b1c6d"
+dependencies = [
+ "num_cpus",
+]
 
 [[package]]
 name = "peeking_take_while"

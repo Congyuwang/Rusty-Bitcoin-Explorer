@@ -3,8 +3,8 @@
 //! details of iter_block.rs, which follows similar principles.
 //!
 use crate::api::BitcoinDB;
-use crate::iter::par_iter::ParIter;
 use bitcoin::Block;
+use par_iter_sync::{IntoParallelIteratorSync, ParIter};
 
 pub struct BlockIter<TBlock>(ParIter<TBlock>);
 
@@ -19,12 +19,12 @@ where
         <T as IntoIterator>::IntoIter: Send + 'static,
     {
         let db_ref = db.clone();
-        BlockIter(ParIter::new(heights, move |h| {
-            match db_ref.get_block::<TBlock>(h) {
+        BlockIter(
+            heights.into_par_iter_sync(move |h| match db_ref.get_block::<TBlock>(h) {
                 Ok(blk) => Ok(blk),
                 Err(_) => Err(()),
-            }
-        }))
+            }),
+        )
     }
 
     /// the worker threads are dispatched in this `new` constructor!

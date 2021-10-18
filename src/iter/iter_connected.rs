@@ -1,6 +1,5 @@
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
-use crate::iter::par_iter::ParIter;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
 use crate::parser::proto::connected_proto::BlockConnectable;
@@ -11,6 +10,7 @@ use hash_hasher::HashedMap;
 #[cfg(feature = "on-disk-utxo")]
 use log::error;
 use num_cpus;
+use par_iter_sync::{IntoParallelIteratorSync, ParIter};
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, DB};
 use std::sync::Arc;
@@ -86,16 +86,17 @@ where
         let heights = 0..end;
         let db_copy = db.clone();
         let unspent_copy = unspent.clone();
-        let blk_reader = ParIter::new(heights, move |height| {
-            update_unspent_cache::<TBlock>(
-                &unspent_copy,
-                #[cfg(feature = "on-disk-utxo")]
-                &db_copy,
-                height,
-            )
-        });
 
-        let output_iterator = ParIter::new(blk_reader, move |blk| connect_outpoints(&unspent, blk));
+        let output_iterator = heights
+            .into_par_iter_sync(move |height| {
+                update_unspent_cache::<TBlock>(
+                    &unspent_copy,
+                    #[cfg(feature = "on-disk-utxo")]
+                    &db_copy,
+                    height,
+                )
+            })
+            .into_par_iter_sync(move |blk| connect_outpoints(&unspent, blk));
 
         ConnectedBlockIter {
             inner: output_iterator,
