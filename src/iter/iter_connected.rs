@@ -9,6 +9,7 @@ use crate::parser::proto::connected_proto::TxConnectable;
 use hash_hasher::HashedMap;
 #[cfg(feature = "on-disk-utxo")]
 use log::error;
+#[cfg(feature = "on-disk-utxo")]
 use num_cpus;
 use par_iter_sync::{IntoParallelIteratorSync, ParIter};
 #[cfg(feature = "on-disk-utxo")]
@@ -91,7 +92,6 @@ where
             .into_par_iter_sync(move |height| {
                 update_unspent_cache::<TBlock>(
                     &unspent_copy,
-                    #[cfg(feature = "on-disk-utxo")]
                     &db_copy,
                     height,
                 )
