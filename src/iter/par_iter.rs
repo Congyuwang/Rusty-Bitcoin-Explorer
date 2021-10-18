@@ -193,23 +193,141 @@ impl<R> Drop for ParIter<R> {
 
 #[cfg(test)]
 mod test_par_iter {
-    use crate::iter::iter::ParIter;
-    use std::sync::Arc;
+    use crate::iter::par_iter::ParIter;
 
     #[test]
     fn par_iter() {
-        let resource_captured = Arc::new(vec![3, 1, 4, 1, 5, 9, 2, 6, 5, 3]);
-        let tasks = 0..resource_captured.len();
+        let resource_captured = vec![3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
+        let results_expected = resource_captured.clone();
 
-        let resource_clone = resource_captured.clone();
-        let par_iter = ParIter::new(tasks, move |a| {
+        let par_iter = ParIter::new(0..resource_captured.len(), move |a| {
             Ok(resource_captured.get(a).unwrap().to_owned())
         });
 
-        let mut pos = 0;
-        for i in par_iter {
-            assert_eq!(*resource_clone.get(pos).unwrap(), i);
-            pos += 1;
-        }
+        let results: Vec<i32> = par_iter.into_iter().collect();
+        assert_eq!(results, results_expected)
+    }
+
+    #[test]
+    fn par_iter_test_exception() {
+        let resource_captured = vec![3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
+        let results_expected = vec![3, 1, 4, 1];
+
+        let par_iter = ParIter::new(0..resource_captured.len(), move |a| {
+            let n = resource_captured.get(a).unwrap().to_owned();
+            if n == 5 {
+                Err(())
+            } else {
+                Ok(n)
+            }
+        });
+
+        let results: Vec<i32> = par_iter.into_iter().collect();
+        assert_eq!(results, results_expected)
+    }
+
+    ///
+    /// par_iter_0 -> owned by -> par_iter_1 -> owned by -> par_iter_2
+    ///
+    /// par_iter_1 exception at height 1000,
+    ///
+    /// the final output should contain 0..1000;
+    ///
+    #[test]
+    fn par_iter_chained_exception() {
+        let resource_captured: Vec<i32> = (0..10000).collect();
+        let resource_captured_1 = resource_captured.clone();
+        let resource_captured_2 = resource_captured.clone();
+        let results_expected: Vec<i32> = (0..1000).collect();
+
+        let par_iter_0 = ParIter::new(0..resource_captured.len(), move |a| {
+            Ok(resource_captured.get(a).unwrap().to_owned())
+        });
+
+        let par_iter_1 = ParIter::new(par_iter_0, move |a| {
+            let n = resource_captured_1.get(a as usize).unwrap().to_owned();
+            if n == 1000 {
+                Err(())
+            } else {
+                Ok(n)
+            }
+        });
+
+        let par_iter_2 = ParIter::new(par_iter_1, move |a| {
+            Ok(resource_captured_2.get(a as usize).unwrap().to_owned())
+        });
+
+        let results: Vec<i32> = par_iter_2.into_iter().collect();
+        assert_eq!(results, results_expected)
+    }
+
+    ///
+    /// par_iter_0 -> owned by -> par_iter_1 -> owned by -> par_iter_2
+    ///
+    /// par_iter_2 exception at height 1000,
+    ///
+    /// the final output should contain 0..1000;
+    ///
+    #[test]
+    fn par_iter_chained_exception_1() {
+        let resource_captured: Vec<i32> = (0..10000).collect();
+        let resource_captured_1 = resource_captured.clone();
+        let resource_captured_2 = resource_captured.clone();
+        let results_expected: Vec<i32> = (0..1000).collect();
+
+        let par_iter_0 = ParIter::new(0..resource_captured.len(), move |a| {
+            Ok(resource_captured.get(a).unwrap().to_owned())
+        });
+
+        let par_iter_1 = ParIter::new(par_iter_0, move |a| {
+            Ok(resource_captured_2.get(a as usize).unwrap().to_owned())
+        });
+
+        let par_iter_2 = ParIter::new(par_iter_1, move |a| {
+            let n = resource_captured_1.get(a as usize).unwrap().to_owned();
+            if n == 1000 {
+                Err(())
+            } else {
+                Ok(n)
+            }
+        });
+
+        let results: Vec<i32> = par_iter_2.into_iter().collect();
+        assert_eq!(results, results_expected)
+    }
+
+    ///
+    /// par_iter_0 -> owned by -> par_iter_1 -> owned by -> par_iter_2
+    ///
+    /// par_iter_0 exception at height 1000,
+    ///
+    /// the final output should contain 0..1000;
+    ///
+    #[test]
+    fn par_iter_chained_exception_2() {
+        let resource_captured: Vec<i32> = (0..10000).collect();
+        let resource_captured_1 = resource_captured.clone();
+        let resource_captured_2 = resource_captured.clone();
+        let results_expected: Vec<i32> = (0..1000).collect();
+
+        let par_iter_0 = ParIter::new(0..resource_captured.len(), move |a| {
+            let n = resource_captured_1.get(a as usize).unwrap().to_owned();
+            if n == 1000 {
+                Err(())
+            } else {
+                Ok(n)
+            }
+        });
+
+        let par_iter_1 = ParIter::new(par_iter_0, move |a| {
+            Ok(resource_captured.get(a as usize).unwrap().to_owned())
+        });
+
+        let par_iter_2 = ParIter::new(par_iter_1, move |a| {
+            Ok(resource_captured_2.get(a as usize).unwrap().to_owned())
+        });
+
+        let results: Vec<i32> = par_iter_2.into_iter().collect();
+        assert_eq!(results, results_expected)
     }
 }

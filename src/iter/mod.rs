@@ -3,7 +3,7 @@
 //!
 
 mod fetch_connected_async;
-mod iter;
+mod par_iter;
 mod iter_block;
 mod iter_connected;
 mod util;

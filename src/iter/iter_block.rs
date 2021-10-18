@@ -3,7 +3,7 @@
 //! details of iter_block.rs, which follows similar principles.
 //!
 use crate::api::BitcoinDB;
-use crate::iter::iter::ParIter;
+use crate::iter::par_iter::ParIter;
 use bitcoin::Block;
 
 pub struct BlockIter<TBlock>(ParIter<TBlock>);
@@ -32,8 +32,7 @@ where
         if end <= start {
             BlockIter::new(db, Vec::new())
         } else {
-            let heights: Vec<usize> = (start..end).collect();
-            BlockIter::new(db, heights)
+            BlockIter::new(db, start..end)
         }
     }
 }
