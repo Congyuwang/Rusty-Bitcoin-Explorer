@@ -1,36 +1,3 @@
-//!
-//! Development Note:
-//!
-//! This module consists manually implemented concurrency model.
-//!
-//! Below is a basic description of the data model:
-//! - Each worker thread actively try to fetch task
-//! - There are two groups of workers in this file: producers and consumers
-//!
-//! ## Synchronization
-//! - When each thread fetch a task, it registers its thread ID (thread_num)
-//!   in a mpsc channel. When consumer consumes, it fetch from this mpsc
-//!   channel to see which thread data stream to fetch from. This ensures
-//!   the output are in right order.
-//! - An additional task number (current, or current_height) is updated
-//!   when output is received, it is compared to the output's task number
-//!   to ensure that output are received in the right order.
-//! - If order is incorrect, some one of the threads have stopped due
-//!   to exception. This will stop iterator output, and stop all producers
-//!   from fetching tasks, and attempt to flush output until all workers
-//!   have stopped.
-//!
-//! ## Error handling
-//! - When any exception occurs, stop producers from fetching new task.
-//! - Stop consumers only after all producers have stopped
-//!   (otherwise producers might block consumers from sending)
-//! - Before dropping the structure, stop all producers from fetching tasks,
-//!   and flush all remaining tasks.
-//!
-//! ## Temporary RocksDB Storage
-//! - A temporary rocksDB will be created in system, which will be cleared up
-//!   once the iterator is dropped.
-//!
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
 use crate::iter::util::get_task;

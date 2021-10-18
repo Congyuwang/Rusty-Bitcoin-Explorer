@@ -3,28 +3,10 @@
 //! details of iter_block.rs, which follows similar principles.
 //!
 use crate::api::BitcoinDB;
-use crate::iter::util::get_task;
+use crate::iter::iter::ParIter;
 use bitcoin::Block;
-use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, sync_channel, Receiver, SyncSender};
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::thread::JoinHandle;
 
-const MAX_SIZE_FOR_THREAD: usize = 10;
-
-/// iterate through blocks according to array index.
-pub struct BlockIter<TBlock> {
-    receivers: Vec<Receiver<TBlock>>,
-    // Receiver<(height, thread)>
-    task_order: Receiver<(usize, usize)>,
-    heights: Vec<usize>,
-    current: usize,
-    worker_thread: Option<Vec<JoinHandle<()>>>,
-    iterator_stopper: Arc<AtomicBool>,
-    is_killed: bool,
-}
+pub struct BlockIter<TBlock>(ParIter<TBlock>);
 
 impl<TBlock> BlockIter<TBlock>
 where
@@ -32,53 +14,13 @@ where
 {
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, heights: Vec<usize>) -> Self {
-        let cpus = num_cpus::get();
-        let iterator_stopper = Arc::new(AtomicBool::new(false));
-        // worker master
-        let (task_register, task_order) = channel();
-        let tasks: VecDeque<usize> = heights.clone().into_iter().collect();
-        let tasks = Arc::new(Mutex::new(tasks));
-        let mut handles = Vec::with_capacity(cpus);
-        let mut receivers = Vec::with_capacity(cpus);
-        for thread_number in 0..cpus {
-            let (sender, receiver) = sync_channel(MAX_SIZE_FOR_THREAD);
-            let task = tasks.clone();
-            let register = task_register.clone();
-            let iterator_stopper = iterator_stopper.clone();
-            let db = db.clone();
-
-            // workers
-            let handle = thread::spawn(move || {
-                loop {
-                    if iterator_stopper.load(Ordering::SeqCst) {
-                        break;
-                    }
-                    match get_task(&task, &register, thread_number) {
-                        // finish
-                        None => break,
-                        Some(task) => {
-                            if !fetch_block(&db, task, &sender) {
-                                // on error
-                                iterator_stopper.fetch_or(true, Ordering::SeqCst);
-                                break;
-                            }
-                        }
-                    }
-                }
-            });
-            receivers.push(receiver);
-            handles.push(handle);
-        }
-
-        BlockIter {
-            receivers,
-            task_order,
-            heights,
-            current: 0,
-            worker_thread: Some(handles),
-            iterator_stopper,
-            is_killed: false,
-        }
+        let db_ref = db.clone();
+        BlockIter(ParIter::new(heights, move |h| {
+            match db_ref.get_block::<TBlock>(h) {
+                Ok(blk) => Ok(blk),
+                Err(_) => Err(()),
+            }
+        }))
     }
 
     /// the worker threads are dispatched in this `new` constructor!
@@ -92,95 +34,10 @@ where
     }
 }
 
-impl<T> BlockIter<T> {
-    /// stop workers, flush tasks
-    fn kill(&mut self) {
-        if !self.is_killed {
-            // stop threads from getting new tasks
-            self.iterator_stopper.fetch_or(true, Ordering::SeqCst);
-            // flush the remaining tasks in the channel
-            loop {
-                let _ = match self.task_order.recv() {
-                    Ok((_, thread_number)) => self.receivers.get(thread_number).unwrap().recv(),
-                    // all workers have stopped
-                    Err(_) => break,
-                };
-            }
-            self.is_killed = true;
-        }
-    }
-}
-
 impl<TBlock> Iterator for BlockIter<TBlock> {
     type Item = TBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.is_killed {
-            return None;
-        }
-        match self.task_order.recv() {
-            Ok((height, thread_number)) => {
-                let current_height = *self
-                    .heights
-                    .get(self.current)
-                    .expect("report this, shouldn't reach here, must debug");
-
-                // Some threads might have stopped first.
-                // while the remaining working threads produces wrong order.
-                if height != current_height {
-                    self.kill();
-                    return None;
-                }
-
-                match self.receivers.get(thread_number).unwrap().recv() {
-                    Ok(block) => {
-                        self.current += 1;
-                        Some(block)
-                    }
-                    // some worker have stopped
-                    Err(_) => {
-                        self.kill();
-                        None
-                    }
-                }
-            }
-            // all workers have stopped
-            Err(_) => None,
-        }
-    }
-}
-
-impl<T> BlockIter<T> {
-    fn join(&mut self) {
-        for handle in self.worker_thread.take().unwrap() {
-            handle.join().unwrap()
-        }
-    }
-}
-
-impl<T> Drop for BlockIter<T> {
-    // attempt to stop the worker threads
-    fn drop(&mut self) {
-        self.kill();
-        self.join();
-    }
-}
-
-///
-/// fetch_block, thread safe
-///
-#[inline]
-pub(crate) fn fetch_block<T>(db: &BitcoinDB, height: usize, sender: &SyncSender<T>) -> bool
-where
-    T: From<Block>,
-{
-    match db.get_block::<T>(height) {
-        Ok(blk) => {
-            sender.send(blk).unwrap();
-            true
-        }
-        Err(_) => {
-            return false;
-        }
+        self.0.next()
     }
 }
