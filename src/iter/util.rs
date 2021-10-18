@@ -1,9 +1,6 @@
 use ahash::AHasher;
 use bitcoin::Txid;
-use std::collections::VecDeque;
 use std::hash::{Hash, Hasher};
-use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
 
 ///
 /// Key compression
@@ -56,29 +53,6 @@ impl<T> VecMap<T> {
             self.size -= 1;
         };
         element.take()
-    }
-}
-
-///
-/// Utility function for work stealing.
-/// Exclusive access to task list.
-///
-#[inline(always)]
-pub(crate) fn get_task<T: Copy + Send>(
-    tasks: &Arc<Mutex<VecDeque<T>>>,
-    register: &Sender<(T, usize)>,
-    thread_number: usize,
-) -> Option<T> {
-    // lock task list
-    let mut task = tasks.lock().unwrap();
-    let next_task = task.pop_front();
-    // register task stealing
-    match next_task {
-        Some(next_task) => {
-            register.send((next_task, thread_number)).unwrap();
-            Some(next_task)
-        }
-        None => None,
     }
 }
 

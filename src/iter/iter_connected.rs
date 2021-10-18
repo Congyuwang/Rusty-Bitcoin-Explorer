@@ -1,10 +1,8 @@
-use std::sync::Arc;
 use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
+use crate::iter::par_iter::ParIter;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-#[cfg(not(feature = "on-disk-utxo"))]
-use std::sync::Mutex;
 use crate::parser::proto::connected_proto::BlockConnectable;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::parser::proto::connected_proto::TxConnectable;
@@ -14,11 +12,11 @@ use hash_hasher::HashedMap;
 use log::{error, warn};
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, WriteOptions, DB};
+use std::sync::Arc;
+#[cfg(not(feature = "on-disk-utxo"))]
+use std::sync::Mutex;
 #[cfg(feature = "on-disk-utxo")]
 use tempdir::TempDir;
-use crate::iter::iter::ParIter;
-
-const MAX_SIZE_FOR_THREAD: usize = 10;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
@@ -102,24 +100,22 @@ where
             )
         });
 
-        let output_iterator = ParIter::new(blk_reader, move |blk| {
-            connect_outpoints(&unspent, blk)
-        });
+        let output_iterator = ParIter::new(blk_reader, move |blk| connect_outpoints(&unspent, blk));
 
         ConnectedBlockIter {
             inner: output_iterator,
             // cache dir will be deleted when ConnectedBlockIter is dropped
             #[cfg(feature = "on-disk-utxo")]
-            cache: Some(cache_dir)
+            cache: Some(cache_dir),
         }
     }
 
     #[cfg(feature = "on-disk-utxo")]
     fn null() -> Self {
         ConnectedBlockIter {
-            inner: ParIter::new(Vec::new(), |a: usize| {Err(())}),
+            inner: ParIter::new(Vec::new(), |a: usize| Err(())),
             #[cfg(feature = "on-disk-utxo")]
-            cache: None
+            cache: None,
         }
     }
 }

@@ -18,7 +18,6 @@ use log::warn;
 use rocksdb::WriteOptions;
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{WriteBatch, DB};
-use std::sync::mpsc::SyncSender;
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
@@ -101,9 +100,7 @@ where
             }
         }
 
-        Err(_) => {
-            Err(())
-        }
+        Err(_) => Err(()),
     }
 }
 
