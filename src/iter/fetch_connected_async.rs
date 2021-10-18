@@ -34,8 +34,7 @@ pub(crate) fn update_unspent_cache<TBlock>(
     #[cfg(feature = "on-disk-utxo")] write_options: &WriteOptions,
     db: &BitcoinDB,
     height: usize,
-    channel: &SyncSender<Block>,
-) -> bool
+) -> Result<Block, ()>
 where
     TBlock: BlockConnectable,
 {
@@ -70,7 +69,7 @@ where
             }
             unspent.lock().unwrap().extend(new_unspent_cache);
             // if some exception happens in lower stream
-            channel.send(block).is_ok()
+            Ok(block)
         }
 
         #[cfg(feature = "on-disk-utxo")]
@@ -93,18 +92,17 @@ where
             match unspent.write_opt(batch, write_options) {
                 Ok(_) => {
                     // if some exception happens in lower stream
-                    channel.send(block).is_ok()
+                    Ok(block)
                 }
                 Err(e) => {
                     error!("failed to write UTXO to cache, error: {}", e);
-                    false
+                    Err(())
                 }
             }
         }
 
         Err(_) => {
-            // usually no more block
-            false
+            Err(())
         }
     }
 }
@@ -117,10 +115,8 @@ pub(crate) fn connect_outpoints<TBlock>(
         Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
-    sender: &SyncSender<(TBlock, usize)>,
     block: Block,
-    height: usize,
-) -> bool
+) -> Result<TBlock, ()>
 where
     TBlock: BlockConnectable,
 {
@@ -157,7 +153,7 @@ where
             Ok(_) => {}
             Err(e) => {
                 error!("failed to remove key {:?}, error: {}", &key, e);
-                return false;
+                return Err(());
             }
         }
     }
@@ -217,11 +213,11 @@ where
                     output_tx.add_input(out);
                 } else {
                     error!("cannot find previous outpoint, bad data");
-                    return false;
+                    return Err(());
                 }
             } else {
                 error!("cannot find previous transactions, bad data");
-                return false;
+                return Err(());
             }
 
             #[cfg(feature = "on-disk-utxo")]
@@ -230,14 +226,12 @@ where
                 pos += 1;
             } else {
                 error!("cannot find previous outpoint, bad data");
-                return false;
+                return Err(());
             }
         }
         output_block.add_tx(output_tx);
     }
-
-    sender.send((output_block, height)).unwrap();
-    true
+    Ok(output_block)
 }
 
 #[inline(always)]
