@@ -11,7 +11,7 @@ use hash_hasher::HashedMap;
 use log::error;
 #[cfg(feature = "on-disk-utxo")]
 use num_cpus;
-use par_iter_sync::{IntoParallelIteratorSync, ParIter};
+use par_iter_sync::{IntoParallelIteratorSync, ParIterSync};
 #[cfg(feature = "on-disk-utxo")]
 use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, DB};
 use std::sync::Arc;
@@ -22,7 +22,7 @@ use tempdir::TempDir;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
-    inner: ParIter<TBlock>,
+    inner: ParIterSync<TBlock>,
     #[cfg(feature = "on-disk-utxo")]
     #[allow(dead_code)]
     cache: Option<TempDir>,

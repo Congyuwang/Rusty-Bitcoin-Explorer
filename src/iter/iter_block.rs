@@ -4,9 +4,9 @@
 //!
 use crate::api::BitcoinDB;
 use bitcoin::Block;
-use par_iter_sync::{IntoParallelIteratorSync, ParIter};
+use par_iter_sync::{IntoParallelIteratorSync, ParIterSync};
 
-pub struct BlockIter<TBlock>(ParIter<TBlock>);
+pub struct BlockIter<TBlock>(ParIterSync<TBlock>);
 
 impl<TBlock> BlockIter<TBlock>
 where
