@@ -78,9 +78,16 @@ pub struct STransaction {
 
 impl From<Transaction> for STransaction {
     fn from(tx: Transaction) -> STransaction {
+        let is_coinbase = tx.is_coin_base();
+        let txid = tx.txid();
+        let input = if is_coinbase {
+            Vec::new()
+        } else {
+            tx.input.into_iter().map(|x| x.into()).collect()
+        };
         STransaction {
-            txid: tx.txid(),
-            input: tx.input.into_iter().map(|x| x.into()).collect(),
+            txid,
+            input,
             output: tx.output.into_iter().map(|x| x.into()).collect(),
         }
     }

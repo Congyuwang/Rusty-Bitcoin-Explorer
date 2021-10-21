@@ -90,11 +90,7 @@ where
 
         let output_iterator = heights
             .into_par_iter_sync(move |height| {
-                update_unspent_cache::<TBlock>(
-                    &unspent_copy,
-                    &db_copy,
-                    height,
-                )
+                update_unspent_cache::<TBlock>(&unspent_copy, &db_copy, height)
             })
             .into_par_iter_sync(move |blk| connect_outpoints(&unspent, blk));
 

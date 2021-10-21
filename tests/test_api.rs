@@ -6,7 +6,10 @@
 #[cfg(test)]
 mod iterator_tests {
     use bitcoin::{Block, Transaction};
-    use bitcoin_explorer::{BitcoinDB, SBlock, SConnectedBlock, SConnectedTransaction};
+    use bitcoin_explorer::{
+        BitcoinDB, FBlock, FTransaction, SBlock, SConnectedBlock, SConnectedTransaction,
+        STransaction,
+    };
     use std::path::PathBuf;
 
     const END: usize = 700000;
@@ -142,12 +145,29 @@ mod iterator_tests {
 
         for blk in db.iter_connected_block::<SConnectedBlock>(early_end) {
             for tx in blk.txdata {
-                assert_eq!(
-                    db.get_connected_transaction::<SConnectedTransaction>(&tx.txid)
-                        .unwrap(),
-                    tx
-                );
+                let connected_tx = db
+                    .get_connected_transaction::<SConnectedTransaction>(&tx.txid)
+                    .unwrap();
+                let unconnected_stx = db.get_transaction::<STransaction>(&tx.txid).unwrap();
+                let unconnected_ftx = db.get_transaction::<FTransaction>(&tx.txid).unwrap();
+                assert_eq!(connected_tx.input.len(), unconnected_stx.input.len());
+                assert_eq!(connected_tx.input.len(), unconnected_ftx.input.len());
+                assert_eq!(connected_tx, tx);
             }
+        }
+    }
+
+    #[test]
+    /// assert that coinbase input has zero length
+    fn test_coinbase_input() {
+        let db = get_test_db();
+
+        for blk in db.iter_block::<SBlock>(0, END) {
+            assert_eq!(blk.txdata.first().unwrap().input.len(), 0);
+        }
+
+        for blk in db.iter_block::<FBlock>(0, END) {
+            assert_eq!(blk.txdata.first().unwrap().input.len(), 0);
         }
     }
 

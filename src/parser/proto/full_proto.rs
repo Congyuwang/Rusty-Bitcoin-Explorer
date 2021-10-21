@@ -76,13 +76,15 @@ pub struct FTransaction {
 }
 
 impl From<Transaction> for FTransaction {
-    /// obtain addresses for each output
     fn from(tx: Transaction) -> FTransaction {
+        let is_coinbase = tx.is_coin_base();
+        let txid = tx.txid();
+        let input = if is_coinbase { Vec::new() } else { tx.input };
         FTransaction {
             version: tx.version,
             lock_time: tx.lock_time,
-            txid: tx.txid(),
-            input: tx.input,
+            txid,
+            input,
             output: tx.output.into_iter().map(FTxOut::from).collect(),
         }
     }
