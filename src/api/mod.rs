@@ -423,7 +423,7 @@ impl BitcoinDB {
     pub fn iter_heights<T, TIter>(&self, heights: TIter) -> BlockIter<T>
     where
         T: 'static + From<Block> + Send,
-        TIter: IntoIterator<Item = usize> + Send,
+        TIter: IntoIterator<Item = usize> + Send + 'static,
         <TIter as IntoIterator>::IntoIter: Send + 'static,
     {
         BlockIter::new(self, heights)

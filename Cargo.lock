@@ -58,7 +58,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-explorer"
-version = "1.2.12"
+version = "1.2.13"
 dependencies = [
  "ahash",
  "bitcoin",
@@ -328,9 +328,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.104"
+version = "0.2.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b2f96d100e1cf1929e7719b7edb3b90ab5298072638fccd77be9ce942ecdfce"
+checksum = "869d572136620d55835903746bcb5cdc54cb2851fd0aeec53220b4bb65ef3013"
 
 [[package]]
 name = "libloading"
@@ -408,9 +408,9 @@ checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
 
 [[package]]
 name = "par-iter-sync"
-version = "0.1.5"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ada10a8b384308389a0961b8743209e0bae45d3dc44e08ace603c4c536d40095"
+checksum = "7b078c9409e9e53f80532048d801da86dbcf043014cf7a94eccf8528775aeb8a"
 dependencies = [
  "crossbeam",
  "num_cpus",

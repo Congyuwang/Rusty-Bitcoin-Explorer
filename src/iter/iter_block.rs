@@ -15,7 +15,7 @@ where
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new<T>(db: &BitcoinDB, heights: T) -> Self
     where
-        T: IntoIterator<Item = usize> + Send,
+        T: IntoIterator<Item = usize> + Send + 'static,
         <T as IntoIterator>::IntoIter: Send + 'static,
     {
         let db_ref = db.clone();
