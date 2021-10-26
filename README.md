@@ -213,7 +213,7 @@ db.iter_connected_block::<SConnectedBlock>(700000)
 Compile with default features (Cargo.toml):
 
 ```toml
-bitcoin-explorer = "^2.1"
+bitcoin-explorer = "^1.2"
 ```
 
 - Time: about 2.5 hours
@@ -224,7 +224,7 @@ bitcoin-explorer = "^2.1"
 Compile with non-default features (Cargo.toml):
 
 ```toml
-bitcoin-explorer = { version = "^2.1", default-features = false }
+bitcoin-explorer = { version = "^1.2", default-features = false }
 ```
 
 - Time: about 30 minutes
@@ -246,5 +246,5 @@ Copyright (C) 2009-2020 The Bitcoin Core developers`.
 If you have more than 32 GB memory, you might try `default-features = false`
 for faster performance on `db.iter_connected_block()`
 ```toml
-bitcoin-explorer = { version = "^2.1", default-features = false }
+bitcoin-explorer = { version = "^1.2", default-features = false }
 ```
