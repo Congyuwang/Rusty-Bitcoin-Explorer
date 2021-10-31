@@ -56,11 +56,11 @@ where
             options.create_if_missing(true);
             // config to more jobs
             options.set_max_background_jobs(num_cpus::get() as i32);
-            // configure mem-table to a large value (1 GB)
-            options.set_write_buffer_size(0x40000000);
-            // configure l0 and l1 size, let them have the same size (4 GB)
+            // configure mem-table to a large value (256 MB)
+            options.set_write_buffer_size(0x10000000);
+            // configure l0 and l1 size, let them have the same size (1 GB)
             options.set_level_zero_file_num_compaction_trigger(4);
-            options.set_max_bytes_for_level_base(0x100000000);
+            options.set_max_bytes_for_level_base(0x40000000);
             // 256MB file size
             options.set_target_file_size_base(0x10000000);
             // use a smaller compaction multiplier
