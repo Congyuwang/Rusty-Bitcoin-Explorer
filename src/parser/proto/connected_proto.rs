@@ -95,6 +95,7 @@ pub struct SConnectedTransaction {
 ///
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct FConnectedTransaction {
+    pub version: i32,
     pub lock_time: u32,
     pub txid: Txid,
     /// List of inputs
@@ -108,6 +109,7 @@ impl TxConnectable for FConnectedTransaction {
 
     fn from(tx: &Transaction) -> Self {
         FConnectedTransaction {
+            version: tx.version,
             lock_time: tx.lock_time,
             txid: tx.txid(),
             input: Vec::new(),
@@ -127,6 +129,7 @@ impl TxConnectable for FConnectedTransaction {
     ) -> OpResult<Self> {
         let is_coinbase = tx.is_coin_base();
         Ok(FConnectedTransaction {
+            version: tx.version,
             lock_time: tx.lock_time,
             txid: tx.txid(),
             input: connect_output_tx_in(tx.input, is_coinbase, tx_db, blk_index, blk_file)?
