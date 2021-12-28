@@ -1,11 +1,10 @@
-use crate::iter::util::Compress;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
 use crate::parser::proto::connected_proto::{ConnectedBlock, ConnectedTx};
 use crate::BitcoinDB;
 #[cfg(feature = "on-disk-utxo")]
 use bitcoin::consensus::{Decodable, Encodable};
-use bitcoin::Block;
+use bitcoin::{Block, Txid};
 #[cfg(feature = "on-disk-utxo")]
 use bitcoin::TxOut;
 #[cfg(not(feature = "on-disk-utxo"))]
@@ -19,13 +18,16 @@ use rocksdb::{WriteBatch, DB};
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
+use bitcoin::hashes::Hash;
+#[cfg(feature = "on-disk-utxo")]
+use crate::iter::iter_connected::KEY_LENGTH;
 
 ///
-/// read block, update cache
+/// read block, update UTXO cache, return block
 ///
 pub(crate) fn update_unspent_cache<TBlock>(
     #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
-        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
+        Mutex<HashedMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     db: &BitcoinDB,
@@ -43,25 +45,24 @@ where
             for tx in block.txdata.iter() {
                 // clone outputs
                 let txid = tx.txid();
-                let mut outs: Vec<Option<<TBlock::Tx as ConnectedTx>::TOut>> =
+                let mut outs: Vec<Option<Box<<TBlock::Tx as ConnectedTx>::TOut>>> =
                     Vec::with_capacity(tx.output.len());
                 for o in tx.output.iter() {
-                    outs.push(Some(o.clone().into()));
+                    outs.push(Some(Box::new(o.clone().into())));
                 }
 
                 // update unspent cache
                 let outs: VecMap<<TBlock::Tx as ConnectedTx>::TOut> =
                     VecMap::from_vec(outs.into_boxed_slice());
                 let new_unspent = Arc::new(Mutex::new(outs));
-                let txid_compressed = txid.compress();
 
                 // the new transaction should not be in unspent
                 #[cfg(debug_assertions)]
-                if unspent.lock().unwrap().contains_key(&txid_compressed) {
+                if unspent.lock().unwrap().contains_key(&txid) {
                     warn!("found duplicate key {}", &txid);
                 }
 
-                new_unspent_cache.push((txid_compressed, new_unspent));
+                new_unspent_cache.push((txid, new_unspent));
             }
             unspent.lock().unwrap().extend(new_unspent_cache);
             // if some exception happens in lower stream
@@ -75,21 +76,18 @@ where
             // insert new transactions
             for tx in block.txdata.iter() {
                 // clone outputs
-                let txid_compressed = tx.txid().compress();
+                let txid = tx.txid();
 
                 let mut n: u32 = 0;
                 for o in tx.output.iter() {
-                    let key = txo_key(txid_compressed, n);
+                    let key = txo_key(txid, n);
                     let value = txo_to_u8(o);
                     batch.put(key, value);
                     n += 1;
                 }
             }
             match unspent.write_without_wal(batch) {
-                Ok(_) => {
-                    // if some exception happens in lower stream
-                    Ok(block)
-                }
+                Ok(_) => Ok(block),
                 Err(e) => {
                     error!("failed to write UTXO to cache, error: {}", e);
                     Err(())
@@ -106,7 +104,7 @@ where
 ///
 pub(crate) fn connect_outpoints<TBlock>(
     #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
-        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
+        Mutex<HashedMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     block: Block,
@@ -130,7 +128,7 @@ where
             }
 
             keys.push(txo_key(
-                input.previous_output.txid.compress(),
+                input.previous_output.txid,
                 input.previous_output.vout,
             ));
         }
@@ -167,7 +165,7 @@ where
             }
 
             #[cfg(not(feature = "on-disk-utxo"))]
-            let prev_txid = &input.previous_output.txid.compress();
+            let prev_txid = &input.previous_output.txid;
             #[cfg(not(feature = "on-disk-utxo"))]
             let n = *&input.previous_output.vout as usize;
 
@@ -204,7 +202,7 @@ where
                     unspent.lock().unwrap().remove(prev_txid);
                 }
                 if let Some(out) = tx_out {
-                    output_tx.add_input(out);
+                    output_tx.add_input(*out);
                 } else {
                     error!("cannot find previous outpoint, bad data");
                     return Err(());
@@ -230,8 +228,9 @@ where
 
 #[inline(always)]
 #[cfg(feature = "on-disk-utxo")]
-fn txo_key(txid_compressed: u128, n: u32) -> Vec<u8> {
-    let mut bytes = Vec::from(txid_compressed.to_ne_bytes());
+fn txo_key(txid: Txid, n: u32) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(KEY_LENGTH as usize);
+    bytes.extend(txid.into_inner());
     bytes.extend(n.to_ne_bytes());
     bytes
 }

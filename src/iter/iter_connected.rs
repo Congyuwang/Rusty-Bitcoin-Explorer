@@ -17,8 +17,14 @@ use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, DB};
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
+#[cfg(not(feature = "on-disk-utxo"))]
+use bitcoin::Txid;
 #[cfg(feature = "on-disk-utxo")]
 use tempdir::TempDir;
+
+/// 32 (txid) + 4 (i32 out n)
+#[cfg(feature = "on-disk-utxo")]
+pub(crate) const KEY_LENGTH: u32 = 32 + 4;
 
 /// iterate through blocks, and connecting outpoints.
 pub struct ConnectedBlockIter<TBlock> {
@@ -37,7 +43,7 @@ where
         // UTXO cache
         #[cfg(not(feature = "on-disk-utxo"))]
         let unspent: Arc<
-            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
+            Mutex<HashedMap<Txid, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
         > = Arc::new(Mutex::new(HashedMap::default()));
         #[cfg(feature = "on-disk-utxo")]
         let cache_dir = {
@@ -69,8 +75,8 @@ where
             options.set_prefix_extractor(SliceTransform::create_fixed_prefix(8));
             // set to plain-table for better performance
             options.set_plain_table_factory(&PlainTableFactoryOptions {
-                // 16 (compressed txid) + 4 (i32 out n)
-                user_key_length: 20,
+                // 32 (txid) + 4 (i32 out n)
+                user_key_length: KEY_LENGTH,
                 bloom_bits_per_key: 10,
                 hash_table_ratio: 0.75,
                 index_sparseness: 16,

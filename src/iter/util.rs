@@ -1,40 +1,16 @@
-use ahash::AHasher;
-use bitcoin::Txid;
-use std::hash::{Hash, Hasher};
-
-///
-/// Key compression
-///
-pub(crate) trait Compress {
-    fn compress(&self) -> u128;
-}
-
-impl Compress for Txid {
-    #[inline]
-    fn compress(&self) -> u128 {
-        let mut hasher_0 = AHasher::new_with_keys(54321, 12345);
-        let mut hasher_1 = AHasher::new_with_keys(12345, 54321);
-        self.hash(&mut hasher_0);
-        self.hash(&mut hasher_1);
-        let hash_0 = (hasher_0.finish() as u128) << 64;
-        let hash_1 = hasher_1.finish() as u128;
-        hash_0 ^ hash_1
-    }
-}
-
 ///
 /// a light weighted data structure for storing unspent output
 ///
 #[cfg(not(feature = "on-disk-utxo"))]
 pub(crate) struct VecMap<T> {
     size: u32,
-    inner: Box<[Option<T>]>,
+    inner: Box<[Option<Box<T>>]>,
 }
 
 #[cfg(not(feature = "on-disk-utxo"))]
 impl<T> VecMap<T> {
     #[inline(always)]
-    pub(crate) fn from_vec(slice: Box<[Option<T>]>) -> Self {
+    pub(crate) fn from_vec(slice: Box<[Option<Box<T>>]>) -> Self {
         VecMap {
             size: slice.len() as u32,
             inner: slice,
@@ -47,7 +23,7 @@ impl<T> VecMap<T> {
     }
 
     #[inline(always)]
-    pub(crate) fn remove(&mut self, n: usize) -> Option<T> {
+    pub(crate) fn remove(&mut self, n: usize) -> Option<Box<T>> {
         let element = &mut self.inner[n];
         if let Some(_) = element {
             self.size -= 1;
@@ -67,9 +43,9 @@ mod test_vec_map {
     fn test_vec_map() {
         let mut vec: VecMap<STxOut> = VecMap::from_vec(
             vec![
-                Some(TxOut::default().into()),
-                Some(TxOut::default().into()),
-                Some(TxOut::default().into()),
+                Some(Box::new(TxOut::default().into())),
+                Some(Box::new(TxOut::default().into())),
+                Some(Box::new(TxOut::default().into())),
             ]
             .into_boxed_slice(),
         );
