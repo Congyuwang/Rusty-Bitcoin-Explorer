@@ -1,12 +1,15 @@
+#[cfg(feature = "on-disk-utxo")]
+use crate::iter::iter_connected::KEY_LENGTH;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
 use crate::parser::proto::connected_proto::{ConnectedBlock, ConnectedTx};
 use crate::BitcoinDB;
 #[cfg(feature = "on-disk-utxo")]
 use bitcoin::consensus::{Decodable, Encodable};
-use bitcoin::{Block, Txid};
+use bitcoin::hashes::Hash;
 #[cfg(feature = "on-disk-utxo")]
 use bitcoin::TxOut;
+use bitcoin::{Block, Txid};
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
 use log::error;
@@ -18,9 +21,6 @@ use rocksdb::{WriteBatch, DB};
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
-use bitcoin::hashes::Hash;
-#[cfg(feature = "on-disk-utxo")]
-use crate::iter::iter_connected::KEY_LENGTH;
 
 ///
 /// read block, update UTXO cache, return block

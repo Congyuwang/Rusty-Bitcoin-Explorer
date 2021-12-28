@@ -6,6 +6,8 @@ use crate::parser::proto::connected_proto::ConnectedBlock;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::parser::proto::connected_proto::ConnectedTx;
 #[cfg(not(feature = "on-disk-utxo"))]
+use bitcoin::Txid;
+#[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
 #[cfg(feature = "on-disk-utxo")]
 use log::error;
@@ -17,8 +19,6 @@ use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, DB};
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
-#[cfg(not(feature = "on-disk-utxo"))]
-use bitcoin::Txid;
 #[cfg(feature = "on-disk-utxo")]
 use tempdir::TempDir;
 

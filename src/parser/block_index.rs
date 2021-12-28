@@ -54,7 +54,6 @@ pub struct BlockIndexRecord {
 }
 
 impl BlockIndex {
-
     ///
     /// Build a collections of block index.
     ///

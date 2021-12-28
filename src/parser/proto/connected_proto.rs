@@ -19,7 +19,6 @@ use std::collections::VecDeque;
 /// - FConnectedBlock
 ///
 pub trait ConnectedBlock {
-
     ///
     /// Associated output type.
     ///
@@ -48,8 +47,8 @@ pub trait ConnectedBlock {
         blk_index: &BlockIndex,
         blk_file: &BlkFile,
     ) -> OpResult<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }
 
 ///
@@ -61,7 +60,6 @@ pub trait ConnectedBlock {
 /// - FTransaction
 ///
 pub trait ConnectedTx {
-
     ///
     /// Associated output type.
     ///
@@ -383,7 +381,7 @@ fn connect_input(
         }
         if let Ok(record) = tx_db.get_tx_record(tx_id) {
             if let Ok(mut tx) =
-            blk_file.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)
+                blk_file.read_transaction(record.n_file, record.n_pos, record.n_tx_offset)
             {
                 let len = tx.output.len();
                 if n >= len as u32 {

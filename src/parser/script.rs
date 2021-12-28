@@ -82,7 +82,6 @@ impl ScriptInfo {
 /// translated from Bitcoinj:
 /// [isSentToMultisig()](https://github.com/bitcoinj/bitcoinj/blob/d3d5edbcbdb91b25de4df3b6ed6740d7e2329efc/core/src/main/java/org/bitcoinj/script/ScriptPattern.java#L225:L246)
 fn is_multisig(script: &Script) -> bool {
-
     // Read OpCodes
     let mut chunks: Vec<Instruction> = Vec::new();
     for i in script.instructions() {
@@ -145,7 +144,8 @@ fn is_multisig(script: &Script) -> bool {
 ///
 fn multisig_addresses(script: &Script) -> Vec<Address> {
     assert!(is_multisig(script));
-    let ops: Vec<Instruction> = script.instructions()
+    let ops: Vec<Instruction> = script
+        .instructions()
         .map(|o| o.ok())
         .filter_map(|x| x)
         .collect();
