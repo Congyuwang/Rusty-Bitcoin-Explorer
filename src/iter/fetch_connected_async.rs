@@ -1,7 +1,7 @@
 use crate::iter::util::Compress;
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-use crate::parser::proto::connected_proto::{BlockConnectable, TxConnectable};
+use crate::parser::proto::connected_proto::{ConnectedBlock, ConnectedTx};
 use crate::BitcoinDB;
 #[cfg(feature = "on-disk-utxo")]
 use bitcoin::consensus::{Decodable, Encodable};
@@ -25,14 +25,14 @@ use std::sync::Mutex;
 ///
 pub(crate) fn update_unspent_cache<TBlock>(
     #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
-        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     db: &BitcoinDB,
     height: usize,
 ) -> Result<Block, ()>
 where
-    TBlock: BlockConnectable,
+    TBlock: ConnectedBlock,
 {
     match db.get_block::<Block>(height) {
         #[cfg(not(feature = "on-disk-utxo"))]
@@ -43,14 +43,14 @@ where
             for tx in block.txdata.iter() {
                 // clone outputs
                 let txid = tx.txid();
-                let mut outs: Vec<Option<<TBlock::Tx as TxConnectable>::TOut>> =
+                let mut outs: Vec<Option<<TBlock::Tx as ConnectedTx>::TOut>> =
                     Vec::with_capacity(tx.output.len());
                 for o in tx.output.iter() {
                     outs.push(Some(o.clone().into()));
                 }
 
                 // update unspent cache
-                let outs: VecMap<<TBlock::Tx as TxConnectable>::TOut> =
+                let outs: VecMap<<TBlock::Tx as ConnectedTx>::TOut> =
                     VecMap::from_vec(outs.into_boxed_slice());
                 let new_unspent = Arc::new(Mutex::new(outs));
                 let txid_compressed = txid.compress();
@@ -106,13 +106,13 @@ where
 ///
 pub(crate) fn connect_outpoints<TBlock>(
     #[cfg(not(feature = "on-disk-utxo"))] unspent: &Arc<
-        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+        Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
     >,
     #[cfg(feature = "on-disk-utxo")] unspent: &Arc<DB>,
     block: Block,
 ) -> Result<TBlock, ()>
 where
-    TBlock: BlockConnectable,
+    TBlock: ConnectedBlock,
 {
     let block_hash = block.header.block_hash();
     let mut output_block = TBlock::from(block.header, block_hash);
@@ -157,7 +157,7 @@ where
     let mut pos = 0;
 
     for tx in block.txdata {
-        let mut output_tx: TBlock::Tx = TxConnectable::from(&tx);
+        let mut output_tx: TBlock::Tx = ConnectedTx::from(&tx);
 
         // spend new inputs
         for input in tx.input {

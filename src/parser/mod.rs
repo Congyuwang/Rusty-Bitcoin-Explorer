@@ -1,3 +1,7 @@
+//!
+//! This module defines how to parse binary data on disk to Block structs defined in proto.
+//!
+
 /// read transactions and blocks from blk.dat files
 pub mod blk_file;
 
@@ -13,7 +17,8 @@ pub mod script;
 /// on disk transaction index database
 pub mod tx_index;
 
-pub mod errors;
-
 /// various formats of blockchain data representation
 pub mod proto;
+
+/// error handling
+pub mod errors;

@@ -2,9 +2,9 @@ use crate::api::BitcoinDB;
 use crate::iter::fetch_connected_async::{connect_outpoints, update_unspent_cache};
 #[cfg(not(feature = "on-disk-utxo"))]
 use crate::iter::util::VecMap;
-use crate::parser::proto::connected_proto::BlockConnectable;
+use crate::parser::proto::connected_proto::ConnectedBlock;
 #[cfg(not(feature = "on-disk-utxo"))]
-use crate::parser::proto::connected_proto::TxConnectable;
+use crate::parser::proto::connected_proto::ConnectedTx;
 #[cfg(not(feature = "on-disk-utxo"))]
 use hash_hasher::HashedMap;
 #[cfg(feature = "on-disk-utxo")]
@@ -30,14 +30,14 @@ pub struct ConnectedBlockIter<TBlock> {
 
 impl<TBlock> ConnectedBlockIter<TBlock>
 where
-    TBlock: 'static + BlockConnectable + Send,
+    TBlock: 'static + ConnectedBlock + Send,
 {
     /// the worker threads are dispatched in this `new` constructor!
     pub fn new(db: &BitcoinDB, end: usize) -> Self {
         // UTXO cache
         #[cfg(not(feature = "on-disk-utxo"))]
         let unspent: Arc<
-            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as TxConnectable>::TOut>>>>>,
+            Mutex<HashedMap<u128, Arc<Mutex<VecMap<<TBlock::Tx as ConnectedTx>::TOut>>>>>,
         > = Arc::new(Mutex::new(HashedMap::default()));
         #[cfg(feature = "on-disk-utxo")]
         let cache_dir = {

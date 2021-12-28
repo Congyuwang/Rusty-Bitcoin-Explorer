@@ -2,7 +2,7 @@
 //! Add addresses, block_hash, tx_id to the bitcoin library format
 //!
 use crate::api::Block;
-use crate::parser::script::{evaluate_script, Type};
+use crate::parser::script::{evaluate_script, ScriptType};
 use bitcoin::{Address, BlockHash, Transaction, TxMerkleNode, TxOut, Txid};
 use serde::{Deserialize, Serialize};
 
@@ -94,7 +94,7 @@ impl From<Transaction> for FTransaction {
 pub struct FTxOut {
     pub value: u64,
     pub script_pubkey: bitcoin::Script,
-    pub script_type: Type,
+    pub script_type: ScriptType,
     pub addresses: Box<[Address]>,
 }
 

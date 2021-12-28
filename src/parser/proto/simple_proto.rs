@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 /// - `output public script key hash`
 ///
 /// `SBlock` reduces the amount of data memorized or transferred.
+///
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SBlock {
     pub header: SBlockHeader,

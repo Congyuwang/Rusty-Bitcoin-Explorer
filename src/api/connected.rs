@@ -1,7 +1,7 @@
 //!
 //! implementation of methods that retrieve block info with outpoints connected
 //!
-use crate::api::{BitcoinDB, BlockConnectable, ConnectedBlockIter, TxConnectable, Txid};
+use crate::api::{BitcoinDB, ConnectedBlock, ConnectedBlockIter, ConnectedTx, Txid};
 use crate::parser::errors::{OpError, OpResult};
 
 impl BitcoinDB {
@@ -21,7 +21,7 @@ impl BitcoinDB {
     ///
     /// Slow! For massive computation, use `db.iter_connected_block()`.
     ///
-    pub fn get_connected_block<T: BlockConnectable>(&self, height: usize) -> OpResult<T> {
+    pub fn get_connected_block<T: ConnectedBlock>(&self, height: usize) -> OpResult<T> {
         if !self.tx_db.is_open() {
             return Err(OpError::from("TxDB not open"));
         }
@@ -47,7 +47,7 @@ impl BitcoinDB {
     ///
     /// Slow! For massive computation, use `db.iter_connected_block()`.
     ///
-    pub fn get_connected_transaction<T: TxConnectable>(&self, txid: &Txid) -> OpResult<T> {
+    pub fn get_connected_transaction<T: ConnectedTx>(&self, txid: &Txid) -> OpResult<T> {
         if !self.tx_db.is_open() {
             return Err(OpError::from("TxDB not open"));
         }
@@ -95,7 +95,7 @@ impl BitcoinDB {
     ///
     pub fn iter_connected_block<TBlock>(&self, end: usize) -> ConnectedBlockIter<TBlock>
     where
-        TBlock: 'static + BlockConnectable + Send,
+        TBlock: 'static + ConnectedBlock + Send,
     {
         ConnectedBlockIter::new(self, end)
     }

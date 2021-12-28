@@ -33,8 +33,8 @@ use std::sync::Arc;
 pub use crate::iter::{BlockIter, ConnectedBlockIter};
 pub use crate::parser::block_index::{BlockIndex, BlockIndexRecord};
 pub use crate::parser::proto::connected_proto::{
-    BlockConnectable, FConnectedBlock, FConnectedTransaction, SConnectedBlock,
-    SConnectedTransaction, TxConnectable,
+    ConnectedBlock, FConnectedBlock, FConnectedTransaction, SConnectedBlock,
+    SConnectedTransaction, ConnectedTx,
 };
 pub use crate::parser::proto::full_proto::{FBlock, FBlockHeader, FTransaction, FTxOut};
 pub use crate::parser::proto::simple_proto::{SBlock, SBlockHeader, STransaction, STxOut};
