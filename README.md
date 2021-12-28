@@ -15,34 +15,20 @@ Support bitcoin MainNet, might support other networks in the future.
 
 ### **1. Block & Script Decoding**
 
-- Query blocks based on block heights.
-- Decode Bitcoin Core native levelDB info.
-- Decode addresses from output scripts (supporting all standard scripts, including Multi-Sig scripts).
-- Find input addresses using on-disk UTXO cache (iter_connected_block()).
+- Query blocks based on block heights or block hash.
+- Support `tx_index=1`.
+- Find input addresses using UTXO cache (`iter_connected_block()`).
 
 ### **2. Concurrency + Iterator + Sequential Output**
 
-- Fast concurrent reading but producing sequential output.
-- Work-stealing with registry to maximize efficiency.
+- Fast concurrent deserializing but producing sequential output.
 - Native Iterator interface (support `for in` syntax).
-- Robust exception handling in multi-threading.
-- Data racing and deadlock free data model.
 
 ### **3. Small Memory Footprint (< 4 GB RAM)**
 
-- Compress 256-bit TxID to u128 keys in UTXO.
 - Use a fast on-disk UTXO storage (RocksDB).
-- Configurable in-memory UTXO cache (non-default feature).
 
-### **4. Generic User Interface**
-
-- Use static generic to offer different output formats for various APIs.
-
-### **5. Thorough Testing**
-
-- Thoroughly tested for correctness using rust *integration tests*.
-
-### **6. Build for Rust + Python (Multi-OS PyPI wheels)**
+### **4. Build for Rust + Python (Multi-OS PyPI wheels)**
 
 - Built and published PyPI wheels for `python 3.6-3.10` across `Windows x86/x64`, `MacOS x86_64/arm64`, and `Linux x86_64`.
 - Rust library on [crates.io](https://crates.io) called *bitcoin-explorer*.
