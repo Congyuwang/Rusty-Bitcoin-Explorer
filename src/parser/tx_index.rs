@@ -14,27 +14,36 @@ use std::str::FromStr;
 
 const GENESIS_TXID: &str = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
 
-struct TxKey {
-    key: Vec<u8>,
-}
-
-impl db_key::Key for TxKey {
-    fn from_u8(key: &[u8]) -> Self {
-        TxKey {
-            key: Vec::from(key),
-        }
-    }
-
-    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
-        f(&self.key)
-    }
-}
-
+///
+/// tx-index: looking up transaction position using txid.
+///
+/// This is possible if Bitcoin Core has `txindex=1`.
+///
 pub struct TxDB {
     db: Option<Database<TxKey>>,
     // used for reverse looking up to block height
     file_pos_to_height: BTreeMap<(i32, u32), i32>,
     genesis_txid: Txid,
+}
+
+/// Records transaction storage on disk
+pub struct TransactionRecord {
+    pub txid: Txid,
+    pub n_file: i32,
+    pub n_pos: u32,
+    pub n_tx_offset: u32,
+}
+
+impl TransactionRecord {
+    fn from(key: &[u8], values: &[u8]) -> OpResult<Self> {
+        let mut reader = Cursor::new(values);
+        Ok(TransactionRecord {
+            txid: Txid::from_slice(key)?,
+            n_file: reader.read_varint()? as i32,
+            n_pos: reader.read_varint()? as u32,
+            n_tx_offset: reader.read_varint()? as u32,
+        })
+    }
 }
 
 impl TxDB {
@@ -138,21 +147,20 @@ impl TxDB {
     }
 }
 
-pub struct TransactionRecord {
-    pub txid: Txid,
-    pub n_file: i32,
-    pub n_pos: u32,
-    pub n_tx_offset: u32,
+/// levelDB key utility
+struct TxKey {
+    key: Vec<u8>,
 }
 
-impl TransactionRecord {
-    fn from(key: &[u8], values: &[u8]) -> OpResult<Self> {
-        let mut reader = Cursor::new(values);
-        Ok(TransactionRecord {
-            txid: Txid::from_slice(key)?,
-            n_file: reader.read_varint()? as i32,
-            n_pos: reader.read_varint()? as u32,
-            n_tx_offset: reader.read_varint()? as u32,
-        })
+/// levelDB key utility
+impl db_key::Key for TxKey {
+    fn from_u8(key: &[u8]) -> Self {
+        TxKey {
+            key: Vec::from(key),
+        }
+    }
+
+    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+        f(&self.key)
     }
 }

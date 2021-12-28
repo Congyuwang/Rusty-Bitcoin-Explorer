@@ -7,19 +7,27 @@ use std::fs::{self, DirEntry, File};
 use std::io::{self, BufReader, Cursor, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-/// Holds all necessary data about a raw blk file
+///
+/// An index of all blk files found.
+///
 #[derive(Debug, Clone)]
 pub struct BlkFile {
     files: HashMap<i32, PathBuf>,
 }
 
 impl BlkFile {
+    ///
+    /// Construct an index of all blk files.
+    ///
     pub(crate) fn new(path: &Path) -> OpResult<BlkFile> {
         Ok(BlkFile {
             files: BlkFile::scan_path(path)?,
         })
     }
 
+    ///
+    /// Read a Block from blk file.
+    ///
     pub(crate) fn read_block(&self, n_file: i32, offset: u32) -> OpResult<Block> {
         if let Some(blk_path) = self.files.get(&n_file) {
             let mut r = BufReader::new(File::open(blk_path)?);
@@ -32,6 +40,9 @@ impl BlkFile {
         }
     }
 
+    ///
+    /// Read a transaction from blk file.
+    ///
     pub(crate) fn read_transaction(
         &self,
         n_file: i32,
@@ -48,6 +59,9 @@ impl BlkFile {
         }
     }
 
+    ///
+    /// Scan blk folder to build an index of all blk files.
+    ///
     fn scan_path(path: &Path) -> OpResult<HashMap<i32, PathBuf>> {
         let mut collected = HashMap::with_capacity(4000);
         for entry in fs::read_dir(path)? {
@@ -78,6 +92,9 @@ impl BlkFile {
         }
     }
 
+    ///
+    /// Resolve symlink.
+    ///
     fn resolve_path(entry: &DirEntry) -> io::Result<PathBuf> {
         if entry.file_type()?.is_symlink() {
             fs::read_link(entry.path())
@@ -86,6 +103,9 @@ impl BlkFile {
         }
     }
 
+    ///
+    /// Extract index from block file name.
+    ///
     fn parse_blk_index(file_name: &str) -> Option<i32> {
         let prefix = "blk";
         let ext = ".dat";

@@ -12,6 +12,9 @@ use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
 
+///
+/// See Bitcoin Core repository for definition.
+///
 const BLOCK_VALID_HEADER: u32 = 1;
 const BLOCK_VALID_TREE: u32 = 2;
 const BLOCK_VALID_TRANSACTIONS: u32 = 3;
@@ -25,8 +28,19 @@ const BLOCK_VALID_MASK: u32 = BLOCK_VALID_HEADER
 const BLOCK_HAVE_DATA: u32 = 8;
 const BLOCK_HAVE_UNDO: u32 = 16;
 
-// BLOCK_INDEX RECORD
+///
+/// - Map from block height to block hash (records)
+/// - Map from block hash to block height (hash_to_height)
+///
+#[derive(Clone)]
+pub struct BlockIndex {
+    pub records: Box<[BlockIndexRecord]>,
+    pub hash_to_height: HashMap<BlockHash, i32>,
+}
 
+///
+/// BLOCK_INDEX RECORD as defined in Bitcoin Core.
+///
 #[derive(Serialize, Clone)]
 pub struct BlockIndexRecord {
     pub n_version: i32,
@@ -39,7 +53,85 @@ pub struct BlockIndexRecord {
     pub block_header: BlockHeader,
 }
 
+impl BlockIndex {
+
+    ///
+    /// Build a collections of block index.
+    ///
+    pub(crate) fn new(p: &Path) -> OpResult<BlockIndex> {
+        let records = load_block_index(p)?;
+
+        // build a reverse index to lookup block height of a particular block hash.
+        let mut hash_to_height = HashMap::with_capacity(records.len());
+        let mut check_height = 0;
+        for b in records.iter() {
+            assert_eq!(
+                check_height, b.n_height,
+                "some block info missing from block index levelDB,\
+                       delete Bitcoin folder and re-download!"
+            );
+            hash_to_height.insert(b.block_header.block_hash(), b.n_height);
+            check_height += 1;
+        }
+        hash_to_height.shrink_to_fit();
+        Ok(BlockIndex {
+            records,
+            hash_to_height,
+        })
+    }
+}
+
+///
+/// Load all block index in memory from leveldb (i.e. `blocks/index` path).
+///
+/// Map from block height to block index record.
+///
+pub fn load_block_index(path: &Path) -> OpResult<Box<[BlockIndexRecord]>> {
+    let mut block_index = Vec::with_capacity(800000);
+
+    info!("Start loading block_index");
+    let mut options = Options::new();
+    options.create_if_missing = false;
+    let db: Database<BlockKey> = Database::open(path, options)?;
+    let options = ReadOptions::new();
+    let mut iter = db.iter(options);
+
+    while iter.advance() {
+        let k = iter.key();
+        let v = iter.value();
+        if is_block_index_record(&k.key) {
+            let record = BlockIndexRecord::from(&v)?;
+            if record.n_status & (BLOCK_VALID_MASK | BLOCK_HAVE_DATA) > 0 {
+                block_index.push(record);
+            }
+        }
+    }
+    block_index.sort_by_key(|b| b.n_height);
+    Ok(block_index.into_boxed_slice())
+}
+
+/// levelDB key util
+struct BlockKey {
+    key: Vec<u8>,
+}
+
+/// levelDB key util
+impl db_key::Key for BlockKey {
+    fn from_u8(key: &[u8]) -> Self {
+        BlockKey {
+            key: Vec::from(key),
+        }
+    }
+
+    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+        f(&self.key)
+    }
+}
+
 impl BlockIndexRecord {
+    ///
+    /// Decode levelDB value for Block Index Record.
+    ///
     fn from(values: &[u8]) -> OpResult<Self> {
         let mut reader = Cursor::new(values);
 
@@ -77,6 +169,11 @@ impl BlockIndexRecord {
     }
 }
 
+#[inline]
+fn is_block_index_record(data: &[u8]) -> bool {
+    *data.get(0).unwrap() == b'b'
+}
+
 impl fmt::Debug for BlockIndexRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BlockIndexRecord")
@@ -89,78 +186,4 @@ impl fmt::Debug for BlockIndexRecord {
             .field("header", &self.block_header)
             .finish()
     }
-}
-
-#[inline]
-fn is_block_index_record(data: &[u8]) -> bool {
-    *data.get(0).unwrap() == b'b'
-}
-
-#[derive(Clone)]
-pub struct BlockIndex {
-    pub records: Box<[BlockIndexRecord]>,
-    pub hash_to_height: HashMap<BlockHash, i32>,
-}
-
-impl BlockIndex {
-    pub(crate) fn new(p: &Path) -> OpResult<BlockIndex> {
-        let records = load_block_index(p)?;
-        let mut hash_to_height = HashMap::with_capacity(records.len());
-        let mut check_height = 0;
-        for b in records.iter() {
-            assert_eq!(
-                check_height, b.n_height,
-                "some block info missing from block index levelDB,\
-                       delete Bitcoin folder and re-download!"
-            );
-            hash_to_height.insert(b.block_header.block_hash(), b.n_height);
-            check_height += 1;
-        }
-        hash_to_height.shrink_to_fit();
-        Ok(BlockIndex {
-            records,
-            hash_to_height,
-        })
-    }
-}
-
-struct BlockKey {
-    key: Vec<u8>,
-}
-
-impl db_key::Key for BlockKey {
-    fn from_u8(key: &[u8]) -> Self {
-        BlockKey {
-            key: Vec::from(key),
-        }
-    }
-
-    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
-        f(&self.key)
-    }
-}
-
-/// load all block index in memory from disk (i.e. `blocks/index` path)
-pub fn load_block_index(path: &Path) -> OpResult<Box<[BlockIndexRecord]>> {
-    let mut block_index = Vec::with_capacity(800000);
-
-    info!("Start loading block_index");
-    let mut options = Options::new();
-    options.create_if_missing = false;
-    let db: Database<BlockKey> = Database::open(path, options)?;
-    let options = ReadOptions::new();
-    let mut iter = db.iter(options);
-
-    while iter.advance() {
-        let k = iter.key();
-        let v = iter.value();
-        if is_block_index_record(&k.key) {
-            let record = BlockIndexRecord::from(&v)?;
-            if record.n_status & (BLOCK_VALID_MASK | BLOCK_HAVE_DATA) > 0 {
-                block_index.push(record);
-            }
-        }
-    }
-    block_index.sort_by_key(|b| b.n_height);
-    Ok(block_index.into_boxed_slice())
 }

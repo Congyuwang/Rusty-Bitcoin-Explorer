@@ -5,7 +5,12 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::fs::File;
 use std::io::{BufReader, Cursor};
 
+///
+/// binary file read utilities.
+///
 pub trait BlockchainRead: std::io::Read {
+
+    #[inline]
     fn read_varint(&mut self) -> OpResult<usize> {
         let mut n = 0;
         loop {
