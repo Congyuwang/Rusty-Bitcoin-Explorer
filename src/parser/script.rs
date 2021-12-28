@@ -1,4 +1,3 @@
-use crate::parser::errors::{OpError, OpResult};
 use bitcoin::blockdata::opcodes::{all, All};
 use bitcoin::blockdata::script::Instruction;
 use bitcoin::hashes::{hash160, Hash};
@@ -8,8 +7,14 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use Instruction::{Op, PushBytes};
 
+///
+/// Different types of bitcoin Scripts.
+///
+/// See [An Analysis of Non-standard Transactions](https://doi.org/10.3389/fbloc.2019.00007)
+/// for a more detailed explanation.
+///
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum Type {
+pub enum ScriptType {
     OpReturn,
     Pay2MultiSig,
     Pay2PublicKey,
@@ -22,59 +27,211 @@ pub enum Type {
     NotRecognised,
 }
 
-impl fmt::Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Type::OpReturn => write!(f, "OpReturn"),
-            Type::Pay2MultiSig => write!(f, "Pay2MultiSig"),
-            Type::Pay2PublicKey => write!(f, "Pay2PublicKey"),
-            Type::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
-            Type::Pay2ScriptHash => write!(f, "Pay2ScriptHash"),
-            Type::Pay2WitnessPublicKeyHash => write!(f, "Pay2WitnessPublicKeyHash"),
-            Type::Pay2WitnessScriptHash => write!(f, "Pay2WitnessScriptHash"),
-            Type::WitnessProgram => write!(f, "WitnessProgram"),
-            Type::Unspendable => write!(f, "Unspendable"),
-            Type::NotRecognised => write!(f, "NotRecognised"),
-        }
-    }
-}
-
+///
+/// `ScriptInfo` stores a list of addresses extracted from ScriptPubKey.
+///
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScriptInfo {
     pub addresses: Vec<Address>,
-    pub pattern: Type,
+    pub pattern: ScriptType,
+}
+
+///
+/// This function extract addresses and script type from Script.
+///
+pub fn evaluate_script(script: &Script, net: Network) -> ScriptInfo {
+    let address = Address::from_script(&script, net);
+    if script.is_p2pk() {
+        ScriptInfo::new(p2pk_to_address(&script), ScriptType::Pay2PublicKey)
+    } else if script.is_p2pkh() {
+        ScriptInfo::new(address, ScriptType::Pay2PublicKeyHash)
+    } else if script.is_p2sh() {
+        ScriptInfo::new(address, ScriptType::Pay2ScriptHash)
+    } else if script.is_v0_p2wpkh() {
+        ScriptInfo::new(address, ScriptType::Pay2WitnessPublicKeyHash)
+    } else if script.is_v0_p2wsh() {
+        ScriptInfo::new(address, ScriptType::Pay2WitnessScriptHash)
+    } else if script.is_witness_program() {
+        ScriptInfo::new(address, ScriptType::WitnessProgram)
+    } else if script.is_op_return() {
+        ScriptInfo::new(address, ScriptType::OpReturn)
+    } else if script.is_provably_unspendable() {
+        ScriptInfo::new(address, ScriptType::Unspendable)
+    } else if is_multisig(&script) {
+        ScriptInfo::from_vec(multisig_addresses(&script), ScriptType::Pay2MultiSig)
+    } else {
+        ScriptInfo::new(address, ScriptType::NotRecognised)
+    }
 }
 
 impl ScriptInfo {
-    pub fn new(address: Option<Address>, pattern: Type) -> Self {
+    pub(crate) fn new(address: Option<Address>, pattern: ScriptType) -> Self {
         if let Some(address) = address {
-            Self::new_from_vec(vec![address], pattern)
+            Self::from_vec(vec![address], pattern)
         } else {
-            Self::new_from_vec(Vec::new(), pattern)
+            Self::from_vec(Vec::new(), pattern)
         }
     }
 
-    pub fn new_from_vec(addresses: Vec<Address>, pattern: Type) -> Self {
+    pub(crate) fn from_vec(addresses: Vec<Address>, pattern: ScriptType) -> Self {
         Self { addresses, pattern }
     }
 }
 
-fn p2pk_to_address(script: &Script) -> Option<Address> {
-    assert!(script.is_p2pk());
-    let pk = match script.instructions().next() {
-        Some(Ok(Instruction::PushBytes(bytes))) => bytes,
-        _ => {
+///
+/// translated from Bitcoinj:
+/// [isSentToMultisig()](https://github.com/bitcoinj/bitcoinj/blob/d3d5edbcbdb91b25de4df3b6ed6740d7e2329efc/core/src/main/java/org/bitcoinj/script/ScriptPattern.java#L225:L246)
+fn is_multisig(script: &Script) -> bool {
+
+    // Read OpCodes
+    let mut chunks: Vec<Instruction> = Vec::new();
+    for i in script.instructions() {
+        if let Ok(i) = i {
+            chunks.push(i);
+        } else {
+            return false;
+        }
+    }
+
+    // At least four chunks
+    if chunks.len() < 4 {
+        return false;
+    }
+
+    // Must end in OP_CHECKMULTISIG[VERIFY].
+    match chunks.last().unwrap() {
+        PushBytes(_) => {
+            return false;
+        }
+        Op(op) => {
+            if !(op.eq(&all::OP_CHECKMULTISIG) || op.eq(&all::OP_CHECKMULTISIGVERIFY)) {
+                return false;
+            }
+        }
+    }
+
+    // Second to last chunk must be an OP_N opcode and there should be that many data chunks (keys).
+    let second_last_chunk = chunks.get(chunks.len() - 2).unwrap();
+    if let Some(num_keys) = get_num_keys(second_last_chunk) {
+        // check number of chunks
+        if num_keys < 1 || (num_keys + 3) as usize != chunks.len() {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    // the rest must be data (except the first and the last 2)
+    for chunk in chunks.iter().skip(1).take(chunks.len() - 3) {
+        if let Op(_) = chunk {
+            return false;
+        }
+    }
+
+    // First chunk must be an OP_N opcode too.
+    if let Some(num_keys) = get_num_keys(chunks.first().unwrap()) {
+        // check number of chunks
+        if num_keys < 1 {
+            return false;
+        }
+    } else {
+        return false;
+    }
+    true
+}
+
+///
+/// Obtain addresses for multisig transactions.
+///
+fn multisig_addresses(script: &Script) -> Vec<Address> {
+    assert!(is_multisig(script));
+    let ops: Vec<Instruction> = script.instructions()
+        .map(|o| o.ok())
+        .filter_map(|x| x)
+        .collect();
+
+    // obtain number of keys
+    let num_keys = {
+        if let Some(Op(op)) = ops.get(ops.len() - 2) {
+            decode_from_op_n(op)
+        } else {
             unreachable!()
         }
     };
+    // read public keys
+    let mut public_keys = Vec::with_capacity(num_keys as usize);
+    for op in ops.iter().skip(1).take(num_keys as usize) {
+        if let PushBytes(data) = op {
+            match PublicKey::from_slice(data) {
+                Ok(pk) => public_keys.push(Address {
+                    payload: Payload::PubkeyHash(pk.pubkey_hash()),
+                    network: Network::Bitcoin,
+                }),
+                Err(_) => return Vec::new(),
+            }
+        } else {
+            unreachable!()
+        }
+    }
+    public_keys
+}
 
-    let pkh = hash160::Hash::hash(pk);
+///
+/// Decode OP_N
+///
+/// translated from BitcoinJ:
+/// [decodeFromOpN()](https://github.com/bitcoinj/bitcoinj/blob/d3d5edbcbdb91b25de4df3b6ed6740d7e2329efc/core/src/main/java/org/bitcoinj/script/Script.java#L515:L524)
+///
+#[inline]
+fn decode_from_op_n(op: &All) -> i32 {
+    if op.eq(&all::OP_PUSHBYTES_0) {
+        0
+    } else if op.eq(&all::OP_PUSHNUM_NEG1) {
+        -1
+    } else {
+        op.into_u8() as i32 + 1 - all::OP_PUSHNUM_1.into_u8() as i32
+    }
+}
 
-    let address = Address {
-        payload: Payload::PubkeyHash(PubkeyHash::from_slice(&pkh).ok()?),
-        network: Network::Bitcoin,
-    };
-    Some(address)
+///
+/// Get number of keys for multisig
+///
+#[inline]
+fn get_num_keys(op: &Instruction) -> Option<i32> {
+    match op {
+        PushBytes(_) => None,
+        Op(op) => {
+            if !(op.eq(&all::OP_PUSHNUM_NEG1)
+                || op.eq(&all::OP_PUSHBYTES_0)
+                || (op.ge(&all::OP_PUSHNUM_1) && all::OP_PUSHNUM_16.ge(op)))
+            {
+                None
+            } else {
+                Some(decode_from_op_n(op))
+            }
+        }
+    }
+}
+
+///
+/// Get address from p2pk script.
+///
+/// Can only be used for p2pk script,
+/// otherwise panic.
+///
+#[inline]
+fn p2pk_to_address(script: &Script) -> Option<Address> {
+    assert!(script.is_p2pk());
+    if let Some(Ok(Instruction::PushBytes(pk))) = script.instructions().next() {
+        // hash the 20 bytes public key
+        let pkh = hash160::Hash::hash(pk);
+        Some(Address {
+            payload: Payload::PubkeyHash(PubkeyHash::from_slice(&pkh).ok()?),
+            network: Network::Bitcoin,
+        })
+    } else {
+        unreachable!()
+    }
 }
 
 trait Cmp {
@@ -87,161 +244,26 @@ impl Cmp for bitcoin::blockdata::opcodes::All {
     }
 }
 
-fn decode_from_op_n(op: &All) -> i32 {
-    if op.eq(&all::OP_PUSHBYTES_0) {
-        0
-    } else if op.eq(&all::OP_PUSHNUM_NEG1) {
-        -1
-    } else {
-        op.into_u8() as i32 + 1 - all::OP_PUSHNUM_1.into_u8() as i32
-    }
-}
-
-/// according to bitcoinj
-fn is_multisig(script: &Script) -> bool {
-    let mut chunks: Vec<Instruction> = Vec::new();
-    for i in script.instructions() {
-        if let Ok(i) = i {
-            chunks.push(i);
-        } else {
-            return false;
+impl fmt::Display for ScriptType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ScriptType::OpReturn => write!(f, "OpReturn"),
+            ScriptType::Pay2MultiSig => write!(f, "Pay2MultiSig"),
+            ScriptType::Pay2PublicKey => write!(f, "Pay2PublicKey"),
+            ScriptType::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
+            ScriptType::Pay2ScriptHash => write!(f, "Pay2ScriptHash"),
+            ScriptType::Pay2WitnessPublicKeyHash => write!(f, "Pay2WitnessPublicKeyHash"),
+            ScriptType::Pay2WitnessScriptHash => write!(f, "Pay2WitnessScriptHash"),
+            ScriptType::WitnessProgram => write!(f, "WitnessProgram"),
+            ScriptType::Unspendable => write!(f, "Unspendable"),
+            ScriptType::NotRecognised => write!(f, "NotRecognised"),
         }
-    }
-    if chunks.len() < 4 {
-        return false;
-    }
-    let last_chunk = chunks.get(chunks.len() - 1).unwrap();
-    // Must end in OP_CHECKMULTISIG[VERIFY].
-    match last_chunk {
-        PushBytes(_) => {
-            return false;
-        }
-        Op(op) => {
-            if !(op.eq(&all::OP_CHECKMULTISIG) || op.eq(&all::OP_CHECKMULTISIGVERIFY)) {
-                return false;
-            }
-        }
-    }
-    let second_last_chunk = chunks.get(chunks.len() - 2).unwrap();
-    // Second to last chunk must be an OP_N opcode and there should be that many data chunks (keys).
-    match second_last_chunk {
-        PushBytes(_) => {
-            return false;
-        }
-        Op(op) => {
-            if !(op.eq(&all::OP_PUSHNUM_NEG1)
-                || op.eq(&all::OP_PUSHBYTES_0)
-                || (op.ge(&all::OP_PUSHNUM_1) && all::OP_PUSHNUM_16.ge(op)))
-            {
-                return false;
-            } else {
-                let num_keys = decode_from_op_n(op);
-                if num_keys < 1 || (num_keys + 3) as usize != chunks.len() {
-                    return false;
-                }
-            }
-        }
-    }
-    // the rest must be data
-    for i in 1..(chunks.len() - 2) {
-        match chunks.get(i).unwrap() {
-            PushBytes(_) => {}
-            Op(_) => {
-                return false;
-            }
-        }
-    }
-    let first_chunk = chunks.get(0).unwrap();
-    // First chunk must be an OP_N opcode too.
-    match first_chunk {
-        PushBytes(_) => {
-            return false;
-        }
-        Op(op) => {
-            if !(op.eq(&all::OP_PUSHNUM_NEG1)
-                || op.eq(&all::OP_PUSHBYTES_0)
-                || (op.ge(&all::OP_PUSHNUM_1) && all::OP_PUSHNUM_16.ge(op)))
-            {
-                return false;
-            } else {
-                if decode_from_op_n(op) < 1 {
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
-}
-
-fn get_pub_keys(script: &Script) -> OpResult<Vec<PublicKey>> {
-    assert!(is_multisig(script));
-    let ops: Vec<Instruction> = script.instructions().map(|o| o.unwrap()).collect();
-    if let Op(op) = ops.get(ops.len() - 2).unwrap() {
-        let num_keys = decode_from_op_n(op);
-        let mut public_keys = Vec::with_capacity(num_keys as usize);
-        for i in 0..num_keys {
-            if let Some(PushBytes(data)) = ops.get(i as usize + 1) {
-                match PublicKey::from_slice(data) {
-                    Ok(pk) => public_keys.push(pk),
-                    Err(_) => return Err(OpError::from("failed to parse public key")),
-                }
-            } else {
-                // assert! is_multisig
-                unreachable!()
-            }
-        }
-        Ok(public_keys)
-    } else {
-        // assert! is_multisig
-        unreachable!()
-    }
-}
-
-/// get list of keys from multisig transaction
-/// return empty list if the script cannot be parsed
-fn pub_keys_to_addresses(script: &Script) -> Vec<Address> {
-    assert!(is_multisig(script));
-    if let Ok(pub_keys) = get_pub_keys(&script) {
-        pub_keys
-            .iter()
-            .map(|k| Address {
-                payload: Payload::PubkeyHash(k.pubkey_hash()),
-                network: Network::Bitcoin,
-            })
-            .collect()
-    } else {
-        Vec::new()
-    }
-}
-
-pub fn evaluate_script(script: &Script, net: Network) -> ScriptInfo {
-    let address = Address::from_script(&script, net);
-    if script.is_p2pk() {
-        ScriptInfo::new(p2pk_to_address(&script), Type::Pay2PublicKey)
-    } else if script.is_p2pkh() {
-        ScriptInfo::new(address, Type::Pay2PublicKeyHash)
-    } else if script.is_p2sh() {
-        ScriptInfo::new(address, Type::Pay2ScriptHash)
-    } else if script.is_v0_p2wpkh() {
-        ScriptInfo::new(address, Type::Pay2WitnessPublicKeyHash)
-    } else if script.is_v0_p2wsh() {
-        ScriptInfo::new(address, Type::Pay2WitnessScriptHash)
-    } else if script.is_witness_program() {
-        ScriptInfo::new(address, Type::WitnessProgram)
-    } else if script.is_op_return() {
-        ScriptInfo::new(address, Type::OpReturn)
-    } else if script.is_provably_unspendable() {
-        ScriptInfo::new(address, Type::Unspendable)
-    } else if is_multisig(&script) {
-        ScriptInfo::new_from_vec(pub_keys_to_addresses(&script), Type::Pay2MultiSig)
-    } else {
-        ScriptInfo::new(address, Type::NotRecognised)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{evaluate_script, Type};
+    use super::{evaluate_script, ScriptType};
     use bitcoin::hashes::hex::{FromHex, ToHex};
     use bitcoin::{Network, Script};
 
@@ -261,7 +283,7 @@ mod tests {
             result.addresses.get(0).unwrap().to_string(),
             String::from("12higDjoCCNXSA95xZMWUdPvXNmkAduhWv")
         );
-        assert_eq!(result.pattern, Type::Pay2PublicKeyHash);
+        assert_eq!(result.pattern, ScriptType::Pay2PublicKeyHash);
     }
 
     #[test]
@@ -285,7 +307,7 @@ mod tests {
             result.addresses.get(0).unwrap().to_string(),
             String::from("1LEWwJkDj8xriE87ALzQYcHjTmD8aqDj1f")
         );
-        assert_eq!(result.pattern, Type::Pay2PublicKey);
+        assert_eq!(result.pattern, ScriptType::Pay2PublicKey);
     }
 
     #[test]
@@ -309,7 +331,7 @@ mod tests {
             &Script::from_hex(&bytes.to_hex()).unwrap(),
             Network::Bitcoin,
         );
-        assert_eq!(result.pattern, Type::Pay2MultiSig);
+        assert_eq!(result.pattern, ScriptType::Pay2MultiSig);
     }
 
     #[test]
@@ -329,7 +351,7 @@ mod tests {
             result.addresses.get(0).unwrap().to_string(),
             String::from("3P14159f73E4gFr7JterCCQh9QjiTjiZrG")
         );
-        assert_eq!(result.pattern, Type::Pay2ScriptHash);
+        assert_eq!(result.pattern, ScriptType::Pay2ScriptHash);
     }
 
     #[test]
@@ -342,7 +364,7 @@ mod tests {
             Network::Bitcoin,
         );
         assert_eq!(result.addresses.get(0), None);
-        assert_eq!(result.pattern, Type::NotRecognised);
+        assert_eq!(result.pattern, ScriptType::NotRecognised);
     }
 
     #[test]
@@ -353,6 +375,6 @@ mod tests {
             Network::Bitcoin,
         );
         assert_eq!(result.addresses.get(0), None);
-        assert_eq!(result.pattern, Type::NotRecognised);
+        assert_eq!(result.pattern, ScriptType::NotRecognised);
     }
 }
