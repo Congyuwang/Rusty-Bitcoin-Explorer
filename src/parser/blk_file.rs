@@ -28,16 +28,24 @@ impl BlkFile {
     ///
     /// Read a Block from blk file.
     ///
-    pub(crate) fn read_block(&self, n_file: i32, offset: u32) -> OpResult<Block> {
+    #[inline]
+    pub(crate) fn read_raw_block(&self, n_file: i32, offset: u32) -> OpResult<Vec<u8>> {
         if let Some(blk_path) = self.files.get(&n_file) {
             let mut r = BufReader::new(File::open(blk_path)?);
             r.seek(SeekFrom::Start(offset as u64 - 4))?;
             let block_size = r.read_u32()?;
             let block = r.read_u8_vec(block_size)?;
-            Cursor::new(block).read_block()
+            Ok(block)
         } else {
             Err(OpError::from("blk file not found, sync with bitcoin core"))
         }
+    }
+
+    ///
+    /// Read a Block from blk file.
+    ///
+    pub(crate) fn read_block(&self, n_file: i32, offset: u32) -> OpResult<Block> {
+        Cursor::new(self.read_raw_block(n_file, offset)?).read_block()
     }
 
     ///
