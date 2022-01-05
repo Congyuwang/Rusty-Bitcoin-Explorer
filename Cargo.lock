@@ -47,7 +47,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-explorer"
-version = "1.2.16"
+version = "1.2.17"
 dependencies = [
  "bitcoin",
  "byteorder",
