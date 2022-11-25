@@ -40,9 +40,9 @@ pub struct ScriptInfo {
 /// This function extract addresses and script type from Script.
 ///
 pub fn evaluate_script(script: &Script, net: Network) -> ScriptInfo {
-    let address = Address::from_script(&script, net);
+    let address = Address::from_script(script, net);
     if script.is_p2pk() {
-        ScriptInfo::new(p2pk_to_address(&script), ScriptType::Pay2PublicKey)
+        ScriptInfo::new(p2pk_to_address(script), ScriptType::Pay2PublicKey)
     } else if script.is_p2pkh() {
         ScriptInfo::new(address, ScriptType::Pay2PublicKeyHash)
     } else if script.is_p2sh() {
@@ -57,8 +57,8 @@ pub fn evaluate_script(script: &Script, net: Network) -> ScriptInfo {
         ScriptInfo::new(address, ScriptType::OpReturn)
     } else if script.is_provably_unspendable() {
         ScriptInfo::new(address, ScriptType::Unspendable)
-    } else if is_multisig(&script) {
-        ScriptInfo::from_vec(multisig_addresses(&script), ScriptType::Pay2MultiSig)
+    } else if is_multisig(script) {
+        ScriptInfo::from_vec(multisig_addresses(script), ScriptType::Pay2MultiSig)
     } else {
         ScriptInfo::new(address, ScriptType::NotRecognised)
     }
@@ -146,8 +146,7 @@ fn multisig_addresses(script: &Script) -> Vec<Address> {
     assert!(is_multisig(script));
     let ops: Vec<Instruction> = script
         .instructions()
-        .map(|o| o.ok())
-        .filter_map(|x| x)
+        .filter_map(|o| o.ok())
         .collect();
 
     // obtain number of keys

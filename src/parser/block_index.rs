@@ -62,15 +62,13 @@ impl BlockIndex {
 
         // build a reverse index to lookup block height of a particular block hash.
         let mut hash_to_height = HashMap::with_capacity(records.len());
-        let mut check_height = 0;
-        for b in records.iter() {
+        for (check_height, b) in records.iter().enumerate() {
             assert_eq!(
-                check_height, b.n_height,
+                check_height, b.n_height as usize,
                 "some block info missing from block index levelDB,\
                        delete Bitcoin folder and re-download!"
             );
             hash_to_height.insert(b.block_header.block_hash(), b.n_height);
-            check_height += 1;
         }
         hash_to_height.shrink_to_fit();
         Ok(BlockIndex {
@@ -170,7 +168,7 @@ impl BlockIndexRecord {
 
 #[inline]
 fn is_block_index_record(data: &[u8]) -> bool {
-    *data.get(0).unwrap() == b'b'
+    data.first() == Some(&b'b')
 }
 
 impl fmt::Debug for BlockIndexRecord {

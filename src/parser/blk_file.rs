@@ -81,7 +81,7 @@ impl BlkFile {
                     };
                     if let Some(file_name) = path.as_path().file_name() {
                         if let Some(file_name) = file_name.to_str() {
-                            if let Some(index) = BlkFile::parse_blk_index(&file_name) {
+                            if let Some(index) = BlkFile::parse_blk_index(file_name) {
                                 collected.insert(index, path);
                             }
                         }

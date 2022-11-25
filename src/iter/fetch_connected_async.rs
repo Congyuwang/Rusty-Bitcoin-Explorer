@@ -78,12 +78,10 @@ where
                 // clone outputs
                 let txid = tx.txid();
 
-                let mut n: u32 = 0;
-                for o in tx.output.iter() {
+                for (n, o) in (0_u32..).zip(tx.output.iter()) {
                     let key = txo_key(txid, n);
                     let value = txo_to_u8(o);
                     batch.put(key, value);
-                    n += 1;
                 }
             }
             match unspent.write_without_wal(batch) {

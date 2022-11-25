@@ -54,7 +54,7 @@ pub fn parse_script(script_pub_key: &str) -> OpResult<ScriptInfo> {
 ///
 #[inline]
 pub fn get_addresses_from_script(script_pub_key: &str) -> OpResult<ScriptInfo> {
-    let script = Script::from_hex(&script_pub_key)?;
+    let script = Script::from_hex(script_pub_key)?;
     Ok(evaluate_script(&script, Network::Bitcoin))
 }
 
@@ -152,7 +152,7 @@ impl BitcoinDB {
                 return h;
             }
         }
-        return records;
+        records
     }
 
     ///
