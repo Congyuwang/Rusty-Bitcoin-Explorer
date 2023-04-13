@@ -218,7 +218,9 @@ impl BitcoinDB {
     ///
     pub fn get_raw_block(&self, height: usize) -> OpResult<Vec<u8>> {
         if let Some(index) = self.block_index.records.get(height) {
-            let blk = self.blk_file.read_raw_block(index.n_file, index.n_data_pos)?;
+            let blk = self
+                .blk_file
+                .read_raw_block(index.n_file, index.n_data_pos)?;
             Ok(blk)
         } else {
             Err(OpError::from("height not found"))

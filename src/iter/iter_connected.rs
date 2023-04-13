@@ -15,7 +15,7 @@ use log::error;
 use num_cpus;
 use par_iter_sync::{IntoParallelIteratorSync, ParIterSync};
 #[cfg(feature = "on-disk-utxo")]
-use rocksdb::{Options, PlainTableFactoryOptions, SliceTransform, DB};
+use rocksdb::{Options, SliceTransform, DB};
 use std::sync::Arc;
 #[cfg(not(feature = "on-disk-utxo"))]
 use std::sync::Mutex;
@@ -73,14 +73,6 @@ where
             options.set_max_bytes_for_level_multiplier(4.0);
             // use 8-byte prefix (2 ^ 64 is far enough for transaction counts)
             options.set_prefix_extractor(SliceTransform::create_fixed_prefix(8));
-            // set to plain-table for better performance
-            options.set_plain_table_factory(&PlainTableFactoryOptions {
-                // 32 (txid) + 4 (i32 out n)
-                user_key_length: KEY_LENGTH,
-                bloom_bits_per_key: 10,
-                hash_table_ratio: 0.75,
-                index_sparseness: 16,
-            });
             Arc::new(match DB::open(&options, &cache_dir) {
                 Ok(db) => db,
                 Err(e) => {

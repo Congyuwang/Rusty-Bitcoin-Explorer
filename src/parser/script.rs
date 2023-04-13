@@ -144,10 +144,7 @@ fn is_multisig(script: &Script) -> bool {
 ///
 fn multisig_addresses(script: &Script) -> Vec<Address> {
     assert!(is_multisig(script));
-    let ops: Vec<Instruction> = script
-        .instructions()
-        .filter_map(|o| o.ok())
-        .collect();
+    let ops: Vec<Instruction> = script.instructions().filter_map(|o| o.ok()).collect();
 
     // obtain number of keys
     let num_keys = {
