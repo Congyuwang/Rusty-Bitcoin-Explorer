@@ -68,7 +68,12 @@ impl BlockIndex {
             //     "some block info missing from block index levelDB,\
             //            delete Bitcoin folder and re-download!"
             // );
-            println!("{}, {:?}", check_height, b);
+
+            // if check_height is between 788804 and 788807, print check_height and b
+            if check_height >= 788804 && check_height <= 788807 {
+                println!("{}, {:?}", check_height, b);
+            }
+
             hash_to_height.insert(b.block_header.block_hash(), b.n_height);
         }
         hash_to_height.shrink_to_fit();
