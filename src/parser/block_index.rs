@@ -98,7 +98,10 @@ pub fn load_block_index(path: &Path) -> OpResult<Box<[BlockIndexRecord]>> {
         let v = iter.value();
         if is_block_index_record(&k.key) {
             let record = BlockIndexRecord::from(&v)?;
-            if record.n_status & (BLOCK_VALID_MASK | BLOCK_HAVE_DATA) >= BLOCK_VALID_SCRIPTS {
+            // only add valid block index record that has block data.
+            if record.n_status & BLOCK_VALID_MASK >= BLOCK_VALID_SCRIPTS
+                && record.n_status & BLOCK_HAVE_DATA > 0
+            {
                 block_index.push(record);
             }
         }
