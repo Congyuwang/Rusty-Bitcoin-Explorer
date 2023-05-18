@@ -100,6 +100,7 @@ pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
                     && record.n_status & BLOCK_HAVE_DATA > 0)
             {
                 let block_hash = record.block_header.block_hash();
+                // find the block with max height
                 if let Some((hash, height)) = max_height_block_hash.as_mut() {
                     if record.n_height > *height {
                         *hash = block_hash;
@@ -121,7 +122,7 @@ pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
         while current_height >= 0 {
             let blk = block_index_by_block_hash
                 .remove(&current_hash)
-                .expect("block index not found");
+                .expect("block hash not found in block index!");
             assert_eq!(
                 current_height, blk.n_height,
                 "some block info missing from block index levelDB,\
