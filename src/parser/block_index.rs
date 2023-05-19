@@ -7,7 +7,7 @@ use leveldb::iterator::Iterable;
 use leveldb::options::{Options, ReadOptions};
 use log::info;
 use serde::Serialize;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
@@ -58,16 +58,11 @@ impl BlockIndex {
     /// Build a collections of block index.
     ///
     pub(crate) fn new(p: &Path) -> OpResult<BlockIndex> {
-        let records = load_block_index(p)?;
+        let records = load_block_index(p)?.into_boxed_slice();
 
         // build a reverse index to lookup block height of a particular block hash.
         let mut hash_to_height = HashMap::with_capacity(records.len());
-        for (check_height, b) in records.iter().enumerate() {
-            assert_eq!(
-                check_height, b.n_height as usize,
-                "some block info missing from block index levelDB,\
-                       delete Bitcoin folder and re-download!"
-            );
+        for b in records.iter() {
             hash_to_height.insert(b.block_header.block_hash(), b.n_height);
         }
         hash_to_height.shrink_to_fit();
@@ -83,8 +78,8 @@ impl BlockIndex {
 ///
 /// Map from block height to block index record.
 ///
-pub fn load_block_index(path: &Path) -> OpResult<Box<[BlockIndexRecord]>> {
-    let mut block_index = Vec::with_capacity(800000);
+pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
+    let mut block_index_by_block_hash = BTreeMap::new();
 
     info!("Start loading block_index");
     let mut options = Options::new();
@@ -92,19 +87,56 @@ pub fn load_block_index(path: &Path) -> OpResult<Box<[BlockIndexRecord]>> {
     let db: Database<BlockKey> = Database::open(path, options)?;
     let options = ReadOptions::new();
     let mut iter = db.iter(options);
+    let mut max_height_block_hash = Option::<(BlockHash, i32)>::None;
 
     while iter.advance() {
         let k = iter.key();
         let v = iter.value();
         if is_block_index_record(&k.key) {
             let record = BlockIndexRecord::from(&v)?;
-            if record.n_status & (BLOCK_VALID_MASK | BLOCK_HAVE_DATA) > 0 {
-                block_index.push(record);
+            // only add valid block index record that has block data.
+            if record.n_height == 0
+                || (record.n_status & BLOCK_VALID_MASK >= BLOCK_VALID_SCRIPTS
+                    && record.n_status & BLOCK_HAVE_DATA > 0)
+            {
+                let block_hash = record.block_header.block_hash();
+                // find the block with max height
+                if let Some((hash, height)) = max_height_block_hash.as_mut() {
+                    if record.n_height > *height {
+                        *hash = block_hash;
+                        *height = record.n_height;
+                    }
+                } else {
+                    max_height_block_hash = Some((block_hash, record.n_height));
+                }
+                block_index_by_block_hash.insert(block_hash, record);
             }
         }
     }
-    block_index.sort_by_key(|b| b.n_height);
-    Ok(block_index.into_boxed_slice())
+    // build the longest chain
+    if let Some((hash, height)) = max_height_block_hash {
+        let mut block_index = Vec::with_capacity(height as usize + 1);
+        let mut current_hash = hash;
+        let mut current_height = height;
+        // recursively build block index from max height block.
+        while current_height >= 0 {
+            let blk = block_index_by_block_hash
+                .remove(&current_hash)
+                .expect("block hash not found in block index!");
+            assert_eq!(
+                current_height, blk.n_height,
+                "some block info missing from block index levelDB,\
+                       delete Bitcoin folder and re-download!"
+            );
+            current_hash = blk.block_header.prev_blockhash;
+            current_height -= 1;
+            block_index.push(blk);
+        }
+        block_index.reverse();
+        Ok(block_index)
+    } else {
+        Ok(Vec::with_capacity(0))
+    }
 }
 
 /// levelDB key util
