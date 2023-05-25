@@ -122,7 +122,9 @@ pub fn load_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
         while current_height >= 0 {
             let blk = block_index_by_block_hash
                 .remove(&current_hash)
-                .expect("block hash not found in block index!");
+                .expect(&format!(
+                    "block hash {current_hash} (height={current_height}) not found in block index!"
+                ));
             assert_eq!(
                 current_height, blk.n_height,
                 "some block info missing from block index levelDB,\
